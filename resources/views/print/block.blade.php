@@ -28,20 +28,18 @@
         <div style="{{ $textAlign }} width: 100%;">
         @if(isset($company) && $company->logo_url)
             <img src="{{ $company->logo_url }}" alt="Company Logo" class="mb-4" style="{{ $logoHeight }} display: inline-block;">
-        @else
-            <div class="mb-2 bg-gray-200 inline-flex items-center justify-center text-gray-400 text-[10px] uppercase font-bold text-center border-2 border-dashed border-gray-300" style="{{ $logoHeight }} aspect-ratio: 1/1; display: inline-flex;">Logo<br/>Space</div>
         @endif
         </div>
         @break
 
     @case('company_name')
         @if(isset($company))
-            <h2 class="text-2xl font-bold text-gray-800 uppercase tracking-wider mb-2" {!! $styleAttr !!}>{{ $company->company_name }}</h2>
+            <h2 class="text-2xl font-bold text-base uppercase tracking-wider mb-2" {!! $styleAttr !!}>{{ $company->company_name }}</h2>
         @endif
         @break
 
     @case('company_details')
-        <div class="text-gray-500 text-sm" {!! $styleAttr !!}>
+        <div class="text-base text-sm" {!! $styleAttr !!}>
             @if(isset($company))
                 {!! nl2br(e($company->address ?? '')) !!}<br>
                 @if($company->company_email) {{ $company->company_email }} <br> @endif
@@ -125,14 +123,40 @@
 
     @case('totals')
         <div class="border-t-2 border-primary mt-2 min-w-[250px]" {!! $styleAttr !!}>
-            <div class="flex justify-between py-2 font-bold text-xl text-primary">
-                <span>Total</span>
-                <span>{{ $currency }}{{ number_format($totalAmount ?? 0, 2) }}</span>
-            </div>
-            @if(isset($balanceDue))
-            <div class="flex justify-between py-2 text-base border-t border-gray-200">
-                <span>Balance Due</span>
-                <span class="font-semibold text-primary">{{ $currency }}{{ number_format($balanceDue, 2) }}</span>
+            @if(isset($summaryInfo) && is_array($summaryInfo))
+                @foreach($summaryInfo as $label => $value)
+                    <div class="flex justify-between py-2 {{ $loop->last || $label === 'Balance Due' ? 'font-bold text-xl text-primary border-t border-gray-200 mt-2' : 'text-base text-gray-600' }}">
+                        <span>{{ $label }}</span>
+                        <span>{{ $value }}</span>
+                    </div>
+                @endforeach
+            @else
+                <div class="flex justify-between py-2 font-bold text-xl text-primary">
+                    <span>Total</span>
+                    <span>{{ $currency }}{{ number_format($totalAmount ?? 0, 2) }}</span>
+                </div>
+                @if(isset($balanceDue))
+                <div class="flex justify-between py-2 text-base border-t border-gray-200">
+                    <span>Balance Due</span>
+                    <span class="font-semibold text-primary">{{ $currency }}{{ number_format($balanceDue, 2) }}</span>
+                </div>
+                @endif
+            @endif
+
+            @if(isset($paymentsTable) && count($paymentsTable) > 0)
+            <div class="mt-6 border-t border-gray-200 pt-4">
+                <h4 class="text-xs font-bold text-primary opacity-80 uppercase tracking-wider mb-2">Payments Received</h4>
+                <table class="w-full text-sm text-left">
+                    <tbody>
+                        @foreach($paymentsTable as $payment)
+                        <tr class="border-b border-gray-100 last:border-0">
+                            <td class="py-2 text-gray-500">{{ \Carbon\Carbon::parse($payment['date'])->format('M d, Y') }}</td>
+                            <td class="py-2 text-gray-700">{{ $payment['desc'] }}</td>
+                            <td class="py-2 text-right font-medium">{{ $payment['amount'] }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
             @endif
         </div>
@@ -140,24 +164,16 @@
 
     @case('static_content')
         <div {!! $styleAttr !!}>
-            @if((isset($memo) && $memo) || (isset($statementMessage) && $statementMessage))
-                @if(isset($memo) && $memo)
+            @if(isset($statementMessage) && $statementMessage)
                 <div class="mb-4">
-                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Memo / Notes</h4>
-                    <p class="text-sm text-gray-600">{{ $memo }}</p>
+                    <h4 class="text-xs font-bold text-primary opacity-70 uppercase tracking-wider mb-1">Statement Message</h4>
+                    <p class="text-sm text-base">{{ $statementMessage }}</p>
                 </div>
-                @endif
-                @if(isset($statementMessage) && $statementMessage)
-                <div class="mb-4">
-                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Statement Message</h4>
-                    <p class="text-sm text-gray-600">{{ $statementMessage }}</p>
-                </div>
-                @endif
             @endif
 
             @if(isset($staticFooterContent) && $staticFooterContent)
             <div class="mt-8 pt-6 border-t border-gray-200">
-                <div class="text-sm text-gray-600 prose max-w-none">
+                <div class="text-sm text-base prose max-w-none">
                     {!! nl2br(e($staticFooterContent)) !!}
                 </div>
             </div>

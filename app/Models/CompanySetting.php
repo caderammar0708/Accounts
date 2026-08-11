@@ -45,6 +45,8 @@ class CompanySetting extends Model
         'customer_layout_modal',
         'reports_display_as_buttons',
         'vehicles_enabled',
+        'multi_currency_enabled',
+        'home_currency_id',
     ];
 
     protected $casts = [

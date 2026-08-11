@@ -29,7 +29,7 @@ class InvoiceReturn extends Model implements Auditable
 
     public function company()
     {
-        return $this->belongsTo(Company::class);
+        return $this->belongsTo(\App\Models\Company::class);
     }
     public function journalEntry()
     {

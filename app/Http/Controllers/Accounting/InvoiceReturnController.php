@@ -325,7 +325,7 @@ class InvoiceReturnController extends Controller
     {
         $journalEntry->load('lines');
         $invoiceReturn = InvoiceReturn::with('items.item', 'customer', 'company')->findOrFail($journalEntry->transactionable_id);
-        $company = $invoiceReturn->company;
+        $company = $invoiceReturn->company ?? \App\Models\Company::current();
 
         $tableItems = [];
         foreach ($invoiceReturn->items as $item) {
@@ -335,17 +335,16 @@ class InvoiceReturnController extends Controller
             }
             $tableItems[] = [
                 $desc,
-                $item->quantity,
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($item->rate, 2),
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($item->amount, 2),
+                $item->quantity + 0,
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($item->rate, 2),
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($item->amount, 2),
             ];
         }
 
-        $printSetting = \App\Models\PrintSetting::query()
-            ->where('document_type', 'invoice_return')
-            ->first();
+        $printSetting = \App\Models\PrintSetting::getForPrint('invoice_return');
 
         return view('print.document', [
+            'printSetting' => $printSetting,
             'title' => $printSetting?->custom_title ?: 'Credit Note',
             'headerAlignment' => $printSetting?->header_alignment ?: 'left',
             'staticFooterContent' => $printSetting?->static_footer_content ?: null,

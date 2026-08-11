@@ -302,7 +302,7 @@ class CreditInvoiceController extends Controller
     {
         $journalEntry->load('lines');
         $creditInvoice = \App\Models\Accounting\CreditInvoice::with('items.item', 'customer', 'company')->findOrFail($journalEntry->transactionable_id);
-        $company = $creditInvoice->company;
+        $company = $creditInvoice->company ?? \App\Models\Company::current();
 
         $tableItems = [];
         foreach ($creditInvoice->items as $item) {
@@ -312,18 +312,54 @@ class CreditInvoiceController extends Controller
             }
             $tableItems[] = [
                 $desc,
-                $item->quantity,
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($item->rate, 2),
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($item->amount, 2),
+                $item->quantity + 0,
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($item->rate, 2),
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($item->amount, 2),
             ];
         }
 
-        $printSetting = \App\Models\PrintSetting::query()
-            ->where('document_type', 'invoice')
-            ->first();
+        $printSetting = \App\Models\PrintSetting::getForPrint('invoice');
+
+        $subtotal = $creditInvoice->items->sum('amount');
+        $discountAmount = 0;
+        if ($creditInvoice->discount_type === 'percentage') {
+            $discountAmount = $subtotal * ($creditInvoice->discount_value / 100);
+        } elseif ($creditInvoice->discount_type === 'fixed') {
+            $discountAmount = $creditInvoice->discount_value;
+        }
+
+        $currency = $company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '';
+        
+        $summaryInfo = [
+            'Subtotal' => $currency . number_format($subtotal, 2)
+        ];
+
+        if ($discountAmount > 0) {
+            $summaryInfo['Discount' . ($creditInvoice->discount_type === 'percentage' ? " ({$creditInvoice->discount_value}%)" : '')] = '- ' . $currency . number_format($discountAmount, 2);
+        }
+        
+        $summaryInfo['Total Amount'] = $currency . number_format($creditInvoice->total_amount, 2);
+
+        $totalPayments = 0;
+        $paymentsTable = [];
+        $allocations = $creditInvoice->allocations()->with('payment')->get();
+        foreach ($allocations as $alloc) {
+            $totalPayments += $alloc->amount;
+            $paymentsTable[] = [
+                'date' => $alloc->payment->payment_date ?? '',
+                'desc' => 'Payment #' . ($alloc->payment->payment_no ?? ''),
+                'amount' => $currency . number_format($alloc->amount, 2),
+            ];
+        }
+
+        if ($totalPayments > 0) {
+            // $summaryInfo['Payments Applied'] = '- ' . $currency . number_format($totalPayments, 2);
+            $summaryInfo['Balance Due'] = $currency . number_format($creditInvoice->total_amount - $totalPayments, 2);
+        }
 
         return view('print.document', [
-            'title' => $printSetting?->custom_title ?: 'Sales Invoice',
+            'printSetting' => $printSetting,
+            'title' => $printSetting?->custom_title ?: 'Credit Invoice',
             'headerAlignment' => $printSetting?->header_alignment ?: 'left',
             'staticFooterContent' => $printSetting?->static_footer_content ?: null,
             'layoutConfig' => $printSetting?->layout_config,
@@ -340,7 +376,10 @@ class CreditInvoiceController extends Controller
             'partyEmail' => $creditInvoice->email,
             'tableHeaders' => ['Description', 'Qty', 'Rate', 'Amount'],
             'tableItems' => $tableItems,
+            'summaryInfo' => $summaryInfo,
+            'paymentsTable' => $paymentsTable,
             'totalAmount' => $creditInvoice->total_amount,
+            'balanceDue' => $creditInvoice->total_amount - $totalPayments,
             'memo' => $creditInvoice->memo,
             'statementMessage' => $creditInvoice->statement_message,
             'company' => $company,

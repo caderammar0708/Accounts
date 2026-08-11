@@ -517,7 +517,7 @@ class SalesInvoiceController extends Controller
     {
         $journalEntry->load('lines');
         $salesInvoice = \App\Models\Accounting\SalesInvoice::with('items.item', 'customer', 'company', 'vehicle')->findOrFail($journalEntry->transactionable_id);
-        $company = $salesInvoice->company;
+        $company = $salesInvoice->company ?? \App\Models\Company::current();
 
         $tableItems = [];
         foreach ($salesInvoice->items as $item) {
@@ -527,17 +527,16 @@ class SalesInvoiceController extends Controller
             }
             $tableItems[] = [
                 $desc,
-                $item->quantity,
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($item->rate, 2),
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($item->amount, 2),
+                $item->quantity + 0,
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($item->rate, 2),
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($item->amount, 2),
             ];
         }
 
-        $printSetting = \App\Models\PrintSetting::query()
-            ->where('document_type', 'invoice')
-            ->first();
+        $printSetting = \App\Models\PrintSetting::getForPrint('invoice');
 
         return view('print.document', [
+            'printSetting' => $printSetting,
             'title' => $printSetting?->custom_title ?: 'Receipt / Sales Invoice',
             'headerAlignment' => $printSetting?->header_alignment ?: 'left',
             'staticFooterContent' => $printSetting?->static_footer_content ?: null,
@@ -553,7 +552,7 @@ class SalesInvoiceController extends Controller
             'tableItems' => $tableItems,
             
             'summaryInfo' => [
-                'Total Amount' => ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($salesInvoice->total_amount, 2)
+                'Total Amount' => ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($salesInvoice->total_amount, 2)
             ],
             
             'amountInWords' => true,

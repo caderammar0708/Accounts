@@ -456,7 +456,7 @@ class BillController extends Controller
     {
         $journalEntry->load('lines');
         $bill = Bill::with('items.item', 'items.chartOfAccount', 'supplier', 'company')->findOrFail($journalEntry->transactionable_id);
-        $company = $bill->company;
+        $company = $bill->company ?? \App\Models\Company::current();
 
         $tableItems = [];
         foreach ($bill->items as $item) {
@@ -466,17 +466,16 @@ class BillController extends Controller
             }
             $tableItems[] = [
                 $desc,
-                $item->quantity,
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($item->rate, 2),
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($item->amount, 2),
+                $item->quantity + 0,
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($item->rate, 2),
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($item->amount, 2),
             ];
         }
 
-        $printSetting = \App\Models\PrintSetting::query()
-            ->where('document_type', 'bill')
-            ->first();
+        $printSetting = \App\Models\PrintSetting::getForPrint('bill');
 
         return view('print.document', [
+            'printSetting' => $printSetting,
             'title' => $printSetting?->custom_title ?: 'Purchase Bill',
             'headerAlignment' => $printSetting?->header_alignment ?: 'left',
             'staticFooterContent' => $printSetting?->static_footer_content ?: null,

@@ -331,28 +331,27 @@ class PayBillController extends Controller
     {
         $journalEntry->load('lines');
         $receivePayment = BillPayment::with('supplier', 'company', 'allocations.bill')->findOrFail($journalEntry->transactionable_id);
-        $company = $receivePayment->company;
+        $company = $receivePayment->company ?? \App\Models\Company::current();
 
         $tableItems = [];
         if ($receivePayment->allocations && $receivePayment->allocations->count() > 0) {
             foreach ($receivePayment->allocations as $alloc) {
                 $tableItems[] = [
                     "ReceivePayment applied to Bill #" . ($alloc->bill->bill_no ?? 'Unknown'),
-                    ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($alloc->amount_applied, 2),
+                    ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($alloc->amount_applied, 2),
                 ];
             }
         } else {
             $tableItems[] = [
                 "ReceivePayment to Supplier",
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($receivePayment->amount, 2),
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($receivePayment->amount, 2),
             ];
         }
 
-        $printSetting = \App\Models\PrintSetting::query()
-            ->where('document_type', 'payment_voucher')
-            ->first();
+        $printSetting = \App\Models\PrintSetting::getForPrint('payment_voucher');
 
         return view('print.document', [
+            'printSetting' => $printSetting,
             'title' => $printSetting?->custom_title ?: 'ReceivePayment Voucher',
             'headerAlignment' => $printSetting?->header_alignment ?: 'left',
             'staticFooterContent' => $printSetting?->static_footer_content ?: null,
