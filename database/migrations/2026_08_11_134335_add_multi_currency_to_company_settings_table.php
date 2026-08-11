@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('company_settings', function (Blueprint $table) {
-            $table->boolean('multi_currency_enabled')->default(false)->after('close_books');
-            $table->uuid('home_currency_id')->nullable()->after('multi_currency_enabled');
+            $table->boolean('multi_currency_enabled')->default(false);
+            $table->uuid('home_currency_id')->nullable();
             $table->foreign('home_currency_id')->references('id')->on('currencies')->onDelete('set null');
         });
     }
