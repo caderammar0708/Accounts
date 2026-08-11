@@ -13,7 +13,8 @@ class CompanyObserver
      */
     public function updated(Company $company): void
     {
-        $this->syncWithHub($company, 'updated');
+        // Removed as per request: when company name change not need to change sync
+        // $this->syncWithHub($company, 'updated');
     }
 
     /**
@@ -30,15 +31,19 @@ class CompanyObserver
             $authServerUrl = rtrim(config('sso.auth_server_url'), '/');
             $secret = config('sso.client_secret');
 
-            Http::withHeaders([
+            $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $secret,
                 'Accept' => 'application/json',
             ])->post($authServerUrl . '/api/sync/company', [
                 'action' => $action,
                 'company_id' => $company->id,
-                'name' => $company->name,
+                'name' => $company->company_name, // Fixed: use company_name instead of name
                 'domain' => request()->getHost(), // or store domain locally
             ]);
+
+            if ($response->failed()) {
+                Log::error('Failed to sync company to central hub (HTTP ' . $response->status() . '): ' . $response->body());
+            }
         } catch (\Exception $e) {
             Log::error('Failed to sync company to central hub: ' . $e->getMessage());
         }
