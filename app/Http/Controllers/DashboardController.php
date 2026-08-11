@@ -16,14 +16,21 @@ class DashboardController extends Controller
     {
                 $today = Carbon::today();
         
+        $settings = \App\Models\CompanySetting::current();
+        
         // Service Center Metrics
-        $todaysJobs = \App\Models\JobCard::query()
-            ->whereDate('service_date', $today)
-            ->count();
-            
-        $pendingJobs = \App\Models\JobCard::query()
-            ->whereNotIn('status', ['Ready', 'Delivered', 'Cancelled'])
-            ->count();
+        $todaysJobs = 0;
+        $pendingJobs = 0;
+        
+        if ($settings->job_layout_enabled && \Illuminate\Support\Facades\Schema::hasTable('job_cards')) {
+            $todaysJobs = \App\Models\JobCard::query()
+                ->whereDate('service_date', $today)
+                ->count();
+                
+            $pendingJobs = \App\Models\JobCard::query()
+                ->whereNotIn('status', ['Ready', 'Delivered', 'Cancelled'])
+                ->count();
+        }
             
         // Financial Metrics (simplified for Service Center)
         $currentMonth = Carbon::now()->month;
@@ -94,10 +101,13 @@ class DashboardController extends Controller
             ->get(['id', 'name', 'quantity_on_hand']);
 
         // Recent Jobs
-        $recentJobs = \App\Models\JobCard::with(['customer', 'device'])
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
+        $recentJobs = [];
+        if ($settings->job_layout_enabled && \Illuminate\Support\Facades\Schema::hasTable('job_cards')) {
+            $recentJobs = \App\Models\JobCard::with(['customer', 'device'])
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get();
+        }
 
         return Inertia::render('Dashboard', [
             'metrics' => [

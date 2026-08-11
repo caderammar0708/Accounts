@@ -65,9 +65,10 @@ class LookupController extends Controller
         $bankOnly = $request->boolean('bank_only') || strtolower((string) $type) === 'bank_only';
         $includeSelectedId = $request->query('include_selected_id');
 
-        $accounts = \App\Models\Accounting\ChartOfAcc::select('id', 'name', 'account_code', 'balance', 'account_type', 'sub_type', 'currency')
+        $accounts = \App\Models\Accounting\ChartOfAcc::select('id', 'name', 'account_code', 'balance', 'account_type', 'sub_type', 'currency_id')
             ->withSum('journalLines', 'debit')
             ->withSum('journalLines', 'credit')
+            ->with('currency')
             ->when($search, function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('account_code', 'like', "%{$search}%");
@@ -84,9 +85,14 @@ class LookupController extends Controller
             ->orderBy('account_code')
             ->get()
             ->map(function($acc) {
-                $currencyCode = $acc->currency ?: auth()->user()?->currentCompany()?->home_currency_prefix ?: null;
-                $currencySymbol = $this->getCurrencySymbol($currencyCode);
-                $isMultiCurrency = !empty($currencyCode) && $currencyCode !== (auth()->user()?->currentCompany()?->home_currency_prefix ?: null);
+                $settings = \App\Models\CompanySetting::first();
+                $homeCurrencyId = $settings?->home_currency_id;
+                $isMultiCurrency = $settings?->multi_currency_enabled;
+                
+                $currencyCode = $acc->currency ? $acc->currency->code : (\App\Models\Currency::find($homeCurrencyId)?->code ?: 'Rs.');
+                $currencySymbol = $acc->currency ? $acc->currency->symbol : (\App\Models\Currency::find($homeCurrencyId)?->symbol ?: 'Rs.');
+                
+                $isForeignCurrency = $isMultiCurrency && $acc->currency_id && $acc->currency_id !== $homeCurrencyId;
 
                 return [
                     'value' => $acc->id,
@@ -95,7 +101,8 @@ class LookupController extends Controller
                     'account_type' => $acc->account_type,
                     'currency_code' => $currencyCode,
                     'currency_symbol' => $currencySymbol,
-                    'is_multi_currency' => $isMultiCurrency,
+                    'is_foreign_currency' => $isForeignCurrency,
+                    'currency_id' => $acc->currency_id,
                 ];
             });
 
@@ -109,18 +116,25 @@ class LookupController extends Controller
             return response()->json([ 'error' => 'Account ID is required.' ], 422);
         }
 
-        $account = \App\Models\Accounting\ChartOfAcc::select('id', 'currency')->find($accountId);
+        $account = \App\Models\Accounting\ChartOfAcc::select('id', 'currency_id')->with('currency')->find($accountId);
         if (!$account) {
             return response()->json([ 'error' => 'Account not found.' ], 404);
         }
 
-        $currencyCode = $account->currency ?: auth()->user()?->currentCompany()?->home_currency_prefix ?: null;
-        $currencySymbol = 'Rs.';
+        $settings = \App\Models\CompanySetting::first();
+        $homeCurrencyId = $settings?->home_currency_id;
+        $isMultiCurrency = $settings?->multi_currency_enabled;
+        
+        $currencyCode = $account->currency ? $account->currency->code : (\App\Models\Currency::find($homeCurrencyId)?->code ?: 'Rs.');
+        $currencySymbol = $account->currency ? $account->currency->symbol : (\App\Models\Currency::find($homeCurrencyId)?->symbol ?: 'Rs.');
+        
+        $isForeignCurrency = $isMultiCurrency && $account->currency_id && $account->currency_id !== $homeCurrencyId;
 
         return response()->json([
-            'is_multi_currency' => false,
+            'is_foreign_currency' => $isForeignCurrency,
             'currency_code' => $currencyCode,
             'currency_symbol' => $currencySymbol,
+            'currency_id' => $account->currency_id,
             'flag' => $this->currencyFlagEmoji($currencyCode),
         ]);
     }

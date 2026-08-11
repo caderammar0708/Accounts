@@ -13,8 +13,12 @@ class JournalEntryLine extends Model implements Auditable
    protected $fillable = [
     'journal_entry_id',
     'chart_of_acc_id',
-    'payee_id',   // ADD THIS
-    'payee_type', // ADD THIS
+    'payee_id',
+    'payee_type',
+    'fc_currency_id',
+    'exchange_rate',
+    'fc_debit',
+    'fc_credit',
     'debit',
     'credit',
     'memo',

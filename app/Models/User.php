@@ -76,6 +76,6 @@ class User extends Authenticatable
 
     public function currentCompany()
     {
-        return Company::first();
+        return Company::current();
     }
 }

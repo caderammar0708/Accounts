@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('company_settings', function (Blueprint $table) {
-            $table->boolean('vehicles_enabled')->default(true);
+            $table->boolean('vehicles_enabled')->default(false);
         });
     }
 

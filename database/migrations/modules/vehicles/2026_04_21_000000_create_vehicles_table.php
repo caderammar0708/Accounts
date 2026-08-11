@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('fuel_type');
             $table->uuid('customer_id')->nullable();
             $table->string('vehicle_no')->nullable();
+            $table->integer('latest_odometer')->nullable();
             $table->timestamps();
 
             $table->foreign('customer_id')->references('id')->on('customers')->onDelete('set null');
@@ -31,6 +32,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('vehicles');
+        Schema::enableForeignKeyConstraints();
     }
 };

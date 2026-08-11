@@ -79,6 +79,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/vehicles-layout', 'updateVehiclesEnabled')->name('layout.vehicles.update');
             Route::post('/alerts', 'updateAlerts')->name('alerts.update');
             Route::post('/time', 'updateTime')->name('time.settings.update');
+            Route::post('/currency', 'updateCurrency')->name('currency.settings.update');
             Route::post('/logo', 'uploadLogo')->name('logo.upload');
         });
         

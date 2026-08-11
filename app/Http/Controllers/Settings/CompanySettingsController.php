@@ -6,21 +6,38 @@ use App\Http\Controllers\Controller;
 use App\Models\CompanySetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Artisan;
 use Inertia\Inertia;
 
 class CompanySettingsController extends Controller
 {
+    private function handleModuleMigrations($module, $enabled, $dropTables = false)
+    {
+        $path = 'database/migrations/modules/' . $module;
+        
+        if ($enabled) {
+            Artisan::call('migrate', [
+                '--path' => $path,
+                '--force' => true,
+            ]);
+        } elseif ($dropTables) {
+            Artisan::call('migrate:reset', [
+                '--path' => $path,
+                '--force' => true,
+            ]);
+        }
+    }
     /**
      * Helper to get the active company.
      */
     private function getActiveCompany()
     {
-        return \App\Models\Company::first();
+        return \App\Models\Company::current();
     }
 
     private function getSettings()
     {
-        return CompanySetting::firstOrCreate([]);
+        return CompanySetting::current();
     }
 
     public function index()
@@ -53,6 +70,7 @@ class CompanySettingsController extends Controller
         return Inertia::render('Settings/Index', [
             'settings' => $mergedData,
             'tab' => request('tab', 'company'),
+            'currencies' => \App\Models\Currency::where('is_active', true)->get(),
         ]);
     }
 
@@ -135,6 +153,20 @@ public function updateAccounting(Request $request)
 }
 
     /**
+     * Update Currency Settings
+     */
+    public function updateCurrency(Request $request)
+    {
+        $validated = $request->validate([
+            'multi_currency_enabled' => 'required|boolean',
+            'home_currency_id' => 'nullable|exists:currencies,id',
+        ]);
+
+        $this->getSettings()->update($validated);
+        return back()->with('message', 'Currency settings updated successfully.');
+    }
+
+    /**
      * Update Layout Settings
      */
     public function updateLayout(Request $request)
@@ -151,9 +183,13 @@ public function updateAccounting(Request $request)
     {
         $validated = $request->validate([
             'warranty_layout_enabled' => 'required|boolean',
+            'drop_tables' => 'nullable|boolean',
         ]);
 
-        $this->getSettings()->update($validated);
+        $this->getSettings()->update(['warranty_layout_enabled' => $validated['warranty_layout_enabled']]);
+        
+        $this->handleModuleMigrations('warranty', $validated['warranty_layout_enabled'], $request->boolean('drop_tables'));
+
         return back()->with('message', 'Warranty layout settings updated successfully.');
     }
 
@@ -161,9 +197,13 @@ public function updateAccounting(Request $request)
     {
         $validated = $request->validate([
             'job_layout_enabled' => 'required|boolean',
+            'drop_tables' => 'nullable|boolean',
         ]);
 
-        $this->getSettings()->update($validated);
+        $this->getSettings()->update(['job_layout_enabled' => $validated['job_layout_enabled']]);
+        
+        $this->handleModuleMigrations('jobs', $validated['job_layout_enabled'], $request->boolean('drop_tables'));
+
         return back()->with('message', 'Job layout settings updated successfully.');
     }
 
@@ -191,9 +231,13 @@ public function updateAccounting(Request $request)
     {
         $validated = $request->validate([
             'vehicles_enabled' => 'required|boolean',
+            'drop_tables' => 'nullable|boolean',
         ]);
 
-        $this->getSettings()->update($validated);
+        $this->getSettings()->update(['vehicles_enabled' => $validated['vehicles_enabled']]);
+        
+        $this->handleModuleMigrations('vehicles', $validated['vehicles_enabled'], $request->boolean('drop_tables'));
+
         return back()->with('message', 'Vehicles setting updated successfully.');
     }
 
