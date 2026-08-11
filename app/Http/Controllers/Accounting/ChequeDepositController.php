@@ -142,7 +142,7 @@ class ChequeDepositController extends Controller
 
             return $this->handleActionRedirect($request, 'cheque-deposit', $journalEntry->id, 'Cheque deposit saved successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -292,7 +292,7 @@ class ChequeDepositController extends Controller
 
             return $this->handleActionRedirect($request, 'cheque-deposit', $journalEntry->id, 'Cheque deposit updated successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }

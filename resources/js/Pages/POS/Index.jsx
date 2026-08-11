@@ -8,6 +8,7 @@ import CheckoutModal from './Partials/CheckoutModal';
 import SearchableSelect from '@/Components/SearchableSelect';
 import Modal from '@/Components/Modal';
 import { showToast } from '@/Components/ToastNotification';
+import PinPromptModal from '@/Components/PinPromptModal';
 
 export default function POSIndex({ auth, items, paymentMethods, warrantyPolicies = [], nextReceiptNo, existingReceipt, defaultDepositAccount }) {
     const isEditMode = !!existingReceipt;
@@ -28,6 +29,10 @@ export default function POSIndex({ auth, items, paymentMethods, warrantyPolicies
     const [selectedCustomerLabel, setSelectedCustomerLabel] = useState(isEditMode ? existingReceipt.customer?.display_name : '');
     const [posSelectorMode, setPosSelectorMode] = useState(auth.vehicles_enabled !== false ? 'vehicle' : 'customer');
 
+    // Books Lock PIN Modal
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
+
     const getDefaultCashPaymentMethod = () => {
         const cashMethod = paymentMethods.find(pm => pm.name?.toLowerCase() === 'cash' || pm.slug?.toLowerCase() === 'cash');
         return cashMethod?.id || paymentMethods[0]?.id || '';
@@ -44,7 +49,7 @@ export default function POSIndex({ auth, items, paymentMethods, warrantyPolicies
         };
     }, []);
 
-    const { data, setData, post, patch, processing, errors, reset } = useForm({
+    const { data, setData, post, patch, processing, errors, reset, clearErrors, transform } = useForm({
         vehicle_id: isEditMode ? existingReceipt.vehicle_id : '',
         customer: isEditMode ? existingReceipt.customer_id : '',
         email: isEditMode ? existingReceipt.email : '',
@@ -57,8 +62,17 @@ export default function POSIndex({ auth, items, paymentMethods, warrantyPolicies
         statementMessage: isEditMode ? existingReceipt.statementMessage : '',
         repairingCost: isEditMode ? existingReceipt.repairingCost : 0,
         source: 'pos',
-        items: []
+        items: [],
+        books_pin: ''
     });
+
+    useEffect(() => {
+        if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED') {
+            setIsPinModalOpen(true);
+        } else if (errors.books_pin) {
+            setIsPinModalOpen(true);
+        }
+    }, [errors.books_pin]);
 
     useEffect(() => {
         if (!isEditMode && !data.paymentMethod && paymentMethods.length > 0) {
@@ -232,8 +246,10 @@ export default function POSIndex({ auth, items, paymentMethods, warrantyPolicies
         setIsCheckoutModalOpen(true);
     };
 
-    const confirmCheckout = (e) => {
-        e.preventDefault();
+    const confirmCheckout = (e, pinOverride = null) => {
+        if (e && typeof e.preventDefault === 'function') {
+            e.preventDefault();
+        }
 
         // Merge cart into form data
         data.items = cart.map(c => ({
@@ -248,11 +264,20 @@ export default function POSIndex({ auth, items, paymentMethods, warrantyPolicies
 
         // data.action is managed by the modal or handleCheckoutClick
 
+        setPendingAction(e);
+
+        transform((d) => ({
+            ...d,
+            books_pin: pinOverride !== null ? pinOverride : d.books_pin,
+        }));
+
         if (isEditMode) {
             patch(route('pos.update', existingReceipt.id), {
                 onSuccess: () => {
                     showToast('success', 'Sale updated successfully!');
                     setIsCheckoutModalOpen(false);
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
                 },
                 preserveScroll: true
             });
@@ -266,10 +291,12 @@ export default function POSIndex({ auth, items, paymentMethods, warrantyPolicies
                         showToast('success', 'Sale completed successfully!');
                     }
                     setCart([]);
-                    reset('vehicle_id', 'customer', 'email', 'billingAddress', 'repairingCost', 'action');
+                    reset('vehicle_id', 'customer', 'email', 'billingAddress', 'repairingCost', 'action', 'books_pin');
                     setSelectedVehicleLabel('');
                     setSelectedCustomerLabel('');
                     setIsCheckoutModalOpen(false);
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
                 },
                 preserveScroll: true
             });
@@ -673,6 +700,21 @@ export default function POSIndex({ auth, items, paymentMethods, warrantyPolicies
                         window.open(printUrl, '_blank');
                     }
                 }}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    confirmCheckout(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
 
         </AuthenticatedLayout>

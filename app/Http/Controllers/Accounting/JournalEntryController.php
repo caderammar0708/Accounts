@@ -76,6 +76,7 @@ class JournalEntryController extends Controller
     public function store(JournalEntryRequest $request)
 {
     $request->validated();
+    \App\Services\BooksLockService::check($request->date, $request->books_pin);
 
     return DB::transaction(function () use ($request) {
         $totalDebit = 0;
@@ -149,6 +150,10 @@ class JournalEntryController extends Controller
     public function update(JournalEntryRequest $request, JournalEntry $journalEntry)
     {
         $request->validated();
+        \App\Services\BooksLockService::check($journalEntry->date, $request->books_pin);
+        if (date('Y-m-d', strtotime($journalEntry->date)) !== date('Y-m-d', strtotime($request->date))) {
+            \App\Services\BooksLockService::check($request->date, $request->books_pin);
+        }
 
         return DB::transaction(function () use ($request, $journalEntry) {
             $journalEntry->update([
@@ -204,6 +209,10 @@ class JournalEntryController extends Controller
     public function quickUpdate(QuickJournalEntryRequest $request, JournalEntry $journalEntry)
     {
         $request->validated();
+        \App\Services\BooksLockService::check($journalEntry->date, $request->books_pin);
+        if (date('Y-m-d', strtotime($journalEntry->date)) !== date('Y-m-d', strtotime($request->input('date')))) {
+            \App\Services\BooksLockService::check($request->input('date'), $request->books_pin);
+        }
 
         return DB::transaction(function () use ($request, $journalEntry) {
             $payeeId = $request->input('payee_id');
@@ -279,9 +288,9 @@ class JournalEntryController extends Controller
     /**
      * Delete a JournalEntry.
      */
-public function destroy(JournalEntry $journalEntry)
+public function destroy(Request $request, JournalEntry $journalEntry)
 {
-   
+    \App\Services\BooksLockService::check($journalEntry->date, $request->input('books_pin'));
     $chartOfAccountId = $journalEntry->lines->first()?->chart_of_acc_id 
         ?? $journalEntry->lines->first()?->chart_of_account_id 
         ?? $journalEntry->lines->first()?->account_id;

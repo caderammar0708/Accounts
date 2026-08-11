@@ -7,9 +7,11 @@ import CommonInput from "@/Components/CommonInput";
 import QuickAddPayee from "@/Components/QuickAddPayee";
 import QuickAddPaymentMethod from "@/Components/QuickAddPaymentMethod";
 import { showToast } from "@/Components/ToastNotification";
-import QuickAddAccount from "@/Components/QuickAddAccount";
 import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import CommonButton from "@/Components/CommonButton";
+import QuickAddAccount from "@/Components/QuickAddAccount";
+import PinPromptModal from "@/Components/PinPromptModal";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
 
 export default function ReceivePaymentForm({ paymentMethods = [], payment = null, nextPaymentNo = "" }) {
     const { auth } = usePage().props;
@@ -30,6 +32,10 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
     const [savedEntryId, setSavedEntryId] = useState(payment?.id || null);
     const defaultCurrencyCode = auth?.company?.home_currency || auth?.company?.home_currency_prefix || '';
 
+    // Books Lock PIN Modal
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
+
     const getDefaultCashPaymentMethod = () => {
         const cashMethod = paymentMethods.find((pm) => pm.name?.toLowerCase() === 'cash' || pm.slug?.toLowerCase() === 'cash');
         return cashMethod?.id || '';
@@ -47,7 +53,16 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
         checkDate: payment?.checkDate || "",
         checkNumber: payment?.checkNumber || "",
         action: 'save',
+        books_pin: ''
     });
+
+    useEffect(() => {
+        if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED') {
+            setIsPinModalOpen(true);
+        } else if (errors.books_pin) {
+            setIsPinModalOpen(true);
+        }
+    }, [errors.books_pin]);
 
     useEffect(() => {
         if (!payment?.id && !data.paymentMethod && paymentMethods.length > 0) {
@@ -107,7 +122,7 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
             }
 
             const totalApplied = updated.reduce((sum, item) => sum + (parseFloat(String(item.applied).replace(/,/g, '')) || 0), 0);
-            
+
             // Only increase amountReceived to cover the checked invoices, never decrease it automatically
             if (totalApplied > amountReceivedVal) {
                 setData("amountReceived", totalApplied.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -262,7 +277,8 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                 memo: payment.memo || "",
                 checkDate: payment.checkDate || "",
                 checkNumber: payment.checkNumber || "",
-                action: 'save'
+                action: 'save',
+                books_pin: ''
             });
             if (payment.customer) {
                 axios.get(route('api.customers.credit_invoices', payment.customer) + '?receive_payment_id=' + payment.receive_payment_id)
@@ -288,9 +304,14 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                 memo: "",
                 checkDate: "",
                 checkNumber: "",
-                action: 'save'
+                action: 'save',
+                books_pin: ''
             });
             setInvoices([]);
+            clearErrors();
+            setIsDirty(false);
+            setIsPinModalOpen(false);
+            setPendingAction(null);
         }
         clearErrors();
     }, [payment?.id]);
@@ -311,7 +332,14 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
         }));
     }, [data.amountReceived, credit_invoices]);
 
-    const submit = (action = 'save') => {
+    useEffect(() => {
+        if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED') {
+            setIsPinModalOpen(true);
+        }
+    }, [errors.books_pin]);
+
+    const submit = (action = 'save', pinOverride = null) => {
+        setPendingAction(action);
         const currentId = savedEntryId || payment?.id;
         const url = currentId ? route('receive-payment.update', currentId) : route('receive-payment.store');
         const submitMethod = currentId ? patch : post;
@@ -321,6 +349,7 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
         transform((d) => ({
             ...d,
             action: action,
+            books_pin: pinOverride !== null ? pinOverride : d.books_pin,
             amountReceived: String(d.amountReceived).replace(/,/g, ''),
             credit_invoices: credit_invoices
                 .filter(inv => inv.applied > 0)
@@ -336,6 +365,8 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.payment?.id;
@@ -346,7 +377,7 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                 if (action === 'close') {
                     if (typeof onClose === 'function') {
                         onClose();
-                    } 
+                    }
                 }
 
                 if (action === 'new') {
@@ -361,9 +392,15 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                     setData({
                         customer: "", email: "", paymentDate: cachedDate,
                         paymentMethod: getDefaultCashPaymentMethod() || "", referenceNo: nextRef,
-                        depositTo: "", amountReceived: "0.00", memo: "", action: 'save'
+                        depositTo: "", amountReceived: "0.00", memo: "", action: 'save',
+                        books_pin: ''
                     });
                     setIsDirty(false);
+                }
+            },
+            onError: () => {
+                if (errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED') {
+                    setIsPinModalOpen(false);
                 }
             }
         });
@@ -372,7 +409,12 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
     return (
         <TransactionLayout
             historyType="receive_payment"
-            title={payment?.id ? `Edit ReceivePayment no.${data.referenceNo}` : "Receive Payment"}
+            title={
+                <div className="flex items-center">
+                    {payment?.id ? `Edit Receive Payment no.${data.referenceNo}` : "Receive Payment"}
+                    <BooksLockIndicator date={data.paymentDate} lockDate={auth?.books_lock_date} isEdit={!!(payment?.id || savedEntryId)} />
+                </div>
+            }
             amount={parseFloat(String(data.amountReceived || 0).replace(/,/g, '')).toFixed(2)}
             onSave={() => submit('save')}
             onSaveAndClose={() => submit('close')}
@@ -508,29 +550,29 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                     </div>
 
                     <div className="w-[180px]">
-    <CommonInput
-        label="Amount Received"
-        value={data.amountReceived}
-        onChange={(e) => {
-            const raw = e.target.value.replace(/[^0-9.]/g, '');
-            setData("amountReceived", raw);
-            setIsDirty(true);
-            autoApplyAmount(parseFloat(raw) || 0);
-        }}
-        onFocus={(e) => {
-            const val = String(data.amountReceived).replace(/,/g, '');
-            setData("amountReceived", val);
-            setTimeout(() => e.target.select(), 0);
-        }}
-        onBlur={(e) => {
-            const val = parseFloat(String(data.amountReceived).replace(/,/g, '')) || 0;
-            setData("amountReceived", val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        }}
-        size="sm"
-        inputClass="font-mono text-right"
-        error={errors.amountReceived}
-    />
-</div>
+                        <CommonInput
+                            label="Amount Received"
+                            value={data.amountReceived}
+                            onChange={(e) => {
+                                const raw = e.target.value.replace(/[^0-9.]/g, '');
+                                setData("amountReceived", raw);
+                                setIsDirty(true);
+                                autoApplyAmount(parseFloat(raw) || 0);
+                            }}
+                            onFocus={(e) => {
+                                const val = String(data.amountReceived).replace(/,/g, '');
+                                setData("amountReceived", val);
+                                setTimeout(() => e.target.select(), 0);
+                            }}
+                            onBlur={(e) => {
+                                const val = parseFloat(String(data.amountReceived).replace(/,/g, '')) || 0;
+                                setData("amountReceived", val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                            }}
+                            size="sm"
+                            inputClass="font-mono text-right"
+                            error={errors.amountReceived}
+                        />
+                    </div>
                 </div>
 
                 {/* ROW 3: Memo */}
@@ -728,6 +770,21 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                 onSuccess={(newMethod) => {
                     router.reload({ only: ['paymentMethods'] });
                 }}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    submit(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
 
         </TransactionLayout>

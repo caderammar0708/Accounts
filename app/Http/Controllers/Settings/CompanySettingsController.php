@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\CompanySetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class CompanySettingsController extends Controller
@@ -126,11 +128,49 @@ public function updateAccounting(Request $request)
         'acct_method' => 'required|string|max:50',
         'fin_year_start' => 'required|string|max:20',
         'tax_year_start' => 'required|string|max:50',
-        'close_books' => 'required|boolean',
         'tax_form' => 'required|string|max:100',
+        'books_lock_date' => 'nullable|date',
+        'books_lock_pin' => 'nullable|string|size:6',
+        'current_pin' => 'nullable|string',
     ]);
 
-    $this->getSettings()->update($validated);
+    $settings = $this->getSettings();
+    $updateData = [
+        'acct_method' => $validated['acct_method'],
+        'fin_year_start' => $validated['fin_year_start'],
+        'tax_year_start' => $validated['tax_year_start'],
+        'tax_form' => $validated['tax_form'],
+        'books_lock_date' => $validated['books_lock_date'],
+    ];
+
+    if ($validated['books_lock_date']) {
+        if ($settings->books_lock_pin && $settings->books_lock_date) {
+            // Modifying existing lock
+            if (!$validated['current_pin']) {
+                throw ValidationException::withMessages(['current_pin' => 'Current PIN is required to change lock settings.']);
+            }
+            if (!Hash::check($validated['current_pin'], $settings->books_lock_pin)) {
+                throw ValidationException::withMessages(['current_pin' => 'Current PIN is incorrect.']);
+            }
+        }
+        if ($validated['books_lock_pin']) {
+            $updateData['books_lock_pin'] = Hash::make($validated['books_lock_pin']);
+        }
+    } else {
+        // Removing lock
+        if ($settings->books_lock_pin) {
+            if (!$validated['current_pin']) {
+                throw ValidationException::withMessages(['current_pin' => 'Current PIN is required to remove lock.']);
+            }
+            if (!Hash::check($validated['current_pin'], $settings->books_lock_pin)) {
+                throw ValidationException::withMessages(['current_pin' => 'Current PIN is incorrect.']);
+            }
+        }
+        $updateData['books_lock_date'] = null;
+        $updateData['books_lock_pin'] = null;
+    }
+
+    $settings->update($updateData);
     return back()->with('message', 'Accounting settings updated successfully.');
 }
 

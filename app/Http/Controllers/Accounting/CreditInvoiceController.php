@@ -71,6 +71,7 @@ class CreditInvoiceController extends Controller
     public function store(CreditInvoiceRequest $request)
     {
         $validated = $request->validated();
+        \App\Services\BooksLockService::check($request->invoiceDate, $request->books_pin);
 
         $journalEntry = DB::transaction(function () use ($request) {
             $subtotal = collect($request->items)->sum(function ($item) {
@@ -313,6 +314,11 @@ class CreditInvoiceController extends Controller
     {
         $validated = $request->validated();
 
+        \App\Services\BooksLockService::check($journalEntry->date, $request->books_pin);
+        if (date('Y-m-d', strtotime($journalEntry->date)) !== date('Y-m-d', strtotime($request->invoiceDate))) {
+            \App\Services\BooksLockService::check($request->invoiceDate, $request->books_pin);
+        }
+
         DB::transaction(function () use ($request, $journalEntry) {
             $subtotal = collect($request->items)->sum(function ($item) {
                 return (float) str_replace(',', '', $item['amount']);
@@ -459,8 +465,10 @@ class CreditInvoiceController extends Controller
     }
 
 
-    public function destroy(JournalEntry $journalEntry)
+    public function destroy(Request $request, JournalEntry $journalEntry)
     {
+        \App\Services\BooksLockService::check($journalEntry->date, $request->input('books_pin'));
+
         $chartOfAccountId = $journalEntry->lines->first()?->chart_of_acc_id 
             ?? $journalEntry->lines->first()?->chart_of_account_id 
             ?? $journalEntry->lines->first()?->account_id;

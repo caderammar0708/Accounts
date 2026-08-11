@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
 import axios from 'axios';
+import PinPromptModal from './PinPromptModal';
 
 export default function MoreOptionsMenu({
     copyRoute = null,
@@ -12,6 +13,11 @@ export default function MoreOptionsMenu({
 }) {
     const [open, setOpen] = useState(false);
     const menuRef = useRef(null);
+
+    // Books Lock PIN Modal
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [booksPin, setBooksPin] = useState('');
+    const [booksPinError, setBooksPinError] = useState(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -35,6 +41,30 @@ export default function MoreOptionsMenu({
 
         window.alert('Copy is not available for this record type yet.');
     };
+
+    const handleDeleteSubmit = (pin = '') => {
+        // Use Inertia router for delete — the backend redirect determines where to go next
+        const data = pin ? { books_pin: pin } : {};
+        router.delete(route(deleteRoute, recordId), {
+            data: data,
+            preserveScroll: false,
+            onError: (err) => {
+                if (err.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED' || err.books_pin) {
+                    setBooksPinError(err.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? err.books_pin : null);
+                    setIsPinModalOpen(true);
+                } else {
+                    const message = err?.error || err?.message || 'This record cannot be deleted right now.';
+                    window.alert(message);
+                }
+            },
+            onSuccess: () => {
+                setIsPinModalOpen(false);
+                setBooksPin('');
+                setBooksPinError(null);
+            }
+        });
+    };
+
     const handleDelete = () => {
         if (!deleteRoute || !recordId) {
             window.alert('Delete is not available for this record type yet.');
@@ -46,14 +76,7 @@ export default function MoreOptionsMenu({
 
         setOpen(false);
 
-        // Use Inertia router for delete — the backend redirect determines where to go next
-        router.delete(route(deleteRoute, recordId), {
-            preserveScroll: false,
-            onError: (err) => {
-                const message = err?.response?.data?.message || 'This record cannot be deleted right now.';
-                window.alert(message);
-            }
-        });
+        handleDeleteSubmit(booksPin);
     };
 
     const handlePrint = () => {
@@ -109,6 +132,20 @@ export default function MoreOptionsMenu({
                     )}
                 </div>
             )}
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setBooksPin('');
+                    setBooksPinError(null);
+                }}
+                onSubmit={(pin) => {
+                    setBooksPin(pin);
+                    setTimeout(() => handleDeleteSubmit(pin), 0);
+                }}
+                errorMessage={booksPinError}
+            />
         </div>
     );
 }

@@ -219,7 +219,7 @@ class BillReturnController extends Controller
             }
 
             return redirect()->route('bill-return.edit', $journalEntry->id)->with('success', 'Bill Return saved successfully.');
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -413,7 +413,7 @@ class BillReturnController extends Controller
             }
 
             return redirect()->route('bill-return.edit', $journalEntry->id)->with('success', 'Bill Return updated successfully.');
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }

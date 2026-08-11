@@ -166,7 +166,7 @@ class InventoryQuantityAdjustmentController extends Controller
                 return redirect()->route('inventory-adjustment.edit', $journalEntry->id)->with('success', 'Inventory quantity adjustment saved successfully.');
             }
             return redirect()->route('items.index')->with('success', 'Inventory quantity adjustment saved successfully.');
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -330,7 +330,7 @@ class InventoryQuantityAdjustmentController extends Controller
             }
             return redirect()->route('inventory-adjustment.edit', $journalEntry->id)->with('success', 'Inventory quantity adjustment updated successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }

@@ -82,6 +82,8 @@ class HandleInertiaRequests extends Middleware
                 'vehicles_enabled'           => class_exists(\App\Models\CompanySetting::class) ? ((\App\Models\CompanySetting::first()?->vehicles_enabled) ?? true) : true,
                 'currency_prefix'         => $request->user()?->currentCompany()?->home_currency_prefix ?? '',
                 'financial_year_start_month' => class_exists(\App\Models\CompanySetting::class) ? (\App\Models\CompanySetting::first()?->fin_year_start ?? 'January') : 'January',
+                'books_lock_date'         => class_exists(\App\Models\CompanySetting::class) ? (\App\Models\CompanySetting::first()?->books_lock_date) : null,
+                'has_books_pin'           => class_exists(\App\Models\CompanySetting::class) ? !empty(\App\Models\CompanySetting::first()?->books_lock_pin) : false,
             ],
             'appName' => config('app.name'),
             'flash' => [

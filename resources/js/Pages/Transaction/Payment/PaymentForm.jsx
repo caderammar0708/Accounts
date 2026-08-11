@@ -12,6 +12,8 @@ import QuickAddPaymentMethod from "@/Components/QuickAddPaymentMethod";
 import InventoryItemSidePanel from "@/Components/InventoryItemSidePanel";
 import { showToast } from "@/Components/ToastNotification";
 import { useDateFormat, formatDate } from "@/Utils/dateFormat";
+import PinPromptModal from "@/Components/PinPromptModal";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
 
 export default function PaymentForm({
     auth,
@@ -45,6 +47,10 @@ export default function PaymentForm({
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [accountModalType, setAccountModalType] = useState('asset');
     const [addingItemRowIndex, setAddingItemRowIndex] = useState(null);
+
+    // Books Lock PIN Modal
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
 
     // Fetch payees from API
     const fetchPayees = (search = "") => {
@@ -119,8 +125,17 @@ export default function PaymentForm({
         })) : [
             { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
         ],
-        action: 'save'
+        action: 'save',
+        books_pin: ''
     });
+
+    useEffect(() => {
+        if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED') {
+            setIsPinModalOpen(true);
+        } else if (errors.books_pin) {
+            setIsPinModalOpen(true);
+        }
+    }, [errors.books_pin]);
 
     const actionRef = useRef('save');
 
@@ -185,7 +200,8 @@ export default function PaymentForm({
                 })) : [
                     { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }
                 ],
-                action: 'save'
+                action: 'save',
+                books_pin: ''
             });
         } else {
             const cachedDate = localStorage.getItem('last_transaction_date') || new Date().toISOString().split('T')[0];
@@ -204,7 +220,8 @@ export default function PaymentForm({
                 itemDetails: [
                     { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
                 ],
-                action: 'save'
+                action: 'save',
+                books_pin: ''
             });
         }
         clearErrors();
@@ -292,13 +309,20 @@ export default function PaymentForm({
         }
     };
 
-    const handleSave = (action = 'save') => {
+    const handleSave = (action = 'save', pinOverride = null) => {
         actionRef.current = action;
+        setPendingAction(action);
         const currentRef = data.ref;
 
         const currentId = savedEntryId || expense?.id;
         const url = currentId ? route('payment.update', currentId) : route('payment.store');
         const method = currentId ? patch : post;
+
+        transform((d) => ({
+            ...d,
+            action: action,
+            books_pin: pinOverride !== null ? pinOverride : d.books_pin,
+        }));
 
         method(url, {
             preserveScroll: true,
@@ -346,9 +370,12 @@ export default function PaymentForm({
                         payee: "", account: "", date: cachedDate, method: getDefaultCashPaymentMethod() || "", ref: nextRef, memo: "",
                         items: [{ category: "", description: "", amount: "0.00" }],
                         itemDetails: [{ product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }],
-                        action: 'save'
+                        action: 'save',
+                        books_pin: ''
                     });
                     setIsDirty(false);
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
                 }
             }
         });
@@ -400,7 +427,12 @@ export default function PaymentForm({
     return (
         <TransactionLayout
             historyType="payment"
-            title="Payment"
+            title={
+                <div className="flex items-center gap-2">
+                    Payment {data.ref ? `#${data.ref}` : ''}
+                    <BooksLockIndicator date={data.date} lockDate={auth?.books_lock_date} isEdit={!!(expense?.id || savedEntryId)} />
+                </div>
+            }
             amount={totalAmount}
             processing={processing}
             dirty={isDirty}
@@ -692,6 +724,21 @@ export default function PaymentForm({
                         setAddingItemRowIndex(null);
                     });
                 }}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
         </TransactionLayout>
     );

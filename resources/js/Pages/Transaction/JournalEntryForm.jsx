@@ -7,6 +7,8 @@ import CommonInput from "@/Components/CommonInput";
 import QuickAddPayee from "@/Components/QuickAddPayee";
 import QuickAddAccount from "@/Components/QuickAddAccount";
 import { Head, usePage, router } from "@inertiajs/react";
+import PinPromptModal from "@/Components/PinPromptModal";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
 
 export default function JournalEntryForm({ journalEntry = null, nextJournalNo = "" }) {
     const isEditing = Boolean(journalEntry?.id);
@@ -21,6 +23,12 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
     // Modal States
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+
+    // Books Lock PIN Modal
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
+    const [booksPin, setBooksPin] = useState("");
+    const [booksPinError, setBooksPinError] = useState(null);
 
     const fetchPayees = (search = "") => {
         axios.get(route('api.payees', { search })).then(res => setPayeeOptions(res.data));
@@ -212,7 +220,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
         setIsDirty(true);
     };
 
-    const handleSave = (type = 'save') => {
+    const handleSave = (type = 'save', pinOverride = null) => {
         if (Math.abs(totals.debit - totals.credit) > 0.001) {
             alert("Debits and Credits must balance to save this entry.");
             return;
@@ -231,8 +239,11 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                     ...i,
                     debit: parseCurrency(i.debit),
                     credit: parseCurrency(i.credit)
-                }))
+                })),
+            books_pin: pinOverride !== null ? pinOverride : booksPin
         };
+
+        setPendingAction(type);
 
         // Use savedEntryId if we already saved once this session
         const currentId = savedEntryId || journalEntry?.id;
@@ -251,6 +262,10 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 if (!savedEntryId && page.props?.flash?.journal_entry_id) {
                     setSavedEntryId(page.props.flash.journal_entry_id);
                 }
+
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                setBooksPinError(null);
 
                 if (type === 'close') {
                     if (typeof onClose === 'function') {
@@ -273,14 +288,24 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 }
             },
             onError: (errors) => {
-                alert(Object.values(errors).join('\n') || "Error saving entry ❌");
+                if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED' || errors.books_pin) {
+                    setBooksPinError(errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null);
+                    setIsPinModalOpen(true);
+                } else {
+                    alert(Object.values(errors).join('\n') || "Error saving entry ❌");
+                }
             }
         });
     };
     return (
         <TransactionLayout
             historyType="journal_entry"
-            title={`Journal Entry #${form.journalNo}`}
+            title={
+                <div className="flex items-center gap-2">
+                    Journal Entry #{form.journalNo}
+                    <BooksLockIndicator date={form.date} lockDate={auth?.books_lock_date} isEdit={!!(journalEntry?.id || savedEntryId)} />
+                </div>
+            }
             amount={totals.debit.toFixed(2)}
             dirty={isDirty}
             onSave={() => handleSave('save')}
@@ -377,6 +402,21 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 isOpen={isAccountModalOpen}
                 onClose={() => setIsAccountModalOpen(false)}
                 onSuccess={(newAcc) => fetchAccounts()}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setBooksPin('');
+                    setBooksPinError(null);
+                }}
+                onSubmit={(pin) => {
+                    setBooksPin(pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={booksPinError}
             />
         </TransactionLayout>
     );

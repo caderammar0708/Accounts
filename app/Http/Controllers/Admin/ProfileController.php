@@ -48,7 +48,7 @@ class ProfileController extends Controller
             } else {
                 \Illuminate\Support\Facades\Log::error('SSO Client Secret is empty. Cannot fetch companies.');
             }
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('SSO Companies Fetch Error: ' . $e->getMessage());
         }
 
