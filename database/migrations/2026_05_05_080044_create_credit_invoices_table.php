@@ -22,8 +22,12 @@ return new class extends Migration
             $table->date('due_date')->nullable();
             $table->string('invoice_no');
             $table->decimal('total_amount', 15, 2)->default(0);
+            $table->string('discount_type')->default('percent');
+            $table->decimal('discount_value', 12, 2)->default(0);
             $table->text('memo')->nullable();
             $table->text('statement_message')->nullable();
+            $table->string('prefix')->nullable();
+            $table->string('memo_on_statement')->nullable();
             $table->string('status')->default('draft');
             $table->timestamps();
 
