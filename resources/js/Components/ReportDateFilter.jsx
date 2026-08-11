@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import CommonInput from './CommonInput';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 
 export default function ReportDateFilter({ currentFilter, onFilterChange }) {
+    const { auth } = usePage().props;
     const [filterType, setFilterType] = useState('custom');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -119,6 +120,34 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                 start = formatDate(new Date(y - 1, 0, 1));
                 end = formatDate(new Date(y - 1, 11, 31));
                 break;
+            case 'this_financial_year': {
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                const finStartMonthStr = auth?.financial_year_start_month || 'April';
+                let finStartMonthIdx = monthNames.indexOf(finStartMonthStr);
+                if (finStartMonthIdx < 0) finStartMonthIdx = 3; // Default to April
+                
+                let fyStartYear = y;
+                if (m < finStartMonthIdx) {
+                    fyStartYear = y - 1;
+                }
+                start = formatDate(new Date(fyStartYear, finStartMonthIdx, 1));
+                end = formatDate(new Date(fyStartYear + 1, finStartMonthIdx, 0));
+                break;
+            }
+            case 'last_financial_year': {
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                const finStartMonthStr = auth?.financial_year_start_month || 'April';
+                let finStartMonthIdx = monthNames.indexOf(finStartMonthStr);
+                if (finStartMonthIdx < 0) finStartMonthIdx = 3;
+                
+                let lfyStartYear = y - 1;
+                if (m < finStartMonthIdx) {
+                    lfyStartYear = y - 2;
+                }
+                start = formatDate(new Date(lfyStartYear, finStartMonthIdx, 1));
+                end = formatDate(new Date(lfyStartYear + 1, finStartMonthIdx, 0));
+                break;
+            }
             case 'custom':
                 start = customStart || startDate;
                 end = customEnd || endDate;
@@ -201,6 +230,8 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                     <option value="last_half_year">Last Half Year</option>
                     <option value="this_year">This Year</option>
                     <option value="last_year">Last Year</option>
+                    <option value="this_financial_year">This Financial Year</option>
+                    <option value="last_financial_year">Last Financial Year</option>
                 </select>
             </div>
 
@@ -211,7 +242,23 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                             type="date"
                             value={startDate}
                             onChange={(e) => {
-                                setStartDate(e.target.value);
+                                const newStart = e.target.value;
+                                setStartDate(newStart);
+                                
+                                if (newStart) {
+                                    const [y, m, day] = newStart.split('-');
+                                    const d = new Date(y, m - 1, day);
+                                    
+                                    d.setFullYear(d.getFullYear() + 1);
+                                    d.setDate(d.getDate() - 1);
+                                    
+                                    const today = new Date();
+                                    today.setHours(0, 0, 0, 0);
+                                    d.setHours(0, 0, 0, 0);
+                                    
+                                    const end = d > today ? today : d;
+                                    setEndDate(formatDate(end));
+                                }
                             }}
                         />
                     </div>

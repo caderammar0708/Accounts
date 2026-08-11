@@ -511,10 +511,11 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                     setData(prev => ({ ...prev, discount_value: val, discount_type: type }));
                     setIsDirty(true);
                 }}
+                hideSummaryBlock={true}
             />
 
 
-            <div className="grid grid-cols-2 gap-10 mt-8">
+            <div className="flex justify-between mt-8 items-start">
                 <div className="w-[400px] flex flex-col gap-4">
                     <CommonInput
                         type="textarea"
@@ -535,6 +536,67 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                         size="sm"
                         className="h-24"
                     />
+                </div>
+
+                {/* Subtotal / Discount / Total Summary Block */}
+                <div className="flex flex-col items-end gap-3 min-w-[300px] bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    {/* Subtotal */}
+                    <div className="flex justify-between items-center w-full">
+                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Subtotal</span>
+                        <span className="text-sm font-black text-slate-900 flex items-center gap-1">
+                            <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
+                            {parseFloat(String(subtotal || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                    </div>
+
+                    {/* Discount Input */}
+                    <div className="flex justify-between items-center w-full gap-4 mt-2">
+                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest mt-2">Discount</span>
+                        <div className="flex items-center">
+                            <input
+                                type="text"
+                                value={data.discount_value}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                                    const parts = val.split('.');
+                                    if (parts.length > 2) return;
+                                    setData(prev => ({ ...prev, discount_value: val }));
+                                    setIsDirty(true);
+                                }}
+                                onBlur={(e) => {
+                                    const val = parseFloat(e.target.value || 0).toString();
+                                    setData(prev => ({ ...prev, discount_value: val }));
+                                    setIsDirty(true);
+                                }}
+                                className="w-[80px] h-8 text-right text-sm font-medium border border-slate-300 rounded-l-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none px-2"
+                            />
+                            <div className="flex h-8 bg-slate-100 border border-l-0 border-slate-300 rounded-r-md overflow-hidden">
+                                <button
+                                    type="button"
+                                    onClick={() => { setData(prev => ({ ...prev, discount_type: 'percent' })); setIsDirty(true); }}
+                                    className={`px-2 text-xs font-bold transition-colors ${data.discount_type === 'percent' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                                >
+                                    %
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setData(prev => ({ ...prev, discount_type: 'fixed' })); setIsDirty(true); }}
+                                    className={`px-2 text-xs font-bold transition-colors ${data.discount_type === 'fixed' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                                >
+                                    $
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Total */}
+                    <div className="flex justify-between items-center w-full mt-2 pt-3 border-t border-slate-200">
+                        <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Total</span>
+                        <span className="text-lg font-black text-slate-900 flex items-center gap-1">
+                            <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
+                            {parseFloat(String(totalAmount || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                    </div>
                 </div>
             </div>
 

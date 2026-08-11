@@ -80,9 +80,17 @@ class POSController extends Controller
                 $customerId = $request->customer;
                 if ($request->vehicle_id) {
                     $vehicle = \App\Models\Vehicle::find($request->vehicle_id);
-                    if ($vehicle) {
+                    if ($vehicle && $vehicle->customer_id) {
                         $customerId = $vehicle->customer_id;
                     }
+                }
+
+                if (!$customerId || !\App\Models\Customer::where('id', $customerId)->exists()) {
+                    $walkIn = \App\Models\Customer::firstOrCreate(
+                        ['display_name' => 'Walk-in Customer'],
+                        ['first_name' => 'Walk-in', 'last_name' => 'Customer']
+                    );
+                    $customerId = $walkIn->id;
                 }
 
                 // 1. Save Document (Business Details)
@@ -366,9 +374,17 @@ class POSController extends Controller
                 $customerId = $request->customer;
                 if ($request->vehicle_id) {
                     $vehicle = \App\Models\Vehicle::find($request->vehicle_id);
-                    if ($vehicle) {
+                    if ($vehicle && $vehicle->customer_id) {
                         $customerId = $vehicle->customer_id;
                     }
+                }
+
+                if (!$customerId || !\App\Models\Customer::where('id', $customerId)->exists()) {
+                    $walkIn = \App\Models\Customer::firstOrCreate(
+                        ['display_name' => 'Walk-in Customer'],
+                        ['first_name' => 'Walk-in', 'last_name' => 'Customer']
+                    );
+                    $customerId = $walkIn->id;
                 }
 
                 // 1. Update Business Document (SalesInvoice or CreditInvoice)

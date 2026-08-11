@@ -81,6 +81,7 @@ class HandleInertiaRequests extends Middleware
                 'reports_display_as_buttons' => class_exists(\App\Models\CompanySetting::class) ? ((\App\Models\CompanySetting::first()?->reports_display_as_buttons) ?? true) : true,
                 'vehicles_enabled'           => class_exists(\App\Models\CompanySetting::class) ? ((\App\Models\CompanySetting::first()?->vehicles_enabled) ?? true) : true,
                 'currency_prefix'         => $request->user()?->currentCompany()?->home_currency_prefix ?? '',
+                'financial_year_start_month' => class_exists(\App\Models\CompanySetting::class) ? (\App\Models\CompanySetting::first()?->fin_year_start ?? 'January') : 'January',
             ],
             'appName' => config('app.name'),
             'flash' => [
