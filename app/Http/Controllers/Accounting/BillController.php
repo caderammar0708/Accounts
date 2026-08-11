@@ -222,7 +222,7 @@ class BillController extends Controller
                 return redirect()->back()->withErrors(['error' => 'Total amount is too large. Please enter a smaller value.']);
             }
             return redirect()->back()->withErrors(['error' => 'A database error occurred.']);
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -414,7 +414,7 @@ class BillController extends Controller
                 return redirect()->back()->withErrors(['error' => 'Total amount is too large. Please enter a smaller value.']);
             }
             return redirect()->back()->withErrors(['error' => 'A database error occurred.']);
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }   
     }

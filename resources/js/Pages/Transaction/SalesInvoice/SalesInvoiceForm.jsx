@@ -10,6 +10,8 @@ import QuickAddAccount from "@/Components/QuickAddAccount";
 import InventoryItemSidePanel from "@/Components/InventoryItemSidePanel";
 import QuickAddPaymentMethod from "@/Components/QuickAddPaymentMethod";
 import { showToast } from "@/Components/ToastNotification";
+import PinPromptModal from "@/Components/PinPromptModal";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
 
 export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceiptNo = "", receipt = null }) {
     const company = auth.company;
@@ -34,6 +36,39 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
     const [addingItemRowIndex, setAddingItemRowIndex] = useState(null);
     const [isDirty, setIsDirty] = useState(false);
     const [savedEntryId, setSavedEntryId] = useState(receipt?.id || null);
+
+    // Books Lock PIN Modal
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
+
+    const { data, setData, post, patch, processing, errors, reset, clearErrors, transform } = useForm({
+        customer: receipt?.customer || "",
+        email: receipt?.email || "",
+        billingAddress: receipt?.billingAddress || "",
+        receiptDate: receipt?.receiptDate || localStorage.getItem('last_transaction_date') || new Date().toISOString().split('T')[0],
+        receiptNo: receipt?.receiptNo || (nextReceiptNo ? nextReceiptNo : "RCPT-0001"),
+        paymentMethod: receipt?.paymentMethod || "",
+        depositTo: receipt?.depositTo || "",
+        memo: receipt?.memo || "",
+        statementMessage: receipt?.statementMessage || "",
+        checkDate: receipt?.checkDate || "",
+        checkNumber: receipt?.checkNumber || "",
+        items: receipt?.items ? receipt.items.map(i => ({
+            ...i,
+            qty: i.qty ? parseFloat(i.qty).toLocaleString('en-US', { maximumFractionDigits: 4 }) : "1",
+            rate: parseFloat(i.rate || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            amount: parseFloat(i.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        })) : [
+            { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
+            { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }
+        ],
+        discount_type: receipt?.discountType || 'percent',
+        discount_value: receipt?.discountValue !== undefined ? String(receipt.discountValue) : '0',
+        prefix: receipt?.prefix || '',
+        memo_on_statement: receipt?.memo_on_statement || '',
+        action: 'save',
+        books_pin: ''
+    });
 
     const fetchCustomers = (search = "") => {
         axios.get(route('api.payees', { search, type: 'Customer' })).then(res => setCustomerOptions(res.data));
@@ -107,12 +142,22 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 discount_type: 'percent',
                 discount_value: '0',
                 prefix: '',
-                action: 'save'
+                action: 'save',
+                books_pin: ''
             });
 
         }
         clearErrors();
     }, [receipt?.id]);
+
+    useEffect(() => {
+        if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED') {
+            setIsPinModalOpen(true);
+        } else if (errors.books_pin) {
+            // Re-open if invalid pin submitted
+            setIsPinModalOpen(true);
+        }
+    }, [errors.books_pin]);
 
     const COLUMNS = [
         {
@@ -133,34 +178,6 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
         { key: "rate", label: "Rate", type: "currency", width: "120px", className: "text-right", inputClass: "text-right" },
         { key: "amount", label: "Amount", type: "currency", width: "140px", className: "text-right", inputClass: "text-right" },
     ];
-
-    const { data, setData, post, patch, processing, errors, reset, clearErrors, transform } = useForm({
-        customer: receipt?.customer || "",
-        email: receipt?.email || "",
-        billingAddress: receipt?.billingAddress || "",
-        receiptDate: receipt?.receiptDate || localStorage.getItem('last_transaction_date') || new Date().toISOString().split('T')[0],
-        receiptNo: receipt?.receiptNo || (nextReceiptNo ? nextReceiptNo : "RCPT-0001"),
-        paymentMethod: receipt?.paymentMethod || "",
-        depositTo: receipt?.depositTo || "",
-        memo: receipt?.memo || "",
-        statementMessage: receipt?.statementMessage || "",
-        checkDate: receipt?.checkDate || "",
-        checkNumber: receipt?.checkNumber || "",
-        items: receipt?.items ? receipt.items.map(i => ({
-            ...i,
-            qty: i.qty ? parseFloat(i.qty).toLocaleString('en-US', { maximumFractionDigits: 4 }) : "1",
-            rate: parseFloat(i.rate || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-            amount: parseFloat(i.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-        })) : [
-            { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
-            { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
-        ],
-        discount_type: receipt?.discountType || 'percent',
-        discount_value: receipt?.discountValue !== undefined ? String(receipt.discountValue) : '0',
-        prefix: receipt?.prefix || '',
-        memo_on_statement: receipt?.memo_on_statement || '',
-        action: 'save'
-    });
 
 
     const handlePaymentMethodChange = (val) => {
@@ -189,7 +206,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
     const formatCurrencyValue = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2 });
 
     const subtotal = data.items.reduce((sum, item) => sum + parseCurrency(item.amount), 0);
-    
+
     let discountAmount = 0;
     const dVal = parseFloat(data.discount_value || 0);
     if (dVal > 0) {
@@ -239,13 +256,14 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
         setIsDirty(true);
     };
 
-    const handleSave = (actionType = 'save') => {
+    const handleSave = (actionType = 'save', pinOverride = null) => {
 
         const currentNo = data.receiptNo;
 
         transform((data) => ({
             ...data,
             action: actionType,
+            books_pin: pinOverride !== null ? pinOverride : data.books_pin,
             items: data.items
                 .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount && item.amount !== "0.00" && item.amount !== "0"))
                 .map(item => ({
@@ -255,6 +273,8 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                     amount: String(item.amount).replace(/,/g, '')
                 }))
         }));
+
+        setPendingAction(actionType);
 
         const currentId = savedEntryId || receipt?.id;
         const url = currentId ? route('sales-invoice.update', currentId) : route('sales-invoice.store');
@@ -278,7 +298,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 if (actionType === 'close') {
                     if (typeof onClose === 'function') {
                         onClose();
-                    } 
+                    }
                 }
 
                 if (actionType === 'new') {
@@ -295,12 +315,15 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                         discount_value: '0',
                         prefix: '',
                         memo_on_statement: '',
-                        action: 'save'
+                        action: 'save',
+                        books_pin: ''
                     });
 
                     reset();
                     clearErrors();
                     setIsDirty(false);
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
                 }
             }
         });
@@ -309,7 +332,12 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
     return (
         <TransactionLayout
             historyType="sales_invoice"
-            title={`Sales Invoice #${data.receiptNo}`}
+            title={
+                <div className="flex items-center">
+                    Sales Invoice #{data.receiptNo}
+                    <BooksLockIndicator date={data.receiptDate} lockDate={auth?.books_lock_date} isEdit={!!(receipt?.id || savedEntryId)} />
+                </div>
+            }
             amount={totalAmount}
             processing={processing}
             dirty={isDirty}
@@ -645,7 +673,21 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
             <QuickAddPaymentMethod
                 isOpen={isMethodModalOpen}
                 onClose={() => setIsMethodModalOpen(false)}
-                onSuccess={() => router.reload({ only: ['paymentMethods'] })}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
 
         </TransactionLayout>

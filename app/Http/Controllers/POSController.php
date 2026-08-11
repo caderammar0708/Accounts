@@ -61,6 +61,7 @@ class POSController extends Controller
     {
         $validated = $request->validated();
         try {
+            \App\Services\BooksLockService::check($request->receiptDate, $request->books_pin);
             $journalEntry = DB::transaction(function() use ($request) {
                 // Filter out empty items
                 $items = collect($request->items)->filter(function($item) {
@@ -246,7 +247,7 @@ class POSController extends Controller
             }
 
             return redirect()->back()->with('success', 'Sale saved successfully.')->with('print_url', $printUrl);
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             \Log::error('POS save error: ' . $e->getMessage(), [
                 'data' => $request->all(),
                 'trace' => $e->getTraceAsString()
@@ -355,6 +356,11 @@ class POSController extends Controller
         $validated = $request->validated();
 
         try {
+            \App\Services\BooksLockService::check($journalEntry->date, $request->books_pin);
+            if (date('Y-m-d', strtotime($journalEntry->date)) !== date('Y-m-d', strtotime($request->receiptDate))) {
+                \App\Services\BooksLockService::check($request->receiptDate, $request->books_pin);
+            }
+
             DB::transaction(function() use ($request, $journalEntry) {
                 // Filter out empty items
                 $items = collect($request->items)->filter(function($item) {
@@ -540,13 +546,15 @@ class POSController extends Controller
             });
 
             return redirect()->back()->with('success', 'Sale updated successfully.');
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 
-    public function destroy(JournalEntry $journalEntry)
+    public function destroy(Request $request, JournalEntry $journalEntry)
     {
+        \App\Services\BooksLockService::check($journalEntry->date, $request->input('books_pin'));
+
         $chartOfAccountId = $journalEntry->lines->first()?->chart_of_acc_id
             ?? $journalEntry->lines->first()?->chart_of_account_id
             ?? $journalEntry->lines->first()?->account_id;

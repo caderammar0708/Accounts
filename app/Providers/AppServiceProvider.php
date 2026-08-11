@@ -22,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
         \App\Models\Accounting\JournalEntryLine::observe(\App\Observers\JournalEntryLineObserver::class);
+        \App\Models\Accounting\JournalEntry::observe(\App\Observers\JournalEntryObserver::class);
         \App\Models\Company::observe(\App\Observers\CompanyObserver::class);
         \App\Models\User::observe(\App\Observers\UserObserver::class);
     }

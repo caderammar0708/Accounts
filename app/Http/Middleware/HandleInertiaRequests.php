@@ -87,6 +87,8 @@ class HandleInertiaRequests extends Middleware
                 'financial_year_start_month' => $companySetting?->fin_year_start ?? 'January',
                 'multi_currency_enabled' => (bool) $companySetting?->multi_currency_enabled,
                 'home_currency_id' => $companySetting?->home_currency_id,
+                'books_lock_date'         => $companySetting?->books_lock_date,
+                'has_books_pin'           => !empty($companySetting?->books_lock_pin),
             ],
             'appName' => config('app.name'),
             'flash' => [

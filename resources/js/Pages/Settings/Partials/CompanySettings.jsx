@@ -86,8 +86,10 @@ const accountingForm = useForm({
     acct_method: settings?.acct_method || 'Accrual',
     fin_year_start: settings?.fin_year_start || 'January',
     tax_year_start: settings?.tax_year_start || 'Same as financial year',
-    close_books: !!settings?.close_books,
     tax_form: settings?.tax_form || 'Partnership or limited liability company',
+    books_lock_date: settings?.books_lock_date || '',
+    books_lock_pin: '',
+    current_pin: '',
 });
 
 const handleAccountingSubmit = (e) => {
@@ -306,7 +308,7 @@ const submitFeatureToggle = (feature, enabled, dropData = false) => {
                 </div>
                 <div className="grid grid-cols-12 pb-2">
                     <div className="col-span-4 text-gray-500 text-xs font-bold">Close the books</div>
-                    <div className="col-span-8 text-xs text-gray-800">{accountingForm.data.close_books ? 'On' : 'Off'}</div>
+                    <div className="col-span-8 text-xs text-gray-800">{accountingForm.data.books_lock_date ? `Locked on or before ${accountingForm.data.books_lock_date}` : 'Off'}</div>
                 </div>
             </div>
         </div>
@@ -354,17 +356,40 @@ const submitFeatureToggle = (feature, enabled, dropData = false) => {
                         { label: 'Cash', value: 'Cash' },
                     ]}
                 />
-                <div className="pt-2">
-                    <label className="font-bold text-slate-600 ml-0.5 text-xs mb-1 block">Close the books</label>
-                    <label className="relative inline-flex items-center cursor-pointer scale-90 ml-0.5">
-                        <input
-                            type="checkbox"
-                            className="sr-only peer"
-                            checked={accountingForm.data.close_books}
-                            onChange={e => accountingForm.setData('close_books', e.target.checked)}
-                        />
-                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
-                    </label>
+                <div className="pt-2 border-t border-gray-100 mt-2">
+                    <label className="font-bold text-slate-600 ml-0.5 text-xs mb-1 block">Lock transactions on and before this date</label>
+                    <CommonInput
+                        type="date"
+                        value={accountingForm.data.books_lock_date}
+                        onChange={e => accountingForm.setData('books_lock_date', e.target.value)}
+                        error={accountingForm.errors.books_lock_date}
+                    />
+                    
+                    {accountingForm.data.books_lock_date && (
+                        <div className="mt-2">
+                            <CommonInput
+                                type="password"
+                                label={settings?.books_lock_pin ? "New PIN (leave blank to keep current)" : "Set 6-digit PIN"}
+                                value={accountingForm.data.books_lock_pin}
+                                onChange={e => accountingForm.setData('books_lock_pin', e.target.value)}
+                                error={accountingForm.errors.books_lock_pin}
+                                maxLength={6}
+                            />
+                        </div>
+                    )}
+                    
+                    {settings?.books_lock_pin && (
+                        <div className="mt-2">
+                            <CommonInput
+                                type="password"
+                                label="Current PIN (required to change or remove lock)"
+                                value={accountingForm.data.current_pin}
+                                onChange={e => accountingForm.setData('current_pin', e.target.value)}
+                                error={accountingForm.errors.current_pin}
+                                maxLength={6}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
             <div className="mt-6 flex justify-end gap-2 border-t border-gray-100 pt-4">

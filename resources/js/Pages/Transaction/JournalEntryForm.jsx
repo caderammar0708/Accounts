@@ -7,6 +7,8 @@ import CommonInput from "@/Components/CommonInput";
 import QuickAddPayee from "@/Components/QuickAddPayee";
 import QuickAddAccount from "@/Components/QuickAddAccount";
 import { Head, usePage, router } from "@inertiajs/react";
+import PinPromptModal from "@/Components/PinPromptModal";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
 
 export default function JournalEntryForm({ journalEntry = null, nextJournalNo = "" }) {
     const isEditing = Boolean(journalEntry?.id);
@@ -22,6 +24,12 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
+    // Books Lock PIN Modal
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
+    const [booksPin, setBooksPin] = useState("");
+    const [booksPinError, setBooksPinError] = useState(null);
+
     const fetchPayees = (search = "") => {
         axios.get(route('api.payees', { search })).then(res => setPayeeOptions(res.data));
     };
@@ -36,7 +44,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
     }, []);
 
     const isMultiCurrency = auth?.multi_currency_enabled;
-    
+
     const JOURNAL_COLUMNS = [
         {
             key: "account_id",
@@ -188,7 +196,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 rowIndex === index ? { ...row, [field]: value } : row
             );
             const numVal = parseCurrency(value);
-            
+
             // Clear opposite fields
             if (field === "debit" && numVal > 0) updated[index].credit = "";
             if (field === "credit" && numVal > 0) updated[index].debit = "";
@@ -206,13 +214,13 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
             const updated = prev.map((row, rowIndex) =>
                 rowIndex === index ? { ...row, [field]: value } : row
             );
-            
+
             const numVal = parseCurrency(value);
 
             // Auto-calculate base amounts if FC amounts or exchange rate change
             if (["fc_debit", "fc_credit", "exchange_rate"].includes(field)) {
                 const exRate = parseCurrency(updated[index].exchange_rate) || 1;
-                
+
                 if (field === "fc_debit" || (field === "exchange_rate" && parseCurrency(updated[index].fc_debit) > 0)) {
                     const fcDeb = parseCurrency(updated[index].fc_debit);
                     updated[index].debit = formatCurrencyValue(fcDeb * exRate);
@@ -230,7 +238,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
             }
 
             const suggestion = getSuggestedBalance(updated);
-            
+
             // Try to auto-balance on debit/credit blur if not FC
             if (["debit", "credit"].includes(field)) {
                 const targetIndex = getBalanceTargetIndex(updated, index, field);
@@ -252,7 +260,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
         setIsDirty(true);
     };
 
-    const handleSave = (type = 'save') => {
+    const handleSave = (type = 'save', pinOverride = null) => {
         if (Math.abs(totals.debit - totals.credit) > 0.001) {
             alert("Debits and Credits must balance to save this entry.");
             return;
@@ -278,8 +286,11 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                         debit: parseCurrency(i.debit),
                         credit: parseCurrency(i.credit)
                     };
-                })
+                }),
+            books_pin: pinOverride !== null ? pinOverride : booksPin
         };
+
+        setPendingAction(type);
 
         // Use savedEntryId if we already saved once this session
         const currentId = savedEntryId || journalEntry?.id;
@@ -298,6 +309,10 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 if (!savedEntryId && page.props?.flash?.journal_entry_id) {
                     setSavedEntryId(page.props.flash.journal_entry_id);
                 }
+
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                setBooksPinError(null);
 
                 if (type === 'close') {
                     if (typeof onClose === 'function') {
@@ -320,14 +335,24 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 }
             },
             onError: (errors) => {
-                alert(Object.values(errors).join('\n') || "Error saving entry ❌");
+                if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED' || errors.books_pin) {
+                    setBooksPinError(errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null);
+                    setIsPinModalOpen(true);
+                } else {
+                    alert(Object.values(errors).join('\n') || "Error saving entry ❌");
+                }
             }
         });
     };
     return (
         <TransactionLayout
             historyType="journal_entry"
-            title={`Journal Entry #${form.journalNo}`}
+            title={
+                <div className="flex items-center gap-2">
+                    Journal Entry #{form.journalNo}
+                    <BooksLockIndicator date={form.date} lockDate={auth?.books_lock_date} isEdit={!!(journalEntry?.id || savedEntryId)} />
+                </div>
+            }
             amount={totals.debit.toFixed(2)}
             dirty={isDirty}
             onSave={() => handleSave('save')}
@@ -424,6 +449,21 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 isOpen={isAccountModalOpen}
                 onClose={() => setIsAccountModalOpen(false)}
                 onSuccess={(newAcc) => fetchAccounts()}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setBooksPin('');
+                    setBooksPinError(null);
+                }}
+                onSubmit={(pin) => {
+                    setBooksPin(pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={booksPinError}
             />
         </TransactionLayout>
     );

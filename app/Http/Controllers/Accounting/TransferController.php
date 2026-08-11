@@ -81,7 +81,7 @@ class TransferController extends Controller
 
             return redirect()->route('transfer.edit', $journalEntry)->with('success', 'Transfer saved successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return response()->json(['message' => 'Database error: ' . $e->getMessage()], 500);
         }
     }
@@ -165,7 +165,7 @@ class TransferController extends Controller
 
             return redirect()->route('transfer.edit', $journalEntry)->with('success', 'Transfer updated successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return response()->json(['message' => 'Database error: ' . $e->getMessage()], 500);
         }
     }

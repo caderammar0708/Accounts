@@ -10,6 +10,8 @@ import QuickAddPayee from "@/Components/QuickAddPayee";
 import InventoryItemSidePanel from "@/Components/InventoryItemSidePanel";
 import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import axios from "axios";
+import PinPromptModal from "@/Components/PinPromptModal";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
 
 export default function CreditInvoiceForm({
     auth,
@@ -32,6 +34,10 @@ export default function CreditInvoiceForm({
     const [isDirty, setIsDirty] = useState(false);
 
     const [savedEntryId, setSavedEntryId] = useState(invoice?.id || null);
+
+    // Books Lock PIN Modal
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
 
     const fetchPayees = async (search = "") => {
         const res = await axios.get(route('api.payees', { search, type: 'Customer' }));
@@ -72,7 +78,6 @@ export default function CreditInvoiceForm({
         fetchPayees();
         fetchItems();
     }, []);
-
     // 1. Define CreditInvoice Specific Columns
     const INVOICE_COLUMNS = [
         {
@@ -168,7 +173,8 @@ export default function CreditInvoiceForm({
         ],
         discount_type: invoice?.discountType || 'percent',
         discount_value: invoice?.discountValue !== undefined ? String(invoice.discountValue) : '0',
-        prefix: invoice?.prefix || ''
+        prefix: invoice?.prefix || '',
+        books_pin: ''
     });
 
 
@@ -196,7 +202,8 @@ export default function CreditInvoiceForm({
                 ],
                 discount_type: invoice.discountType || 'percent',
                 discount_value: invoice.discountValue !== undefined ? String(invoice.discountValue) : '0',
-                prefix: invoice.prefix || ''
+                prefix: invoice.prefix || '',
+                books_pin: ''
             }));
         } else {
             const cachedDate = localStorage.getItem('last_transaction_date') || new Date().toISOString().split('T')[0];
@@ -218,7 +225,8 @@ export default function CreditInvoiceForm({
                 ],
                 discount_type: 'percent',
                 discount_value: '0',
-                prefix: ''
+                prefix: '',
+                books_pin: ''
             }));
         }
         clearErrors();
@@ -301,14 +309,16 @@ export default function CreditInvoiceForm({
         }));
     };
 
-    const handleSave = (action = 'save') => {
-        actionRef.current = action;
+    const handleSave = (actionType = 'save', pinOverride = null) => {
+        actionRef.current = actionType;
+        setPendingAction(actionType);
         const currentNo = data.invoiceNo;
         const currentId = savedEntryId || invoice?.id;
 
         transform((currentData) => ({
             ...currentData,
-            action: action,
+            action: actionType,
+            books_pin: pinOverride !== null ? pinOverride : currentData.books_pin,
             items: currentData.items.map(item => ({
                 ...item,
                 qty: String(item.qty).replace(/,/g, ''),
@@ -355,10 +365,13 @@ export default function CreditInvoiceForm({
                         ],
                         discount_type: 'percent',
                         discount_value: '0',
-                        prefix: ''
+                        prefix: '',
+                        books_pin: ''
                     });
                     clearErrors();
                     setIsDirty(false);
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
                 }
             }
         });
@@ -367,7 +380,12 @@ export default function CreditInvoiceForm({
     return (
         <TransactionLayout
             historyType="credit_invoice"
-            title={`Credit Invoice ${data.invoiceNo}`}
+            title={
+                <div className="flex items-center">
+                    Credit Invoice #{data.invoiceNo}
+                    <BooksLockIndicator date={data.invoiceDate} lockDate={auth?.books_lock_date} isEdit={!!(invoice?.id || savedEntryId)} />
+                </div>
+            }
             amount={totalAmount}
             processing={processing}
             dirty={isDirty}
@@ -615,10 +633,25 @@ export default function CreditInvoiceForm({
                     </div>
                 </div>
             </div>
-            <TermModal
+            <TermModal 
                 isOpen={isTermModalOpen}
                 onClose={() => setIsTermModalOpen(false)}
                 onSave={handleAddTerm}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
 
             <QuickAddPayee

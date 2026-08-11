@@ -128,7 +128,7 @@ class PayBillController extends Controller
 
             return $this->handleActionRedirect($request, 'pay-bill', $journalEntry->id, 'Bill payment recorded successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -279,7 +279,7 @@ class PayBillController extends Controller
 
             return $this->handleActionRedirect($request, 'pay-bill', $journalEntry->id, 'Bill payment updated successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }

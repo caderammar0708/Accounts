@@ -172,7 +172,7 @@ class ChequeController extends Controller
 
             return redirect()->route('cheque.edit', $journalEntry->id)->with('success', 'Cheque saved successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -299,7 +299,7 @@ class ChequeController extends Controller
 
             return redirect()->route('cheque.edit', $journalEntry->id)->with('success', 'Cheque updated successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }

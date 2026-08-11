@@ -151,7 +151,7 @@ class InvoiceReturnController extends Controller
 
             return redirect()->route('invoice-return.edit', $journalEntry->id)->with('success', 'InvoiceReturn saved successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -284,7 +284,7 @@ class InvoiceReturnController extends Controller
 
             return redirect()->route('invoice-return.edit', $journalEntry->id)->with('success', 'InvoiceReturn updated successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }

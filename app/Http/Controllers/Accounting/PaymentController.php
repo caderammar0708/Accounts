@@ -93,6 +93,7 @@ class PaymentController extends Controller
 
         
         try {
+            \App\Services\BooksLockService::check($paymentDate, $request->books_pin);
             $journalEntry = DB::transaction(function() use ($request, $paymentAccount, $paymentDate, $paymentMethod, $referenceNo) {
                 $categoryItems = collect($request->items)->filter(function($item) {
                     return !empty($item['category']) && (float)str_replace(',', '', $item['amount']) > 0;
@@ -236,7 +237,7 @@ class PaymentController extends Controller
 
             return redirect()->route('payment.edit', $journalEntry->id)->with('success', 'ReceivePayment saved successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -297,6 +298,11 @@ class PaymentController extends Controller
 
         
         try {
+            \App\Services\BooksLockService::check($journalEntry->date, $request->books_pin);
+            if (date('Y-m-d', strtotime($journalEntry->date)) !== date('Y-m-d', strtotime($paymentDate))) {
+                \App\Services\BooksLockService::check($paymentDate, $request->books_pin);
+            }
+
             DB::transaction(function() use ($request, $journalEntry, $paymentAccount, $paymentDate, $paymentMethod, $referenceNo) {
                 $categoryItems = collect($request->items)->filter(function($item) {
                     return !empty($item['category']) && (float)str_replace(',', '', $item['amount']) > 0;
@@ -441,13 +447,15 @@ class PaymentController extends Controller
 
             return redirect()->route('payment.edit', $journalEntry->id)->with('success', 'Payment updated successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 
-    public function destroy(JournalEntry $journalEntry)
+    public function destroy(Request $request, JournalEntry $journalEntry)
 {
+    \App\Services\BooksLockService::check($journalEntry->date, $request->input('books_pin'));
+
     // Must grab this BEFORE the transaction deletes the lines
     $paymentAccountId = $journalEntry->lines()
         ->where('credit', '>', 0)
