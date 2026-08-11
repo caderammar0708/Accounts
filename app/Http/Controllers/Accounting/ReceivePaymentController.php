@@ -87,14 +87,22 @@ class ReceivePaymentController extends Controller
 
                 // Allocations (Business Details)
                 if ($request->has('credit_invoices')) {
+                    $allocationsData = [];
+                    $now = now();
                     foreach ($request->credit_invoices as $inv) {
                         if ((float)$inv['amount'] > 0) {
-                            \App\Models\Accounting\ReceivePaymentAllocation::create([
+                            $allocationsData[] = [
+                                'id' => \Illuminate\Support\Str::uuid()->toString(),
                                 'receive_payment_id' => $receivePayment->id,
                                 'credit_invoice_id' => $inv['id'],
                                 'amount' => (float)$inv['amount'],
-                            ]);
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ];
                         }
+                    }
+                    if (!empty($allocationsData)) {
+                        \App\Models\Accounting\ReceivePaymentAllocation::insert($allocationsData);
                     }
                 }
 
@@ -113,24 +121,35 @@ class ReceivePaymentController extends Controller
                     'transactionable_type' => \App\Models\Accounting\ReceivePayment::class,
                 ]);
 
+                $linesData = [];
+                $now = now();
+
                 // Cash/Bank Account (Debit)
-                JournalEntryLine::create([
+                $linesData[] = [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $request->depositTo,
                     'debit' => $amount,
                     'credit' => 0,
                     'memo' => $request->memo,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
 
                 // Accounts Receivable (Credit)
                 $arAccount = ChartOfAcc::getOrCreateDefault('accounts-receivable');
-                JournalEntryLine::create([
+                $linesData[] = [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $arAccount->id,
                     'debit' => 0,
                     'credit' => $amount,
                     'memo' => $request->memo,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+
+                JournalEntryLine::insert($linesData);
 
                 return $journalEntry;
             });
@@ -206,14 +225,22 @@ class ReceivePaymentController extends Controller
                 // 2. Re-create Allocations
                 $receivePayment->allocations()->delete();
                 if ($request->has('credit_invoices')) {
+                    $allocationsData = [];
+                    $now = now();
                     foreach ($request->credit_invoices as $inv) {
                         if ((float)$inv['amount'] > 0) {
-                            \App\Models\Accounting\ReceivePaymentAllocation::create([
+                            $allocationsData[] = [
+                                'id' => \Illuminate\Support\Str::uuid()->toString(),
                                 'receive_payment_id' => $receivePayment->id,
                                 'credit_invoice_id' => $inv['id'],
                                 'amount' => (float)$inv['amount'],
-                            ]);
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ];
                         }
+                    }
+                    if (!empty($allocationsData)) {
+                        \App\Models\Accounting\ReceivePaymentAllocation::insert($allocationsData);
                     }
                 }
 
@@ -229,24 +256,35 @@ class ReceivePaymentController extends Controller
                 // Re-create lines
                 $journalEntry->lines->each->delete();
 
+                $linesData = [];
+                $now = now();
+
                 // Cash/Bank Account (Debit)
-                JournalEntryLine::create([
+                $linesData[] = [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $request->depositTo,
                     'debit' => $amount,
                     'credit' => 0,
                     'memo' => $request->memo,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
 
                 // Accounts Receivable (Credit)
                 $arAccount = ChartOfAcc::getOrCreateDefault('accounts-receivable');
-                JournalEntryLine::create([
+                $linesData[] = [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $arAccount->id,
                     'debit' => 0,
                     'credit' => $amount,
                     'memo' => $request->memo,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+
+                JournalEntryLine::insert($linesData);
             });
 
             return $this->handleActionRedirect($request, 'receive-payment', $journalEntry->id, 'ReceivePayment updated successfully.');

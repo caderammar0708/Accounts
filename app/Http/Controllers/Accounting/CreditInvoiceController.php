@@ -113,8 +113,11 @@ class CreditInvoiceController extends Controller
             ]);
 
 
+            $creditInvoiceItemsData = [];
+            $now = now();
             foreach ($request->items as $lineItem) {
-                \App\Models\Accounting\CreditInvoiceItem::create([
+                $creditInvoiceItemsData[] = [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'credit_invoice_id' => $creditInvoice->id,
                     'item_id' => $lineItem['product'],
                     'description' => $lineItem['description'] ?? '',
@@ -122,7 +125,12 @@ class CreditInvoiceController extends Controller
                     'rate' => (float) str_replace(',', '', $lineItem['rate'] ?? 0),
                     'amount' => (float) str_replace(',', '', $lineItem['amount']),
                     'service_date' => $lineItem['serviceDate'] ?? null,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+            if (!empty($creditInvoiceItemsData)) {
+                \App\Models\Accounting\CreditInvoiceItem::insert($creditInvoiceItemsData);
             }
 
             // 2. Create Financial Truth (Journal Entry)
@@ -141,19 +149,24 @@ class CreditInvoiceController extends Controller
                 'transactionable_type' => \App\Models\Accounting\CreditInvoice::class,
             ]);
 
+            $journalLinesData = [];
+
             // Income Credits
             foreach ($request->items as $lineItem) {
                 $itemModel = \App\Models\Item::find($lineItem['product']);
                 $incomeAccount = $itemModel?->income_account_id ?? (ChartOfAcc::where('account_type', 'income')->first()?->id ?? ChartOfAcc::getOrCreateDefault('uncategorized-income')->id);
 
-                JournalEntryLine::create([
+                $journalLinesData[] = [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $incomeAccount,
                     'debit' => 0,
                     'credit' => (float) str_replace(',', '', $lineItem['amount']),
                     'memo' => $lineItem['description'] ?? $request->memo,
                     'service_date' => $lineItem['serviceDate'] ?? null,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
 
                 if ($itemModel && $itemModel->type === 'inventory') {
                     $qty = (float) str_replace(',', '', $lineItem['qty'] ?? 1);
@@ -164,45 +177,61 @@ class CreditInvoiceController extends Controller
                         $cogsAccount = $itemModel->expense_account_id ?? ChartOfAcc::getOrCreateDefault('cost-of-goods-sold')->id;
                         $inventoryAccount = $itemModel->inventory_account_id ?? ChartOfAcc::getOrCreateDefault('inventory')->id;
 
-                        JournalEntryLine::create([
+                        $journalLinesData[] = [
+                            'id' => \Illuminate\Support\Str::uuid()->toString(),
                             'journal_entry_id' => $journalEntry->id,
                             'chart_of_acc_id' => $cogsAccount,
                             'debit' => $cogsAmount,
                             'credit' => 0,
                             'memo' => 'Cost of goods sold: ' . ($lineItem['description'] ?? $itemModel->name) . " (Qty: {$qty})",
-                        ]);
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
 
-                        JournalEntryLine::create([
+                        $journalLinesData[] = [
+                            'id' => \Illuminate\Support\Str::uuid()->toString(),
                             'journal_entry_id' => $journalEntry->id,
                             'chart_of_acc_id' => $inventoryAccount,
                             'debit' => 0,
                             'credit' => $cogsAmount,
                             'memo' => 'Inventory reduction: ' . ($lineItem['description'] ?? $itemModel->name) . " (Qty: {$qty})",
-                        ]);
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
                     }
                 }
             }
 
             // Accounts Receivable Debit
             $arAccount = ChartOfAcc::getOrCreateDefault('accounts-receivable');
-            JournalEntryLine::create([
+            $journalLinesData[] = [
+                'id' => \Illuminate\Support\Str::uuid()->toString(),
                 'journal_entry_id' => $journalEntry->id,
                 'chart_of_acc_id' => $arAccount->id,
                 'debit' => $totalAmount,
                 'credit' => 0,
                 'memo' => $request->memo,
-            ]);
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
 
             // Debit Discounts Given if discount exists
             if ($discountAmount > 0) {
                 $discountAccount = ChartOfAcc::getOrCreateDefault('discounts-given');
-                JournalEntryLine::create([
+                $journalLinesData[] = [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $discountAccount->id,
                     'debit' => $discountAmount,
                     'credit' => 0,
                     'memo' => 'Discount for ' . $request->invoiceNo,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            if (!empty($journalLinesData)) {
+                JournalEntryLine::insert($journalLinesData);
             }
 
 
@@ -224,7 +253,7 @@ class CreditInvoiceController extends Controller
     public function edit(JournalEntry $journalEntry)
     {
         $journalEntry->load('lines');
-        $creditInvoice = \App\Models\Accounting\CreditInvoice::find($journalEntry->transactionable_id);
+        $creditInvoice = \App\Models\Accounting\CreditInvoice::with(['allocations.payment.journalEntry'])->find($journalEntry->transactionable_id);
 
         $invoiceData = [
             'id' => $journalEntry->id,
@@ -251,6 +280,14 @@ class CreditInvoiceController extends Controller
             })->toArray() ?? [],
             'discountType' => $creditInvoice?->discount_type ?? 'percent',
             'discountValue' => (float) ($creditInvoice?->discount_value ?? 0),
+            'payments' => $creditInvoice?->allocations->map(function($alloc) {
+                return [
+                    'id' => $alloc->payment?->journalEntry?->id,
+                    'reference' => $alloc->payment?->reference_no ?? '',
+                    'date' => $alloc->payment?->payment_date ?? '',
+                    'amount' => $alloc->amount,
+                ];
+            })->filter(fn($p) => !empty($p['id']))->toArray() ?? [],
         ];
 
         return Inertia::render('Transaction/CreditInvoice/CreditInvoiceForm', [
@@ -367,8 +404,11 @@ class CreditInvoiceController extends Controller
                     }
                 }
                 $creditInvoice->items()->delete();
+                $creditInvoiceItemsData = [];
+                $now = now();
                 foreach ($request->items as $lineItem) {
-                    \App\Models\Accounting\CreditInvoiceItem::create([
+                    $creditInvoiceItemsData[] = [
+                        'id' => \Illuminate\Support\Str::uuid()->toString(),
                         'credit_invoice_id' => $creditInvoice->id,
                         'item_id' => $lineItem['product'],
                         'description' => $lineItem['description'] ?? '',
@@ -376,7 +416,12 @@ class CreditInvoiceController extends Controller
                         'rate' => (float) str_replace(',', '', $lineItem['rate'] ?? 0),
                         'amount' => (float) str_replace(',', '', $lineItem['amount']),
                         'service_date' => $lineItem['serviceDate'] ?? null,
-                    ]);
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+                if (!empty($creditInvoiceItemsData)) {
+                    \App\Models\Accounting\CreditInvoiceItem::insert($creditInvoiceItemsData);
                 }
             }
 
@@ -392,18 +437,23 @@ class CreditInvoiceController extends Controller
 
             $journalEntry->lines->each->delete();
 
+            $journalLinesData = [];
+
             foreach ($request->items as $lineItem) {
                 $itemModel = \App\Models\Item::find($lineItem['product']);
                 $incomeAccount = $itemModel?->income_account_id ?? (ChartOfAcc::where('account_type', 'income')->first()?->id ?? ChartOfAcc::getOrCreateDefault('uncategorized-income')->id);
 
-                JournalEntryLine::create([
+                $journalLinesData[] = [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $incomeAccount,
                     'debit' => 0,
                     'credit' => (float) str_replace(',', '', $lineItem['amount']),
                     'memo' => $lineItem['description'] ?? $request->memo,
                     'service_date' => $lineItem['serviceDate'] ?? null,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
 
                 if ($itemModel && $itemModel->type === 'inventory') {
                     $qty = (float) str_replace(',', '', $lineItem['qty'] ?? 1);
@@ -414,44 +464,60 @@ class CreditInvoiceController extends Controller
                         $cogsAccount = $itemModel->expense_account_id ?? ChartOfAcc::getOrCreateDefault('cost-of-goods-sold')->id;
                         $inventoryAccount = $itemModel->inventory_account_id ?? ChartOfAcc::getOrCreateDefault('inventory')->id;
 
-                        JournalEntryLine::create([
+                        $journalLinesData[] = [
+                            'id' => \Illuminate\Support\Str::uuid()->toString(),
                             'journal_entry_id' => $journalEntry->id,
                             'chart_of_acc_id' => $cogsAccount,
                             'debit' => $cogsAmount,
                             'credit' => 0,
                             'memo' => 'Cost of goods sold: ' . ($lineItem['description'] ?? $itemModel->name) . " (Qty: {$qty})",
-                        ]);
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
 
-                        JournalEntryLine::create([
+                        $journalLinesData[] = [
+                            'id' => \Illuminate\Support\Str::uuid()->toString(),
                             'journal_entry_id' => $journalEntry->id,
                             'chart_of_acc_id' => $inventoryAccount,
                             'debit' => 0,
                             'credit' => $cogsAmount,
                             'memo' => 'Inventory reduction: ' . ($lineItem['description'] ?? $itemModel->name) . " (Qty: {$qty})",
-                        ]);
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
                     }
                 }
             }
 
             $arAccount = ChartOfAcc::getOrCreateDefault('accounts-receivable');
-            JournalEntryLine::create([
+            $journalLinesData[] = [
+                'id' => \Illuminate\Support\Str::uuid()->toString(),
                 'journal_entry_id' => $journalEntry->id,
                 'chart_of_acc_id' => $arAccount->id,
                 'debit' => $totalAmount,
                 'credit' => 0,
                 'memo' => $request->memo,
-            ]);
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
 
             // Debit Discounts Given if discount exists
             if ($discountAmount > 0) {
                 $discountAccount = ChartOfAcc::getOrCreateDefault('discounts-given');
-                JournalEntryLine::create([
+                $journalLinesData[] = [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $discountAccount->id,
                     'debit' => $discountAmount,
                     'credit' => 0,
                     'memo' => 'Discount for ' . $request->invoiceNo,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            if (!empty($journalLinesData)) {
+                JournalEntryLine::insert($journalLinesData);
             }
         });
 

@@ -12,7 +12,21 @@ class SupplierController extends Controller
 {
     public function index()
     {
-        $suppliers = Supplier::orderBy('display_name')->get();
+        $apAccountIds = \App\Models\Accounting\ChartOfAcc::where('sub_type', 'accounts-payable')->pluck('id');
+
+        $suppliers = Supplier::select('suppliers.*')
+            ->addSelect([
+                'debits_sum' => \App\Models\Accounting\JournalEntryLine::selectRaw('SUM(debit)')
+                    ->whereColumn('payee_id', 'suppliers.id')
+                    ->where('payee_type', Supplier::class)
+                    ->whereIn('chart_of_acc_id', $apAccountIds),
+                'credits_sum' => \App\Models\Accounting\JournalEntryLine::selectRaw('SUM(credit)')
+                    ->whereColumn('payee_id', 'suppliers.id')
+                    ->where('payee_type', Supplier::class)
+                    ->whereIn('chart_of_acc_id', $apAccountIds)
+            ])
+            ->orderBy('display_name')
+            ->get();
         return Inertia::render('Contacts/SupplierIndex', [
             'suppliers' => $suppliers
         ]);

@@ -39,10 +39,14 @@ class Customer extends Model
 
     public function getBalanceAttribute()
     {
-        // Calculate AR Balance for Customer
-        $arAccountIds = ChartOfAcc::where('sub_type', 'accounts-receivable')
-            
-            ->pluck('id');
+        if (array_key_exists('debits_sum', $this->attributes) && array_key_exists('credits_sum', $this->attributes)) {
+            return ($this->opening_balance ?? 0) + ($this->attributes['debits_sum'] ?? 0) - ($this->attributes['credits_sum'] ?? 0);
+        }
+
+        static $arAccountIds = null;
+        if ($arAccountIds === null) {
+            $arAccountIds = ChartOfAcc::where('sub_type', 'accounts-receivable')->pluck('id');
+        }
             
         $debits = JournalEntryLine::where('payee_id', $this->id)
             ->whereIn('chart_of_acc_id', $arAccountIds)
