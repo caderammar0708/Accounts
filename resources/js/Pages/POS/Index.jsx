@@ -565,7 +565,12 @@ export default function POSIndex({ auth, items, paymentMethods, warrantyPolicies
 
                         {Object.keys(errors).length > 0 && (
                             <div className="mt-2 p-2 bg-red-50 text-red-700 text-[10px] rounded border border-red-100">
-                                Error completing sale.
+                                <p className="font-bold">Error completing sale:</p>
+                                <ul className="list-disc pl-4 mt-1">
+                                    {Object.entries(errors).map(([key, error]) => (
+                                        <li key={key}>{key}: {error}</li>
+                                    ))}
+                                </ul>
                             </div>
                         )}
                     </div>

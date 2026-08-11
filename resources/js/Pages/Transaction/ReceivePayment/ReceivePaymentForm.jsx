@@ -107,7 +107,11 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
             }
 
             const totalApplied = updated.reduce((sum, item) => sum + (parseFloat(String(item.applied).replace(/,/g, '')) || 0), 0);
-            setData("amountReceived", totalApplied.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            
+            // Only increase amountReceived to cover the checked invoices, never decrease it automatically
+            if (totalApplied > amountReceivedVal) {
+                setData("amountReceived", totalApplied.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            }
 
             return updated;
         });
@@ -140,7 +144,11 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
             inv.checked = parsed > 0;
 
             const totalApplied = updated.reduce((sum, item) => sum + (parseFloat(String(item.applied).replace(/,/g, '')) || 0), 0);
-            setData("amountReceived", totalApplied.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            const amountReceivedVal = parseFloat(String(data.amountReceived).replace(/,/g, '')) || 0;
+
+            if (totalApplied > amountReceivedVal) {
+                setData("amountReceived", totalApplied.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            }
 
             return updated;
         });
@@ -203,7 +211,9 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
             });
 
             const totalApplied = updated.reduce((sum, item) => sum + (parseFloat(String(item.applied).replace(/,/g, '')) || 0), 0);
-            setData("amountReceived", totalApplied.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            if (totalApplied > amountReceivedVal) {
+                setData("amountReceived", totalApplied.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            }
 
             return updated;
         });
