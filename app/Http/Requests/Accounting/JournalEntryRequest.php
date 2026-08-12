@@ -19,6 +19,10 @@ class JournalEntryRequest extends FormRequest
             'lines.*.account_id' => 'required|exists:chart_of_accs,id',
             'lines.*.debit' => 'nullable|numeric',
             'lines.*.credit' => 'nullable|numeric',
+            'lines.*.fc_currency_id' => 'nullable|integer',
+            'lines.*.fc_debit' => 'nullable|numeric',
+            'lines.*.fc_credit' => 'nullable|numeric',
+            'lines.*.exchange_rate' => 'nullable|numeric',
         ];
     }
 }

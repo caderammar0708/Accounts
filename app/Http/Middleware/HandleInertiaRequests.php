@@ -69,21 +69,26 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $companySetting = class_exists(\App\Models\CompanySetting::class) ? \App\Models\CompanySetting::current() : null;
+        $userCompany = $request->user()?->currentCompany();
+
         return [
             ...parent::share($request),
             'auth' => [
                 'user'    => $request->user(),
-                'company' => $request->user()?->currentCompany(),
-                'pos_layout_enabled'      => class_exists(\App\Models\CompanySetting::class) ? (bool) \App\Models\CompanySetting::first()?->pos_layout_enabled : false,
-                'warranties_enabled'      => class_exists(\App\Models\CompanySetting::class) ? (bool) \App\Models\CompanySetting::first()?->warranty_layout_enabled : false,
-                'job_enabled'             => class_exists(\App\Models\CompanySetting::class) ? (bool) \App\Models\CompanySetting::first()?->job_layout_enabled : false,
-                'customer_layout_modal'      => class_exists(\App\Models\CompanySetting::class) ? (bool) \App\Models\CompanySetting::first()?->customer_layout_modal : false,
-                'reports_display_as_buttons' => class_exists(\App\Models\CompanySetting::class) ? ((\App\Models\CompanySetting::first()?->reports_display_as_buttons) ?? true) : true,
-                'vehicles_enabled'           => class_exists(\App\Models\CompanySetting::class) ? ((\App\Models\CompanySetting::first()?->vehicles_enabled) ?? true) : true,
-                'currency_prefix'         => $request->user()?->currentCompany()?->home_currency_prefix ?? '',
-                'financial_year_start_month' => class_exists(\App\Models\CompanySetting::class) ? (\App\Models\CompanySetting::first()?->fin_year_start ?? 'January') : 'January',
-                'books_lock_date'         => class_exists(\App\Models\CompanySetting::class) ? (\App\Models\CompanySetting::first()?->books_lock_date) : null,
-                'has_books_pin'           => class_exists(\App\Models\CompanySetting::class) ? !empty(\App\Models\CompanySetting::first()?->books_lock_pin) : false,
+                'company' => $userCompany,
+                'pos_layout_enabled'      => (bool) $companySetting?->pos_layout_enabled,
+                'warranties_enabled'      => (bool) $companySetting?->warranty_layout_enabled,
+                'job_enabled'             => (bool) $companySetting?->job_layout_enabled,
+                'customer_layout_modal'      => (bool) $companySetting?->customer_layout_modal,
+                'reports_display_as_buttons' => $companySetting?->reports_display_as_buttons ?? true,
+                'vehicles_enabled'           => $companySetting?->vehicles_enabled ?? true,
+                'currency_prefix'         => $companySetting?->homeCurrency?->symbol ?? $userCompany?->home_currency_prefix ?? 'Rs.',
+                'financial_year_start_month' => $companySetting?->fin_year_start ?? 'January',
+                'multi_currency_enabled' => (bool) $companySetting?->multi_currency_enabled,
+                'home_currency_id' => $companySetting?->home_currency_id,
+                'books_lock_date'         => $companySetting?->books_lock_date,
+                'has_books_pin'           => !empty($companySetting?->books_lock_pin),
             ],
             'appName' => config('app.name'),
             'flash' => [

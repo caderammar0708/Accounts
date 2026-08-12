@@ -20,7 +20,19 @@ class CustomerController extends Controller
 
     public function index(Request $request)
     {
-        $customers = Customer::orderBy('display_name')->get();
+        $arAccountIds = \App\Models\Accounting\ChartOfAcc::where('sub_type', 'accounts-receivable')->pluck('id');
+
+        $customers = Customer::select('customers.*')
+            ->addSelect([
+                'debits_sum' => \App\Models\Accounting\JournalEntryLine::selectRaw('SUM(debit)')
+                    ->whereColumn('payee_id', 'customers.id')
+                    ->whereIn('chart_of_acc_id', $arAccountIds),
+                'credits_sum' => \App\Models\Accounting\JournalEntryLine::selectRaw('SUM(credit)')
+                    ->whereColumn('payee_id', 'customers.id')
+                    ->whereIn('chart_of_acc_id', $arAccountIds)
+            ])
+            ->orderBy('display_name')
+            ->get();
         if ($request->wantsJson()) {
             return response()->json($customers);
         }

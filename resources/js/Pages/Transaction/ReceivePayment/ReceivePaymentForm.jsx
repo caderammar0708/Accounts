@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm, Head, router, usePage } from "@inertiajs/react";
 import axios from "axios";
 import TransactionLayout from "@/TransactionLayout/TransactionLayout";
@@ -238,17 +238,17 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
     const amountReceivedVal = parseFloat(String(data.amountReceived).replace(/,/g, '')) || 0;
     const amountToCredit = Math.max(0, amountReceivedVal - amountToApply);
 
-    const fetchCustomers = (search = "") => {
+    const fetchCustomers = useCallback((search = "") => {
         axios.get(route('api.payees', { search, type: 'Customer' })).then(res => {
             setCustomerOptions(res.data);
         });
-    };
+    }, []);
 
-    const fetchAccounts = (search = "") => {
+    const fetchAccounts = useCallback((search = "") => {
         axios.get(route('api.accounts', { search })).then(res => {
             setAccountOptions(res.data);
         });
-    };
+    }, []);
 
     useEffect(() => {
         fetchCustomers();

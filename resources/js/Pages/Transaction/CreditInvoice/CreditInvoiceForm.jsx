@@ -339,7 +339,7 @@ export default function CreditInvoiceForm({
 
         method(url, {
             preserveScroll: true,
-            preserveState: action === 'save',
+            preserveState: actionType === 'save',
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
@@ -353,13 +353,13 @@ export default function CreditInvoiceForm({
                     setSavedEntryId(newId);
                 }
 
-                if (action === 'close') {
+                if (actionType === 'close') {
                     if (typeof onClose === 'function') {
                         onClose();
-                    } 
+                    }
                 }
 
-                if (action === 'new') {
+                if (actionType === 'new') {
                     setSavedEntryId(null);
                     const num = parseInt(String(currentNo).replace(/[^0-9]/g, '')) || 1000;
                     const nextNo = String(num + 1).padStart(4, '0');
@@ -412,7 +412,7 @@ export default function CreditInvoiceForm({
                 setIsDirty(true);
             }}
         >
-            <Head title={`Credit CreditInvoice ${data.invoiceNo}`} />
+            <Head title={`Credit Invoice ${data.invoiceNo}`} />
             <div className="py-6 px-1 space-y-8">
                 {/* ROW 1: Customer & Email & Balance */}
                 <div className="flex items-start justify-between gap-8">
@@ -642,9 +642,27 @@ export default function CreditInvoiceForm({
                             {parseFloat(String(totalAmount || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </span>
                     </div>
+
+                    {/* Payments List */}
+                    {invoice?.payments && invoice.payments.length > 0 && (
+                        <div className="w-full mt-2 pt-3 border-t border-slate-200">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Payments Applied</span>
+                            {invoice.payments.map((payment, idx) => (
+                                <div key={idx} className="flex justify-between items-center w-full mb-1">
+                                    <a href={route('receive-payment.edit', payment.id)} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+                                        Receive Payment # {payment.reference} ({formatDate(payment.date, dateFormat)})
+                                    </a>
+                                    <span className="text-xs font-black text-slate-700 flex items-center gap-1">
+                                        <span className="text-[10px] font-bold text-slate-400">{currencyPrefix}</span>
+                                        {parseFloat(payment.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
-            <TermModal 
+            <TermModal
                 isOpen={isTermModalOpen}
                 onClose={() => setIsTermModalOpen(false)}
                 onSave={handleAddTerm}

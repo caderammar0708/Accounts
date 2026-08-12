@@ -1,0 +1,82 @@
+{
+  "aaass": {
+    "prod": {
+      "APP_URL": "https://aaass.jbooks.cloud/",
+      "SSO_CLIENT_SECRET": "cb5fff85ed424dc538d7ca450bfd545f",
+      "DB_DATABASE": "u487520070_aaass",
+      "DB_USERNAME": "u487520070_aaass",
+      "DB_PASSWORD": "Grow2025@"
+    },
+    "local": {
+      "APP_URL": "http://127.0.0.1:8000/",
+      "SSO_CLIENT_SECRET": "cb5fff85ed424dc538d7ca450bfd545f",
+      "DB_DATABASE": "jbooks_aaass",
+      "DB_USERNAME": "root",
+      "DB_PASSWORD": ""
+    }
+  },
+  "hallam-city-campus": {
+    "prod": {
+      "APP_URL": "https://halam.jbooks.cloud/",
+      "SSO_CLIENT_SECRET": "ff8dd8a7344892cb6b881b97bcc955ef",
+      "DB_DATABASE": "u487520070_halam",
+      "DB_USERNAME": "u487520070_halam",
+      "DB_PASSWORD": "Grow2025@"
+    },
+    "local": {
+      "APP_URL": "http://127.0.0.1:8000/",
+      "SSO_CLIENT_SECRET": "ff8dd8a7344892cb6b881b97bcc955ef",
+      "DB_DATABASE": "jbooks_halam",
+      "DB_USERNAME": "root",
+      "DB_PASSWORD": ""
+    }
+  },
+  "jobalign": {
+    "prod": {
+      "APP_URL": "http://jobalign.jbooks.cloud/",
+      "SSO_CLIENT_SECRET": "526454b4317fecf46a7550b4232b7bec",
+      "DB_DATABASE": "u487520070_jb_jobalign",
+      "DB_USERNAME": "u487520070_jb_jobalign",
+      "DB_PASSWORD": "Grow2025@"
+    },
+    "local": {
+      "APP_URL": "http://127.0.0.1:8000/",
+      "SSO_CLIENT_SECRET": "526454b4317fecf46a7550b4232b7bec",
+      "DB_DATABASE": "jbooks_jobalign",
+      "DB_USERNAME": "root",
+      "DB_PASSWORD": ""
+    }
+  },
+  "steel-audit": {
+    "prod": {
+      "APP_URL": "https://steel-audit.jbooks.cloud/",
+      "SSO_CLIENT_SECRET": "ecb1dff657582ef41b700904c12630c9",
+      "DB_DATABASE": "u487520070_steel_audit",
+      "DB_USERNAME": "u487520070_steel_audit",
+      "DB_PASSWORD": "Grow2025@"
+    },
+    "local": {
+      "APP_URL": "http://127.0.0.1:8000/",
+      "SSO_CLIENT_SECRET": "ecb1dff657582ef41b700904c12630c9",
+      "DB_DATABASE": "jbooks_steel_audit",
+      "DB_USERNAME": "root",
+      "DB_PASSWORD": ""
+    }
+  },
+  "tgl-kandy": {
+    "prod": {
+      "APP_URL": "https://tgl-kandy.jbooks.cloud/",
+      "SSO_CLIENT_SECRET": "526454b4317fecf46a7550b42347bbec",
+      "DB_DATABASE": "u487520070_tgl_kandy",
+      "DB_USERNAME": "u487520070_tgl_kandy",
+      "DB_PASSWORD": "Grow2025@"
+    },
+    "local": {
+      "APP_URL": "http://127.0.0.1:8000/",
+      "SSO_CLIENT_SECRET": "526454b4317fecf46a7550b42347bbec",
+      "DB_DATABASE": "jbooks_tgl_kandy",
+      "DB_USERNAME": "root",
+      "DB_PASSWORD": ""
+    }
+  }
+}

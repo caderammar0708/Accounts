@@ -15,14 +15,21 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('receipt_no')->nullable();
             $table->uuid('customer_id');
-            $table->foreignId('vehicle_id')->nullable()->constrained('vehicles')->onDelete('set null');
+            $table->unsignedBigInteger('vehicle_id')->nullable();
             $table->string('email')->nullable();
             $table->date('receipt_date');
             $table->uuid('payment_method_id')->nullable();
+            $table->date('check_date')->nullable();
+            $table->string('check_number')->nullable();
             $table->uuid('deposit_to_account_id')->nullable();
             $table->decimal('total_amount', 15, 2)->default(0);
+            $table->string('discount_type')->default('percent');
+            $table->decimal('discount_value', 12, 2)->default(0);
             $table->text('memo')->nullable();
             $table->text('statement_message')->nullable();
+            $table->string('prefix')->nullable();
+            $table->string('memo_on_statement')->nullable();
+            $table->foreignUuid('created_by')->constrained('users');
             $table->string('status')->default('draft');
             $table->timestamps();
 

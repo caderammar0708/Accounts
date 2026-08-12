@@ -16,11 +16,11 @@ class ReceivePaymentAllocation extends Model
 
     public function invoice()
     {
-        return $this->belongsTo(CreditInvoice::class);
+        return $this->belongsTo(CreditInvoice::class, 'credit_invoice_id');
     }
 
     public function payment()
     {
-        return $this->belongsTo(ReceivePayment::class);
+        return $this->belongsTo(ReceivePayment::class, 'receive_payment_id');
     }
 }

@@ -23,6 +23,11 @@ class CreditInvoice extends Model implements Auditable
         return $this->hasMany(CreditInvoiceItem::class);
     }
 
+    public function allocations()
+    {
+        return $this->hasMany(ReceivePaymentAllocation::class);
+    }
+
     public function customer()
     {
         return $this->belongsTo(Customer::class);
@@ -30,7 +35,7 @@ class CreditInvoice extends Model implements Auditable
 
     public function company()
     {
-        return $this->belongsTo(Company::class);
+        return $this->belongsTo(\App\Models\Company::class);
     }
     public function journalEntry()
     {

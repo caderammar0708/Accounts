@@ -10,6 +10,21 @@ class Company extends Model
 {
     use HasFactory;
 
+    public static function current()
+    {
+        return once(fn() => \Illuminate\Support\Facades\Cache::rememberForever(
+            'active_company_' . \Illuminate\Support\Facades\DB::connection()->getDatabaseName(),
+            fn() => self::first()
+        ));
+    }
+
+    protected static function booted()
+    {
+        static::saved(function ($company) {
+            \Illuminate\Support\Facades\Cache::forget('active_company_' . \Illuminate\Support\Facades\DB::connection()->getDatabaseName());
+        });
+    }
+
     protected $fillable = [
         'company_name',
         'company_email',

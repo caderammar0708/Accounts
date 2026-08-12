@@ -31,22 +31,13 @@ const Toggle = ({ checked, onChange, label, description, disabled }) => (
     </label>
 );
 
-export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultType = 'asset', account = null, initialParentAccount = null }) {
+export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultType = 'asset', account = null, initialParentAccount = null, currencies = [], multiCurrencyEnabled, homeCurrencyId }) {
     const isEdit = !!account;
-    const { auth, currencies = [] } = usePage().props;
+    const { auth } = usePage().props;
     const company = auth?.company;
-    const multicurrencyEnabled = !!company?.multicurrency;
-    const defaultCurrency = company?.home_currency || company?.home_currency_prefix || '';
-    const currencyOptions = currencies.length
-        ? currencies
-        : [
-            { id: defaultCurrency || 'USD', code: defaultCurrency || 'USD', name: 'Company Currency' },
-            { id: 'USD', code: 'USD', name: 'US Dollar' },
-            { id: 'EUR', code: 'EUR', name: 'Euro' },
-            { id: 'GBP', code: 'GBP', name: 'British Pound' },
-            { id: 'INR', code: 'INR', name: 'Indian Rupee' },
-        ];
-
+    
+    const defaultCurrency = homeCurrencyId || '';
+    const currencyOptions = currencies;
 
     const [parentAccounts, setParentAccounts] = useState([]);
     const [nameDuplicateError, setNameDuplicateError] = useState('');
@@ -62,7 +53,7 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
         opening_balance_date: initialDate,
         description: '',
         is_active: true,
-        currency: defaultCurrency,
+        currency_id: defaultCurrency,
         is_subaccount: false,
         parent_id: '',
         is_locked: false,
@@ -88,7 +79,7 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
                     opening_balance_date: account.opening_balance_date || initialDate,
                     description: account.description || '',
                     is_active: !!account.is_active,
-                    currency: account.currency || defaultCurrency,
+                    currency_id: account.currency_id || defaultCurrency,
                     is_subaccount: !!account.parent_id,
                     parent_id: account.parent_id || '',
                     is_locked: !!account.is_locked,
@@ -366,20 +357,20 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
                     />
                 </div>
 
-                {multicurrencyEnabled && (
+                {multiCurrencyEnabled && (
                     <div className="pt-4 border-t border-slate-100">
                         <CommonInput
                             type="select"
                             label="Account Currency"
-                            value={data.currency}
-                            onChange={e => setData('currency', e.target.value)}
-                            error={errors.currency}
+                            value={data.currency_id}
+                            onChange={e => setData('currency_id', e.target.value)}
+                            error={errors.currency_id}
                             disabled={data.is_locked}
                         >
                             <option value="">Select Currency</option>
                             {currencyOptions.map((currency) => (
-                                <option key={currency.id || currency.code} value={currency.code || currency.id}>
-                                    {currency.code || currency.id} - {currency.name || currency.code}
+                                <option key={currency.id} value={currency.id}>
+                                    {currency.code} - {currency.name}
                                 </option>
                             ))}
                         </CommonInput>

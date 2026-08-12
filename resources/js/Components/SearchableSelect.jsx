@@ -84,11 +84,19 @@ const SearchableSelect = forwardRef(function SearchableSelect({
         }
     }, [isOpen]);
 
+    const onSearchRef = useRef(onSearch);
+    const fetchUrlRef = useRef(fetchUrl);
+
+    useEffect(() => {
+        onSearchRef.current = onSearch;
+        fetchUrlRef.current = fetchUrl;
+    }, [onSearch, fetchUrl]);
+
     useEffect(() => {
         if (!isOpen) return;
 
-        if (onSearch) {
-            const result = onSearch(search);
+        if (onSearchRef.current) {
+            const result = onSearchRef.current(search);
             if (result && typeof result.then === 'function') {
                 setIsAsyncMode(true);
                 result.then(data => setSearchResults(data || []));
@@ -98,14 +106,14 @@ const SearchableSelect = forwardRef(function SearchableSelect({
             } else {
                 setIsAsyncMode(false);
             }
-        } else if (fetchUrl) {
+        } else if (fetchUrlRef.current) {
             setIsAsyncMode(true);
-            const separator = fetchUrl.includes('?') ? '&' : '?';
-            axios.get(`${fetchUrl}${separator}search=${encodeURIComponent(search)}`)
+            const separator = fetchUrlRef.current.includes('?') ? '&' : '?';
+            axios.get(`${fetchUrlRef.current}${separator}search=${encodeURIComponent(search)}`)
                 .then(res => setSearchResults(res.data || []))
                 .catch(() => setSearchResults([]));
         }
-    }, [search, isOpen, onSearch, fetchUrl]);
+    }, [search, isOpen]);
 
     useEffect(() => {
         const updatePosition = () => {

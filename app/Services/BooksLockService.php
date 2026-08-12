@@ -19,7 +19,7 @@ class BooksLockService
      */
     public static function check($date, ?string $providedPin = null): void
     {
-        $settings = CompanySetting::first();
+        $settings = class_exists(CompanySetting::class) ? CompanySetting::current() : null;
         if (!$settings || !$settings->books_lock_date) {
             return; // No lock active
         }

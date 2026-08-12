@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title }} {{ $documentNo ?? '' }}</title>
+    <link rel="icon" type="image/x-icon" href="{{ isset($company) && $company->logo_url ? $company->logo_url : asset('favicon.ico') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     @php
         $pageSetup = $pageSetup ?? [];
@@ -28,16 +29,20 @@
             }
             @page {
                 size: {{ $pageSize }};
-                margin: {{ $marginTop }}mm {{ $marginRight }}mm {{ $marginBottom }}mm {{ $marginLeft }}mm;
+                margin: 0; /* Removes default browser headers and footers */
             }
             .no-print {
                 display: none !important;
             }
             .invoice-box {
                 box-shadow: none !important;
-                padding: 0 !important;
                 margin: 0 !important;
                 max-width: 100% !important;
+                width: 100% !important;
+                /* Note: padding is NOT set to 0 here, so the custom margins apply! */
+            }
+            .letterhead-img {
+                position: fixed !important;
             }
         }
         body {
@@ -47,15 +52,12 @@
             color: var(--text-color);
         }
         .invoice-box {
-            max-width: 800px;
+            width: 210mm;
+            min-height: 297mm;
+            box-sizing: border-box;
             margin: auto;
-            padding: 40px;
+            padding: {{ $marginTop ?: '15' }}mm {{ $marginRight ?: '15' }}mm {{ $marginBottom ?: '15' }}mm {{ $marginLeft ?: '15' }}mm;
             background-color: {{ $pageSetup['background_color'] ?? '#fff' }};
-            @if(isset($pageSetup['background_image']) && $pageSetup['background_image'])
-            background-image: url('{{ $pageSetup['background_image'] }}');
-            background-size: cover;
-            background-position: center;
-            @endif
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
             font-size: 14px;
             line-height: 24px;
@@ -93,8 +95,26 @@
         $allVars = get_defined_vars();
     @endphp
 
-    <div class="invoice-box">
-        
+    @if(isset($printSetting) && $printSetting->html_template)
+        @php
+            $html = $printSetting->html_template;
+            
+            // Simple token replacement
+            $html = str_replace('{{ invoice_no }}', $documentNo ?? '', $html);
+            $html = str_replace('{{ title }}', $title ?? '', $html);
+            $html = str_replace('{{ date }}', isset($documentDate) ? $documentDate : date('Y-m-d'), $html);
+            // More tokens can be added here
+        @endphp
+        {!! $html !!}
+    @else
+    <div class="invoice-box relative z-10" style="position: relative;">
+        @if(isset($printSetting) && $printSetting->letterhead_image_path)
+            <!-- Absolute on screen (contained), fixed on print (repeats) -->
+            <img src="{{ asset('storage/' . $printSetting->letterhead_image_path) }}" 
+                 alt="" 
+                 class="letterhead-img"
+                 style="position: absolute; top: 0; left: 0; width: 100%; z-index: -1;">
+        @endif
         <!-- Header Section -->
         <div class="flex justify-between items-start border-b border-gray-200 pb-8 mb-8">
             <div class="w-1/2">
@@ -133,6 +153,7 @@
         </div>
         
     </div>
+    @endif
 
     <script>
         window.onload = function() {

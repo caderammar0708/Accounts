@@ -41,6 +41,7 @@ export default function TransactionLayout({
                 copyRoute: 'invoice',
                 deleteRoute: 'invoice.destroy',
                 printRoute: 'invoice.print',
+                documentType: 'invoice',
                 recordId: props.invoice?.id,
                 listRoute: 'dashboard'
             };
@@ -50,6 +51,7 @@ export default function TransactionLayout({
                 copyRoute: 'credit-invoice.create',
                 deleteRoute: 'credit-invoice.destroy',
                 printRoute: 'credit-invoice.print',
+                documentType: 'invoice',
                 recordId: props.invoice?.id,
                 listRoute: 'dashboard'
             };
@@ -59,6 +61,7 @@ export default function TransactionLayout({
                 copyRoute: 'bill',
                 deleteRoute: 'bill.destroy',
                 printRoute: 'bill.print',
+                documentType: 'bill',
                 recordId: props.bill?.id,
                 listRoute: 'dashboard'
             };
@@ -87,6 +90,7 @@ export default function TransactionLayout({
                 copyRoute: null,
                 deleteRoute: 'pay-bill.destroy',
                 printRoute: 'pay-bill.print',
+                documentType: 'payment_voucher',
                 recordId: props.payment?.id || props.journalEntry?.id,
                 listRoute: 'dashboard'
             };
@@ -105,6 +109,7 @@ export default function TransactionLayout({
                 copyRoute: 'receive_payment',
                 deleteRoute: 'payment.destroy',
                 printRoute: 'payment.print',
+                documentType: 'payment_receipt',
                 recordId: props.payment?.id || props.expense?.id,
                 listRoute: 'dashboard'
             };
@@ -122,6 +127,7 @@ export default function TransactionLayout({
                 copyRoute: 'invoice-return',
                 deleteRoute: 'invoice-return.destroy',
                 printRoute: 'invoice-return.print',
+                documentType: 'invoice_return',
                 recordId: props.invoiceReturn?.id,
                 listRoute: 'dashboard'
             };
@@ -131,6 +137,7 @@ export default function TransactionLayout({
                 copyRoute: 'bill-return',
                 deleteRoute: 'bill-return.destroy',
                 printRoute: 'bill-return.print',
+                documentType: 'bill_return',
                 recordId: props.billReturn?.id,
                 listRoute: 'dashboard'
             };
@@ -172,6 +179,7 @@ export default function TransactionLayout({
                 copyRoute: null,
                 deleteRoute: 'receive-payment.destroy',
                 printRoute: 'receive-payment.print',
+                documentType: 'payment_receipt',
                 recordId: props.payment?.id,
                 listRoute: 'dashboard'
             };
@@ -306,6 +314,7 @@ export default function TransactionLayout({
                             copyRoute={resolvedMoreOptions.copyRoute}
                             deleteRoute={resolvedMoreOptions.deleteRoute}
                             printRoute={resolvedMoreOptions.printRoute}
+                            documentType={resolvedMoreOptions.documentType}
                             recordId={resolvedMoreOptions.recordId}
                             listRoute={resolvedMoreOptions.listRoute}
                         />
