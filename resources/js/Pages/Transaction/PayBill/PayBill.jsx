@@ -354,6 +354,8 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
                 setIsDirty(false);
                 setIsPinModalOpen(false);
                 setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
                 if (action === 'close') {
                     if (typeof onClose === 'function') {
                         onClose();

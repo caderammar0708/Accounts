@@ -154,6 +154,8 @@ export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = 
                 setIsDirty(false);
                 setIsPinModalOpen(false);
                 setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.deposit?.id

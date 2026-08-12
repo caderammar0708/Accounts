@@ -223,6 +223,8 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
                 setIsDirty(false);
                 setIsPinModalOpen(false);
                 setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.billReturn?.id

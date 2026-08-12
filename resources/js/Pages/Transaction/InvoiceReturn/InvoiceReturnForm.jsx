@@ -228,6 +228,8 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
                 setIsDirty(false);
                 setIsPinModalOpen(false);
                 setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.invoiceReturn?.id

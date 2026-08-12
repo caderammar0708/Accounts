@@ -49,10 +49,6 @@ export default function PaymentForm({
     const [accountModalType, setAccountModalType] = useState('asset');
     const [addingItemRowIndex, setAddingItemRowIndex] = useState(null);
 
-    // Books Lock PIN Modal
-    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-    const [pendingAction, setPendingAction] = useState(null);
-
     // Fetch payees from API
     const fetchPayees = (search = "") => {
         axios.get(route('api.payees', { search })).then(res => {
@@ -130,13 +126,7 @@ export default function PaymentForm({
         books_pin: ''
     });
 
-    useEffect(() => {
-        if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED') {
-            setIsPinModalOpen(true);
-        } else if (errors.books_pin) {
-            setIsPinModalOpen(true);
-        }
-    }, [errors.books_pin]);
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
     const actionRef = useRef('save');
 
@@ -339,6 +329,10 @@ export default function PaymentForm({
             onSuccess: async (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.expense?.id

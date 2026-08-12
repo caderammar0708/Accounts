@@ -176,6 +176,8 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                 setIsDirty(false);
                 setIsPinModalOpen(false);
                 setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.deposit?.id

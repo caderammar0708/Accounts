@@ -38,10 +38,6 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
     const [isDirty, setIsDirty] = useState(false);
     const [savedEntryId, setSavedEntryId] = useState(receipt?.id || null);
 
-    // Books Lock PIN Modal
-    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-    const [pendingAction, setPendingAction] = useState(null);
-
     const { data, setData, post, patch, processing, errors, reset, clearErrors, transform } = useForm({
         customer: receipt?.customer || "",
         email: receipt?.email || "",
@@ -151,14 +147,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
         clearErrors();
     }, [receipt?.id]);
 
-    useEffect(() => {
-        if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED') {
-            setIsPinModalOpen(true);
-        } else if (errors.books_pin) {
-            // Re-open if invalid pin submitted
-            setIsPinModalOpen(true);
-        }
-    }, [errors.books_pin]);
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
     const COLUMNS = [
         {
@@ -293,6 +282,10 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.receipt?.id

@@ -142,6 +142,8 @@ export default function EditAdjustment({ items, accounts, adjustment }) {
             onSuccess: () => {
                 setIsPinModalOpen(false);
                 setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
             }
         });
     };

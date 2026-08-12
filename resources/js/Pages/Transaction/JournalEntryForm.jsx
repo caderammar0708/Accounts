@@ -25,9 +25,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
-    // Books Lock PIN Modal
-    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-    const [pendingAction, setPendingAction] = useState(null);
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock();
     const [booksPin, setBooksPin] = useState("");
     const [booksPinError, setBooksPinError] = useState(null);
 
@@ -273,6 +271,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
 
                 setIsPinModalOpen(false);
                 setPendingAction(null);
+                setBooksPin('');
                 setBooksPinError(null);
 
                 if (type === 'close') {

@@ -285,6 +285,8 @@ export default function POSIndex({ auth, items, paymentMethods, warrantyPolicies
                     setIsCheckoutModalOpen(false);
                     setIsPinModalOpen(false);
                     setPendingAction(null);
+                    clearErrors('books_pin');
+                    setData('books_pin', '');
                 },
                 preserveScroll: true
             });

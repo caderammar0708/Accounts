@@ -36,10 +36,6 @@ export default function CreditInvoiceForm({
 
     const [savedEntryId, setSavedEntryId] = useState(invoice?.id || null);
 
-    // Books Lock PIN Modal
-    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-    const [pendingAction, setPendingAction] = useState(null);
-
     const fetchPayees = async (search = "") => {
         const res = await axios.get(route('api.payees', { search, type: 'Customer' }));
         setCustomerOptions(res.data);
@@ -177,6 +173,8 @@ export default function CreditInvoiceForm({
         prefix: invoice?.prefix || '',
         books_pin: ''
     });
+
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
 
     useEffect(() => {
@@ -345,6 +343,10 @@ export default function CreditInvoiceForm({
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.invoice?.id;
                 if (newId && !savedEntryId) {
