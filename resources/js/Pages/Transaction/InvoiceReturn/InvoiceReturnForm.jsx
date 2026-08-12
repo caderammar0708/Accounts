@@ -8,6 +8,9 @@ import CommonInput from "@/Components/CommonInput";
 import QuickAddPayee from "@/Components/QuickAddPayee";
 import { showToast } from "@/Components/ToastNotification";
 import InventoryItemSidePanel from "@/Components/InventoryItemSidePanel";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import PinPromptModal from "@/Components/PinPromptModal";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = null }) {
     const company = auth.company;
@@ -83,6 +86,7 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
         statementMessage: invoiceReturn?.statementMessage || "",
         prefix: invoiceReturn?.prefix || "",
         action: 'save',
+        books_pin: '',
         items: invoiceReturn?.items ? invoiceReturn.items.map(i => ({
             ...i,
             qty: i.qty ? parseFloat(i.qty).toLocaleString('en-US', { maximumFractionDigits: 4 }) : "1",
@@ -93,6 +97,8 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
             { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
         ],
     });
+
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
     useEffect(() => {
         if (invoiceReturn) {
@@ -183,14 +189,24 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
         setIsDirty(true);
     };
 
-    const handleSave = (action = 'save') => {
+    const handleSave = (action = 'save', pinOverride = null) => {
+        const isEdit = !!(invoiceReturn?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.date, auth?.books_lock_date, isEdit)) {
+            actionRef.current = action;
+            setPendingAction(action);
+            setIsPinModalOpen(true);
+            return;
+        }
+
         actionRef.current = action;
+        setPendingAction(action);
 
         const currentId = savedEntryId || invoiceReturn?.id;
         
         transform((data) => ({
             ...data,
             action: action,
+            books_pin: pinOverride !== null ? pinOverride : data.books_pin,
             items: data.items
                 .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount && item.amount !== "0.00" && item.amount !== "0"))
                 .map(item => ({
@@ -210,6 +226,8 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.invoiceReturn?.id
@@ -248,7 +266,12 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
     return (
         <TransactionLayout
             historyType="invoice_return"
-            title={`Invoice Return #${data.reference}`}
+            title={
+                <div className="flex items-center">
+                    Invoice Return #{data.reference}
+                    <BooksLockIndicator date={data.date} lockDate={auth?.books_lock_date} isEdit={!!(invoiceReturn?.id || savedEntryId)} />
+                </div>
+            }
             amount={totalAmount}
             processing={processing}
             dirty={isDirty}
@@ -462,6 +485,21 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
                         setAddingItemRowIndex(null);
                     });
                 }}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
 
         </TransactionLayout>

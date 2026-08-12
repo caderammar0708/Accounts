@@ -42,6 +42,8 @@ class PayBillController extends Controller
             'bills.*.amount' => 'required|numeric|min:0',
         ]);
 
+        $this->checkBooksLock($request->paymentDate, $request->books_pin);
+
         try {
             $journalEntry = DB::transaction(function() use ($request, $validated) {
                 $amount = (float) $validated['amount'];
@@ -182,6 +184,9 @@ class PayBillController extends Controller
             'bills.*.amount' => 'required|numeric|min:0',
         ]);
 
+        $this->checkBooksLock($journalEntry->date, $request->books_pin);
+        $this->checkBooksLock($request->paymentDate, $request->books_pin);
+
         try {
             DB::transaction(function() use ($request, $validated, $journalEntry) {
                 $amount = (float) $validated['amount'];
@@ -286,6 +291,7 @@ class PayBillController extends Controller
 
     public function destroy(JournalEntry $journalEntry)
     {
+        $this->checkBooksLock($journalEntry->date, request()->input('books_pin'));
         $chartOfAccountId = $journalEntry->lines->first()?->chart_of_acc_id
             ?? $journalEntry->lines->first()?->chart_of_account_id
             ?? $journalEntry->lines->first()?->account_id;

@@ -14,6 +14,7 @@ import { showToast } from "@/Components/ToastNotification";
 import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function PaymentForm({
     auth,
@@ -310,6 +311,14 @@ export default function PaymentForm({
     };
 
     const handleSave = (action = 'save', pinOverride = null) => {
+        const isEdit = !!(expense?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.paymentDate, auth?.books_lock_date, isEdit)) {
+            actionRef.current = action;
+            setPendingAction(action);
+            setIsPinModalOpen(true);
+            return;
+        }
+
         actionRef.current = action;
         setPendingAction(action);
         const currentRef = data.ref;

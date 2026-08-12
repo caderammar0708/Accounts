@@ -142,7 +142,7 @@ export default function MoreOptionsMenu({
                 }}
                 onSubmit={(pin) => {
                     setBooksPin(pin);
-                    setTimeout(() => handleDeleteSubmit(pin), 0);
+                    handleDeleteSubmit(pin);
                 }}
                 errorMessage={booksPinError}
             />

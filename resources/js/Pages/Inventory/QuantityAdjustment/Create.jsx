@@ -4,6 +4,9 @@ import { useState } from 'react';
 import CommonButton from '@/Components/CommonButton';
 import SearchableSelect from '@/Components/SearchableSelect';
 import CommonInput from '@/Components/CommonInput';
+import BooksLockIndicator from '@/Components/BooksLockIndicator';
+import PinPromptModal from '@/Components/PinPromptModal';
+import { useBooksLock } from '@/Hooks/useBooksLock';
 
 const FormSection = ({ title, children, show = true }) => {
     if (!show) return null;
@@ -26,8 +29,11 @@ export default function CreateAdjustment({ items, accounts, nextReference }) {
         memo: '',
         items: [
             { id: 1, item_id: '', sku: '', description: '', qty_on_hand: 0, new_qty: 0, change_in_qty: 0 }
-        ]
+        ],
+        books_pin: ''
     });
+
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
     const reasons = [
         { value: 'Damaged Goods', label: 'Damaged Goods' },
@@ -103,11 +109,13 @@ export default function CreateAdjustment({ items, accounts, nextReference }) {
         setData('items', newItems);
     };
 
-    const submit = (e, close = false) => {
-        e.preventDefault();
+    const submit = (e, close = false, pinOverride = null) => {
+        if (e && e.preventDefault) e.preventDefault();
+        setPendingAction(close);
 
         transform((data) => ({
             ...data,
+            books_pin: pinOverride !== null ? pinOverride : data.books_pin,
             items: data.items.filter(item => item.item_id !== '').map(item => ({
                 ...item,
                 new_qty: parseFloat(item.new_qty) || 0,
@@ -119,6 +127,8 @@ export default function CreateAdjustment({ items, accounts, nextReference }) {
 
         post(route('inventory-adjustment.store', { action: close ? 'new' : 'save' }), {
             onSuccess: () => {
+                setIsPinModalOpen(false);
+                setPendingAction(null);
                 if (close) {
                     setData({
                         ...data,
@@ -137,8 +147,9 @@ export default function CreateAdjustment({ items, accounts, nextReference }) {
             <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto ">
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
-                        <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                        <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center">
                             Inventory Quantity Adjustment #{data.reference_number}
+                            <BooksLockIndicator date={data.adjustment_date} lockDate={auth?.books_lock_date} isEdit={false} />
                         </h1>
                     </div>
 
@@ -291,6 +302,20 @@ export default function CreateAdjustment({ items, accounts, nextReference }) {
                     </div>
                 </div>
             </div>
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    submit(null, pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
+            />
         </AuthenticatedLayout>
     );
 }

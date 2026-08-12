@@ -9,6 +9,9 @@ import CommonInput from "@/Components/CommonInput";
 import QuickAddPayee from "@/Components/QuickAddPayee";
 import QuickAddAccount from "@/Components/QuickAddAccount";
 import { showToast } from "@/Components/ToastNotification";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import PinPromptModal from "@/Components/PinPromptModal";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function BankDepositForm({ auth, nextRef = "", deposit = null, onModeChange = null, onClose = null }) {
     const company = auth.company;
@@ -99,8 +102,11 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
         cashBackMemo: deposit?.cashBackMemo || "",
         cashBackAmount: deposit?.cashBackAmount ? parseFloat(deposit.cashBackAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00",
         memo: deposit?.memo || "",
-        action: 'save'
+        action: 'save',
+        books_pin: ''
     });
+
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
     useEffect(() => {
         if (!deposit && paymentMethodOptions.length > 0) {
@@ -133,7 +139,7 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
             });
         }
         clearErrors();
-    }, [deposit]);
+    }, [deposit?.id]);
 
     const totalAmount = data.items.reduce((sum, it) => sum + (parseFloat(String(it.amount).replace(/,/g, '')) || 0), 0).toFixed(2);
     const cashBackAmount = parseFloat(String(data.cashBackAmount).replace(/,/g, '')) || 0;
@@ -147,8 +153,20 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
         setIsDirty(true);
     };
 
-    const handleSave = (action = 'save') => {
-        transform((d) => ({ ...d, action }));
+    const handleSave = (action = 'save', pinOverride = null) => {
+        const isEdit = !!(deposit?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.depositDate, auth?.books_lock_date, isEdit)) {
+            setPendingAction(action);
+            setIsPinModalOpen(true);
+            return;
+        }
+
+        setPendingAction(action);
+        transform((d) => ({
+            ...d,
+            action,
+            books_pin: pinOverride !== null ? pinOverride : d.books_pin,
+        }));
         const url = deposit?.id ? route('bank-deposit.update', deposit.id) : route('bank-deposit.store');
         const method = deposit?.id ? patch : post;
 
@@ -156,6 +174,8 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
             onSuccess: async (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.deposit?.id
@@ -204,7 +224,12 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
     return (
         <TransactionLayout
             historyType="bank_deposit"
-            title={deposit?.id ? `Edit Bank Deposit #${data.depositNo}` : `Bank Deposit #${data.depositNo}`}
+            title={
+                <div className="flex items-center">
+                    {deposit?.id ? `Edit Bank Deposit #${data.depositNo}` : `Bank Deposit #${data.depositNo}`}
+                    <BooksLockIndicator date={data.depositDate} lockDate={auth?.books_lock_date} isEdit={!!(deposit?.id || savedEntryId)} />
+                </div>
+            }
             amount={parseFloat(totalAmount)}
             processing={processing}
             dirty={isDirty}
@@ -369,6 +394,21 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                     setAccountModalTarget(null);
                     setAccountModalRowIndex(null);
                 }}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
 
         </TransactionLayout>

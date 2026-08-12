@@ -28,6 +28,7 @@ class BankDepositController extends Controller
     public function store(BankDepositRequest $request)
     {
         $validated = $request->validated();
+        \App\Services\BooksLockService::check($request->depositDate, $request->books_pin);
 
         DB::transaction(function() use ($request) {
             $items = collect($request->items)->filter(fn($i) => (float)str_replace(',', '', $i['amount']) > 0)->values()->all();
@@ -137,6 +138,8 @@ class BankDepositController extends Controller
     public function update(BankDepositRequest $request, JournalEntry $journalEntry)
     {
         $validated = $request->validated();
+        \App\Services\BooksLockService::check($journalEntry->date, $request->books_pin);
+        \App\Services\BooksLockService::check($request->depositDate, $request->books_pin);
         $deposit = BankDeposit::find($journalEntry->transactionable_id);
 
         DB::transaction(function() use ($request, $deposit, $journalEntry) {
@@ -213,6 +216,7 @@ class BankDepositController extends Controller
 
     public function destroy(JournalEntry $journalEntry)
     {
+        \App\Services\BooksLockService::check($journalEntry->date, request()->input('books_pin'));
         DB::transaction(function () use ($journalEntry) {
             $deposit = BankDeposit::find($journalEntry->transactionable_id);
             if ($deposit) {

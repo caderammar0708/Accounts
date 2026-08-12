@@ -9,6 +9,7 @@ import QuickAddAccount from "@/Components/QuickAddAccount";
 import { Head, usePage, router } from "@inertiajs/react";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import { isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function JournalEntryForm({ journalEntry = null, nextJournalNo = "" }) {
     const isEditing = Boolean(journalEntry?.id);
@@ -221,6 +222,13 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
     };
 
     const handleSave = (type = 'save', pinOverride = null) => {
+        const isEdit = !!(journalEntry?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(form.date, auth?.books_lock_date, isEdit)) {
+            setPendingAction(type);
+            setIsPinModalOpen(true);
+            return;
+        }
+
         if (Math.abs(totals.debit - totals.credit) > 0.001) {
             alert("Debits and Credits must balance to save this entry.");
             return;

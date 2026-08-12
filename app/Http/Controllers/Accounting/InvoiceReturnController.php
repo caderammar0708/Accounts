@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 
 class InvoiceReturnController extends Controller
 {
+    use \App\Traits\AccountingControllerTrait;
     public function create(Request $request)
     {
         if ($copyId = $request->query('copy')) {
@@ -64,6 +65,7 @@ class InvoiceReturnController extends Controller
     public function store(InvoiceReturnRequest $request)
     {
         $validated = $request->validated();
+        $this->checkBooksLock($request->date, $request->books_pin);
 
         try {
             $journalEntry = DB::transaction(function() use ($request) {
@@ -195,7 +197,9 @@ class InvoiceReturnController extends Controller
 
     public function update(InvoiceReturnRequest $request, JournalEntry $journalEntry)
     {
-        $request->validated();
+        $validated = $request->validated();
+        $this->checkBooksLock($journalEntry->date, $request->books_pin);
+        $this->checkBooksLock($request->date, $request->books_pin);
 
         try {
             DB::transaction(function() use ($request, $journalEntry) {
@@ -291,6 +295,7 @@ class InvoiceReturnController extends Controller
 
     public function destroy(JournalEntry $journalEntry)
     {
+        $this->checkBooksLock($journalEntry->date, request()->input('books_pin'));
         $chartOfAccountId = $journalEntry->lines->first()?->chart_of_acc_id 
             ?? $journalEntry->lines->first()?->chart_of_account_id 
             ?? $journalEntry->lines->first()?->account_id;

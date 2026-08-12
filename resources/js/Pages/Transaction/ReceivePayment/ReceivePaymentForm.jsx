@@ -12,6 +12,7 @@ import CommonButton from "@/Components/CommonButton";
 import QuickAddAccount from "@/Components/QuickAddAccount";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function ReceivePaymentForm({ paymentMethods = [], payment = null, nextPaymentNo = "" }) {
     const { auth } = usePage().props;
@@ -339,6 +340,13 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
     }, [errors.books_pin]);
 
     const submit = (action = 'save', pinOverride = null) => {
+        const isEdit = !!(payment?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.paymentDate, auth?.books_lock_date, isEdit)) {
+            setPendingAction(action);
+            setIsPinModalOpen(true);
+            return;
+        }
+
         setPendingAction(action);
         const currentId = savedEntryId || payment?.id;
         const url = currentId ? route('receive-payment.update', currentId) : route('receive-payment.store');

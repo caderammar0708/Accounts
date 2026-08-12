@@ -73,6 +73,7 @@ class ChequeDepositController extends Controller
     public function store(ChequeDepositRequest $request)
     {
         $validated = $request->validated();
+        $this->checkBooksLock($request->depositDate, $request->books_pin);
 
         try {
             $journalEntry = DB::transaction(function () use ($request) {
@@ -216,6 +217,8 @@ class ChequeDepositController extends Controller
     public function update(ChequeDepositRequest $request, JournalEntry $journalEntry)
     {
         $validated = $request->validated();
+        $this->checkBooksLock($journalEntry->date, $request->books_pin);
+        $this->checkBooksLock($request->depositDate, $request->books_pin);
 
         try {
             DB::transaction(function () use ($request, $journalEntry) {
@@ -302,6 +305,8 @@ class ChequeDepositController extends Controller
      */
     public function destroy(JournalEntry $journalEntry)
     {
+        $this->checkBooksLock($journalEntry->date, request()->input('books_pin'));
+
         DB::transaction(function () use ($journalEntry) {
             $deposit = ChequeDeposit::find($journalEntry->transactionable_id);
 

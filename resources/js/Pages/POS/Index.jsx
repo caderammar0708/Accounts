@@ -8,7 +8,9 @@ import CheckoutModal from './Partials/CheckoutModal';
 import SearchableSelect from '@/Components/SearchableSelect';
 import Modal from '@/Components/Modal';
 import { showToast } from '@/Components/ToastNotification';
+import BooksLockIndicator from '@/Components/BooksLockIndicator';
 import PinPromptModal from '@/Components/PinPromptModal';
+import { useBooksLock, isBooksLocked } from '@/Hooks/useBooksLock';
 
 export default function POSIndex({ auth, items, paymentMethods, warrantyPolicies = [], nextReceiptNo, existingReceipt, defaultDepositAccount }) {
     const isEditMode = !!existingReceipt;
@@ -249,6 +251,11 @@ export default function POSIndex({ auth, items, paymentMethods, warrantyPolicies
     const confirmCheckout = (e, pinOverride = null) => {
         if (e && typeof e.preventDefault === 'function') {
             e.preventDefault();
+        }
+
+        if (isEditMode && !pinOverride && isBooksLocked(data.receipt_date, auth?.books_lock_date, true)) {
+            setIsPinModalOpen(true);
+            return;
         }
 
         // Merge cart into form data

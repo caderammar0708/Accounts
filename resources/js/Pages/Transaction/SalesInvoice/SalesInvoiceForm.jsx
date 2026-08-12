@@ -12,6 +12,7 @@ import QuickAddPaymentMethod from "@/Components/QuickAddPaymentMethod";
 import { showToast } from "@/Components/ToastNotification";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceiptNo = "", receipt = null }) {
     const company = auth.company;
@@ -257,6 +258,12 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
     };
 
     const handleSave = (actionType = 'save', pinOverride = null) => {
+        const isEdit = !!(receipt?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.receiptDate, auth?.books_lock_date, isEdit)) {
+            setPendingAction(actionType);
+            setIsPinModalOpen(true);
+            return;
+        }
 
         const currentNo = data.receiptNo;
 

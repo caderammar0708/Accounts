@@ -12,6 +12,7 @@ import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import axios from "axios";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function CreditInvoiceForm({
     auth,
@@ -310,6 +311,14 @@ export default function CreditInvoiceForm({
     };
 
     const handleSave = (actionType = 'save', pinOverride = null) => {
+        const isEdit = !!(invoice?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.invoiceDate, auth?.books_lock_date, isEdit)) {
+            actionRef.current = actionType;
+            setPendingAction(actionType);
+            setIsPinModalOpen(true);
+            return;
+        }
+
         actionRef.current = actionType;
         setPendingAction(actionType);
         const currentNo = data.invoiceNo;

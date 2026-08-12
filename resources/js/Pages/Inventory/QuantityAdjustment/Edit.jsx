@@ -5,6 +5,10 @@ import CommonButton from '@/Components/CommonButton';
 import SearchableSelect from '@/Components/SearchableSelect';
 import CommonInput from '@/Components/CommonInput';
 import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
+import BooksLockIndicator from '@/Components/BooksLockIndicator';
+import PinPromptModal from '@/Components/PinPromptModal';
+import { useBooksLock, isBooksLocked } from '@/Hooks/useBooksLock';
+import { usePage } from '@inertiajs/react';
 
 const FormSection = ({ title, children, show = true }) => {
     if (!show) return null;
@@ -27,8 +31,11 @@ export default function EditAdjustment({ items, accounts, adjustment }) {
         memo: adjustment.memo || '',
         items: adjustment.items?.length ? adjustment.items : [
             { id: Date.now(), item_id: '', sku: '', description: '', qty_on_hand: 0, new_qty: 0, change_in_qty: 0 }
-        ]
+        ],
+        books_pin: ''
     });
+
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -108,11 +115,22 @@ export default function EditAdjustment({ items, accounts, adjustment }) {
         setData('items', newItems);
     };
 
-    const submit = (e, actionType = 'save') => {
-        e.preventDefault();
+    const { auth } = usePage().props;
+
+    const submit = (e, actionType = 'save', pinOverride = null) => {
+        if (e && e.preventDefault) e.preventDefault();
+
+        if (!pinOverride && isBooksLocked(data.adjustment_date, auth?.books_lock_date, true)) {
+            setPendingAction(actionType);
+            setIsPinModalOpen(true);
+            return;
+        }
+
+        setPendingAction(actionType);
 
         transform((data) => ({
             ...data,
+            books_pin: pinOverride !== null ? pinOverride : data.books_pin,
             items: data.items.filter(item => item.item_id !== '').map(item => ({
                 ...item,
                 new_qty: parseFloat(item.new_qty) || 0,
@@ -120,7 +138,12 @@ export default function EditAdjustment({ items, accounts, adjustment }) {
             }))
         }));
 
-        patch(route('inventory-adjustment.update', { journalEntry: adjustment.id, action: actionType }));
+        patch(route('inventory-adjustment.update', { journalEntry: adjustment.id, action: actionType }), {
+            onSuccess: () => {
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+            }
+        });
     };
 
     const handleDelete = () => {
@@ -134,8 +157,9 @@ export default function EditAdjustment({ items, accounts, adjustment }) {
             <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto ">
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
-                        <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                        <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center">
                             Edit Inventory Quantity Adjustment #{data.reference_number}
+                            <BooksLockIndicator date={data.adjustment_date} lockDate={auth?.books_lock_date} isEdit={true} />
                         </h1>
                         <button
                             type="button"
@@ -309,6 +333,20 @@ export default function EditAdjustment({ items, accounts, adjustment }) {
                 onConfirm={handleDelete}
                 title="Delete Inventory Adjustment"
                 message="Are you sure you want to delete this inventory adjustment? This action cannot be undone and will reverse the item quantities and journal entry."
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    submit(null, pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
         </AuthenticatedLayout>
     );
