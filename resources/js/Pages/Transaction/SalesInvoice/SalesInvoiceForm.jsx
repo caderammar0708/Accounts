@@ -108,7 +108,6 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 discount_type: 'percent',
                 discount_value: '0',
                 prefix: '',
-                memo_on_statement: '',
                 action: 'save'
             });
 

@@ -89,24 +89,29 @@ export default function Sidebar({ navigation, user, onQuickMenuOpen }) {
                 <div>
                     <h3 className="px-3 mb-3 text-2xs font-bold text-slate-600 uppercase tracking-[.2em]">Menu</h3>
                     <div className="space-y-0.5">
-                        {navigation.map((item) => (
-                            (!item.adminOnly || user.role === 'admin') && (
+                        {navigation.map((item) => {
+                            const routeName = item.href ? item.href.split('/').pop() : '';
+                            const isActive = (item.activePattern && Array.isArray(item.activePattern) && item.activePattern.some(pattern => route().current(pattern))) ||
+                                (item.name === 'Dashboard' && route().current('dashboard')) ||
+                                (routeName && (route().current(`${routeName}.*`) || route().current(routeName) || route().current(`${routeName}.index`)));
+
+                            return (!item.adminOnly || user.role === 'admin') && (
                                 <Link
                                     key={`${item.name}-${item.href}`}
                                     href={item.href}
                                     onClick={item.onClick ? item.onClick : undefined}
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group ${route().current(item.href.split('/').pop()) || (item.name === 'Dashboard' && route().current('dashboard'))
-                                        ? 'bg-[#00713D] text-white shadow-md shadow-[#00713D]/20'
+                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group ${isActive
+                                        ? 'bg-white/10 text-white font-bold'
                                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                                         }`}
                                 >
-                                    <span className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md transition-colors ${route().current() === item.href ? 'text-white' : 'group-hover:text-white'}`}>
+                                    <span className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md transition-colors ${isActive ? 'text-white' : 'group-hover:text-white'}`}>
                                         <SidebarIcon name={item.icon} />
                                     </span>
                                     <span className="text-xs font-bold leading-none whitespace-nowrap">{item.name}</span>
                                 </Link>
-                            )
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </div>

@@ -43,14 +43,12 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
     const navigation = [
         { name: 'Dashboard', href: route('dashboard'), icon: 'dashboard' },
         ...(page.props.auth.pos_layout_enabled ? [{ name: 'POS Billing', href: route('pos.index'), icon: 'pos', isPos: true }] : []),
-        { name: 'Customer', href: route('customers.index'), icon: 'users' },
+        { name: 'Contacts', href: route('customers.index'), icon: 'users', activePattern: ['customers.*', 'suppliers.*', 'employees.*'] },
         { name: 'Vehicles', href: route('vehicles.index'), icon: 'vehicle' },
         ...(page.props.auth.job_enabled ? [{ name: 'Jobs', href: route('job-cards.index'), icon: 'job', isJob: true }] : []),
         ...(page.props.auth.warranties_enabled ? [{ name: 'Warranties', href: route('warranties.index'), icon: 'warranty', isWarranty: true }] : []),
         { name: 'Products & Services', href: route('items.index'), icon: 'inventory' },
         { name: 'Chart of Accounts', href: route('chart-of-account.index'), icon: 'accounting' },
-        { name: 'Suppliers', href: route('suppliers.index'), icon: 'supplier' },
-        { name: 'Employee', href: route('employees.index'), icon: 'users' },
         { name: 'Reports', href: route('reports.index'), adminOnly: true, icon: 'finance' },
         { name: 'User Management', href: route('users.index'), adminOnly: true, icon: 'users' },
     ];

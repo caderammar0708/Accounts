@@ -4,6 +4,7 @@ import { useState } from 'react';
 import SlideOver from '@/Components/SlideOver';
 import CommonInput from '@/Components/CommonInput';
 import CommonButton from '@/Components/CommonButton';
+import ContactsTabs from '@/Components/ContactsTabs';
 
 export default function CustomerIndex({ customers = [] }) {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -91,6 +92,7 @@ export default function CustomerIndex({ customers = [] }) {
             <Head title="Customers" />
 
             <div className="p-6">
+                <ContactsTabs />
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     {/* Toolbar */}
                     <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between gap-4">
