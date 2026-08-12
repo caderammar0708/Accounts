@@ -292,7 +292,7 @@ export default function EditAdjustment({ items, accounts, adjustment }) {
                     <div className="mt-8 w-1/2">
                         <label className="block text-[11px] font-bold text-slate-600 ml-0.5 text-xs mb-1">Memo</label>
                         <textarea
-                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-sm text-xs focus:border-green-500 focus:ring-2 focus:ring-green-500/20 shadow-sm transition-all resize-none min-h-[80px]"
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-sm text-xs focus:border-green-500 focus:ring-2 focus:ring-green-500/20 shadow-sm transition-all resize-none min-h-[80px] leading-snug"
                             value={data.memo}
                             onChange={e => setData('memo', e.target.value)}
                             placeholder="Add a note for internal use..."

@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use OwenIt\Auditing\Contracts\Auditable;
 
+use App\Traits\BelongsToLocation;
+
 class ChequeDeposit extends Model implements Auditable
 {
-    use HasUuids, \OwenIt\Auditing\Auditable;
+    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
 
     protected $fillable = [
         'deposit_no',
@@ -17,6 +19,7 @@ class ChequeDeposit extends Model implements Auditable
         'total_amount',
         'memo',
         'status',
+        'location_id',
     ];
 
     public function items()

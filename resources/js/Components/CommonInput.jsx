@@ -207,7 +207,7 @@ export default forwardRef(function CommonInput(
                         {...props}
                         value={normalizedValue}
                         ref={inputRef}
-                        className={`${baseInputClasses} ${errorClasses} py-1.5 resize-y ${className} ${inputClass}`}
+                        className={`${baseInputClasses} ${errorClasses} py-1.5 resize-y leading-snug ${className} ${inputClass}`}
                     />
                 ) : type === 'select' ? (
                     <select

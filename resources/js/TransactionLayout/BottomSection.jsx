@@ -21,7 +21,7 @@ export default function BottomSection({ form, setForm }) {
             <div>
                 <label className="text-xs text-gray-500">Memo</label>
                 <textarea
-                    className="w-full border-b border-gray-300 text-sm py-1"
+                    className="w-full border-b border-gray-300 text-sm py-1 leading-snug"
                     value={form.memo}
                     onChange={(e) => setForm({ ...form, memo: e.target.value })}
                 />

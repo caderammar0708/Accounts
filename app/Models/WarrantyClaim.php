@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
+use App\Traits\BelongsToLocation;
+
 class WarrantyClaim extends Model
 {
-    use HasUuids;
+    use HasUuids, BelongsToLocation;
 
     protected $fillable = [
         'warranty_id',
@@ -16,6 +18,7 @@ class WarrantyClaim extends Model
         'issue_description',
         'resolution',
         'resolved_invoice_id',
+        'location_id',
     ];
 
     protected $casts = [

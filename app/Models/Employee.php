@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
+use App\Traits\BelongsToLocation;
+
 class Employee extends Model
 {
-    use HasUuids;
+    use HasUuids, BelongsToLocation;
 
     protected $fillable = [
         'name',
@@ -16,6 +18,7 @@ class Employee extends Model
         'designation',
         'salary',
         'join_date',
+        'location_id',
     ];
 
 

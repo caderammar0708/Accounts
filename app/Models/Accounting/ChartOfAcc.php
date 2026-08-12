@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use OwenIt\Auditing\Contracts\Auditable;
 
+use App\Traits\BelongsToLocation;
+
 class ChartOfAcc extends Model implements Auditable
 {
-    use HasUuids, \OwenIt\Auditing\Auditable;
+    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
 
     protected $fillable = [
         'account_code',
@@ -21,6 +23,7 @@ class ChartOfAcc extends Model implements Auditable
         'is_active',
         'parent_id',
         'is_locked',
+        'location_id',
     ];
 
     protected $appends = ['is_system'];

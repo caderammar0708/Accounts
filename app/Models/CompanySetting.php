@@ -45,6 +45,7 @@ class CompanySetting extends Model
         'customer_layout_modal',
         'reports_display_as_buttons',
         'vehicles_enabled',
+        'branches_enabled',
         'multi_currency_enabled',
         'home_currency_id',
     ];
@@ -56,5 +57,6 @@ class CompanySetting extends Model
         'customer_layout_modal' => 'boolean',
         'reports_display_as_buttons' => 'boolean',
         'vehicles_enabled' => 'boolean',
+        'branches_enabled' => 'boolean',
     ];
 }

@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Models\Accounting\ChartOfAcc;
 use App\Models\Accounting\JournalEntryLine;
 
+use App\Traits\BelongsToLocation;
+
 class Customer extends Model
 {
-    use HasUuids;
+    use HasUuids, BelongsToLocation;
 
     protected $fillable = [
     'display_name',
@@ -25,6 +27,7 @@ class Customer extends Model
     'customer_number',
     'tax_id',
     'opening_balance',
+    'location_id',
 ];
 
     protected $appends = ['balance'];

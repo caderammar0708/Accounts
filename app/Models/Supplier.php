@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
+use App\Traits\BelongsToLocation;
+
 class Supplier extends Model
 {
-    use HasUuids;
+    use HasUuids, BelongsToLocation;
 
     protected $fillable = [
         'display_name',
@@ -19,6 +21,7 @@ class Supplier extends Model
         'tax_id',
         'address',
         'opening_balance',
+        'location_id',
     ];
 
     protected $appends = ['balance'];
