@@ -192,7 +192,7 @@ export default function ChequeForm({
 
         method(url, {
             preserveScroll: true,
-            preserveState: action === 'save',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || action === 'save',
             onSuccess: (page) => {
                 showToast('success', 'Cheque saved successfully.');
                 setIsDirty(false);

@@ -339,7 +339,7 @@ export default function CreditInvoiceForm({
 
         method(url, {
             preserveScroll: true,
-            preserveState: actionType === 'save',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || actionType === 'save',
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);

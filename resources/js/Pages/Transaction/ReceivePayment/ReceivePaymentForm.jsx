@@ -359,7 +359,7 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
 
         submitMethod(url, {
             preserveScroll: true,
-            preserveState: action === 'save',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || action === 'save',
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);

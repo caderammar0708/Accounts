@@ -95,7 +95,8 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
 
     useEffect(() => {
         if (receipt) {
-            setData({
+            setData(prev => ({
+                ...prev,
                 customer: receipt.customer || "",
                 email: receipt.email || "",
                 billingAddress: receipt.billingAddress || "",
@@ -116,10 +117,15 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 })) : [
                     { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }
                 ],
-                action: 'save'
-            });
+                discount_type: receipt.discountType || 'percent',
+                discount_value: receipt.discountValue !== undefined ? String(receipt.discountValue) : '0',
+                prefix: receipt.prefix || '',
+                action: 'save',
+                books_pin: ''
+            }));
         } else {
-            setData({
+            setData(prev => ({
+                ...prev,
                 customer: "",
                 email: "",
                 billingAddress: "",
@@ -141,8 +147,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 prefix: '',
                 action: 'save',
                 books_pin: ''
-            });
-
+            }));
         }
         clearErrors();
     }, [receipt?.id]);
@@ -278,7 +283,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
 
         submitMethod(url, {
             preserveScroll: true,
-            preserveState: actionType === 'save',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || actionType === 'save',
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);

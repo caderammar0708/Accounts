@@ -97,7 +97,7 @@ export default function TransferForm({ transfer = null }) {
 
         method(url, {
             preserveScroll: true,
-            preserveState: type === 'save',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || type === 'save',
             replace: true,
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');

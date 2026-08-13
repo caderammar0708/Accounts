@@ -217,7 +217,7 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
 
         method(url, {
             preserveScroll: true,
-            preserveState: actionType !== 'new',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || actionType !== 'new',
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);

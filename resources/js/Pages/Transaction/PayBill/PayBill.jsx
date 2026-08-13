@@ -348,7 +348,7 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
 
         submitMethod(url, {
             preserveScroll: true,
-            preserveState: action !== 'new',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || action !== 'new',
             onSuccess: () => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
