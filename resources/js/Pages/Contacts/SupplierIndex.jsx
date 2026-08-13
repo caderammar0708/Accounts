@@ -7,8 +7,6 @@ import CommonButton from '@/Components/CommonButton';
 import AddressForm from '@/Components/AddressForm';
 import ContactsTabs from '@/Components/ContactsTabs';
 
-import ContactsTabs from '@/Components/ContactsTabs';
-
 export default function SupplierIndex({ suppliers = [] }) {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
