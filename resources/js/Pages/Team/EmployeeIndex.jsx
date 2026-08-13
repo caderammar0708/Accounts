@@ -6,8 +6,6 @@ import SlideOver from '@/Components/SlideOver';
 import CommonInput from '@/Components/CommonInput';
 import ContactsTabs from '@/Components/ContactsTabs';
 
-import ContactsTabs from '@/Components/ContactsTabs';
-
 export default function EmployeeIndex({ employees = [] }) {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
