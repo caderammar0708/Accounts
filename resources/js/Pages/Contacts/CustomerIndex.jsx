@@ -5,7 +5,6 @@ import SlideOver from '@/Components/SlideOver';
 import CommonInput from '@/Components/CommonInput';
 import CommonButton from '@/Components/CommonButton';
 import ContactsTabs from '@/Components/ContactsTabs';
-
 export default function CustomerIndex({ customers = [] }) {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
@@ -86,10 +85,10 @@ export default function CustomerIndex({ customers = [] }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="font-bold text-lg text-slate-800 tracking-tight">Customers</h2>
+                <h2 className="font-bold text-lg text-slate-800 tracking-tight">Contacts</h2>
             }
         >
-            <Head title="Customers" />
+            <Head title="Contacts - Customers" />
 
             <div className="p-6">
                 <ContactsTabs />
@@ -109,12 +108,7 @@ export default function CustomerIndex({ customers = [] }) {
                             />
                         </div>
 
-                        <CommonButton
-                            variant="primary"
-                            onClick={handleOpenCreate}
-                        >
-                            New customer
-                        </CommonButton>
+                        <CommonButton variant="primary" onClick={handleOpenCreate}>New customer</CommonButton>
                     </div>
 
                     {/* Table */}
@@ -144,11 +138,7 @@ export default function CustomerIndex({ customers = [] }) {
                                         </td>
                                         <td className="px-4 py-3 text-center">
                                             <div className="flex items-center justify-center gap-2">
-                                                <CommonButton
-                                                    variant="ghost"
-                                                    size="xs"
-                                                    onClick={() => handleEdit(customer)}
-                                                >
+                                                <CommonButton variant="ghost" size="xs" onClick={() => handleEdit(customer)}>
                                                     Edit
                                                 </CommonButton>
                                                 <div className="h-3 w-px bg-slate-200" />

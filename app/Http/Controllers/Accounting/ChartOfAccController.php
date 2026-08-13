@@ -32,16 +32,18 @@ class ChartOfAccController extends Controller
         };
         $buildTree(null);
 
-        $currencies = [];
+        $currencies = \App\Models\CompanySetting::first()?->multi_currency_enabled ? \App\Models\Currency::where('is_active', true)->get() : [];
 
         $chartOfAccounts = $chartOfAccounts->map(function ($account) {
-            $account->currency_code = $account->currency ? $account->currency : null;
+            $account->currency_code = $account->currency_id ? $account->currency?->code : null;
             return $account;
         });
 
         return Inertia::render('Accounting/chart-of-acc-index', [
             'chartOfAccounts' => $chartOfAccounts,
             'currencies' => $currencies,
+            'multi_currency_enabled' => \App\Models\CompanySetting::first()?->multi_currency_enabled,
+            'home_currency_id' => \App\Models\CompanySetting::first()?->home_currency_id,
             'lastOpeningBalanceDate' => session('last_opening_balance_date', date('Y-m-d')),
         ]);
     }
@@ -64,7 +66,7 @@ class ChartOfAccController extends Controller
             'balance' => 0,
             'description' => $request->input('description'),
             'is_active' => $request->boolean('is_active', true),
-            'currency' => $request->input('currency') ?: auth()->user()?->currentCompany()?->home_currency_prefix ?: null,
+            'currency_id' => $request->input('currency_id') ?: \App\Models\CompanySetting::first()?->home_currency_id ?: null,
             'parent_id' => $request->input('is_subaccount') ? $request->input('parent_id') : null,
             'is_locked' => $request->boolean('is_locked', false),
         ]);
@@ -196,7 +198,7 @@ class ChartOfAccController extends Controller
             'account_type' => $request->input('account_type'),
             'sub_type' => $request->input('sub_type'),
             'description' => $request->input('description'),
-            'currency' => $request->input('currency') ?: auth()->user()?->currentCompany()?->home_currency_prefix ?: null,
+            'currency_id' => $request->input('currency_id') ?: \App\Models\CompanySetting::first()?->home_currency_id ?: null,
             'parent_id' => $request->input('is_subaccount') ? $request->input('parent_id') : null,
             'is_locked' => $request->boolean('is_locked', false),
         ]);

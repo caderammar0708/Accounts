@@ -7,6 +7,8 @@ import CommonInput from "@/Components/CommonInput";
 import QuickAddPayee from "@/Components/QuickAddPayee";
 import QuickAddAccount from "@/Components/QuickAddAccount";
 import { Head, usePage, router } from "@inertiajs/react";
+import PinPromptModal from "@/Components/PinPromptModal";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
 
 export default function JournalEntryForm({ journalEntry = null, nextJournalNo = "" }) {
     const isEditing = Boolean(journalEntry?.id);
@@ -22,6 +24,12 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
+    // Books Lock PIN Modal
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
+    const [booksPin, setBooksPin] = useState("");
+    const [booksPinError, setBooksPinError] = useState(null);
+
     const fetchPayees = (search = "") => {
         axios.get(route('api.payees', { search })).then(res => setPayeeOptions(res.data));
     };
@@ -35,6 +43,8 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
         fetchAccounts();
     }, []);
 
+    const isMultiCurrency = auth?.multi_currency_enabled;
+
     const JOURNAL_COLUMNS = [
         {
             key: "account_id",
@@ -45,9 +55,14 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
             placeholder: "Select account",
             className: "w-[25%]"
         },
+        ...(isMultiCurrency ? [
+            { key: "exchange_rate", label: "Ex. Rate", type: "number", className: "text-right w-[8%]", inputClass: "text-right" },
+            { key: "fc_debit", label: "FC Debit", type: "currency", className: "text-right w-[10%]", inputClass: "text-right" },
+            { key: "fc_credit", label: "FC Credit", type: "currency", className: "text-right w-[10%]", inputClass: "text-right" },
+        ] : []),
         { key: "debit", label: "Debits", type: "currency", className: "text-right w-[10%]", inputClass: "text-right" },
         { key: "credit", label: "Credits", type: "currency", className: "text-right w-[10%]", inputClass: "text-right" },
-        { key: "description", label: "Description", placeholder: "Enter description", className: "w-[30%]" },
+        { key: "description", label: "Description", placeholder: "Enter description", className: "w-[20%]" },
         {
             key: "payee_id",
             label: "Name",
@@ -55,9 +70,9 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
             options: payeeOptions,
             onAddNew: () => setIsPayeeModalOpen(true),
             placeholder: "Select name",
-            className: "w-[25%]",
+            className: "w-[20%]",
             tabIndex: 0,
-            noAutoSelectOnTab: true,  // Tab without arrow-key selection → don't auto-pick first item
+            noAutoSelectOnTab: true,
         },
     ];
 
@@ -77,6 +92,9 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
     const createBlankLine = (description = "", rowId = null) => ({
         id: rowId ?? `journal-row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         account_id: "",
+        fc_debit: "",
+        fc_credit: "",
+        exchange_rate: "1.00",
         debit: "",
         credit: "",
         description,
@@ -92,6 +110,9 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
         if (journalEntry && journalEntry.lines) {
             setItems(journalEntry.lines.map(line => ({
                 account_id: line.chart_of_acc_id,
+                fc_debit: line.fc_debit ? parseFloat(line.fc_debit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "",
+                fc_credit: line.fc_credit ? parseFloat(line.fc_credit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "",
+                exchange_rate: line.exchange_rate ? parseFloat(line.exchange_rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : "1.00",
                 debit: line.debit ? parseFloat(line.debit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "",
                 credit: line.credit ? parseFloat(line.credit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "",
                 description: line.memo || "",
@@ -175,8 +196,13 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 rowIndex === index ? { ...row, [field]: value } : row
             );
             const numVal = parseCurrency(value);
+
+            // Clear opposite fields
             if (field === "debit" && numVal > 0) updated[index].credit = "";
             if (field === "credit" && numVal > 0) updated[index].debit = "";
+            if (field === "fc_debit" && numVal > 0) updated[index].fc_credit = "";
+            if (field === "fc_credit" && numVal > 0) updated[index].fc_debit = "";
+
             return updated;
         });
         setIsDirty(true);
@@ -190,21 +216,43 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
             );
 
             const numVal = parseCurrency(value);
-            if (field === "debit" && numVal > 0) updated[index].credit = "";
-            if (field === "credit" && numVal > 0) updated[index].debit = "";
+
+            // Auto-calculate base amounts if FC amounts or exchange rate change
+            if (["fc_debit", "fc_credit", "exchange_rate"].includes(field)) {
+                const exRate = parseCurrency(updated[index].exchange_rate) || 1;
+
+                if (field === "fc_debit" || (field === "exchange_rate" && parseCurrency(updated[index].fc_debit) > 0)) {
+                    const fcDeb = parseCurrency(updated[index].fc_debit);
+                    updated[index].debit = formatCurrencyValue(fcDeb * exRate);
+                    updated[index].credit = "";
+                    if (field === "fc_debit" && numVal > 0) updated[index].fc_credit = "";
+                } else if (field === "fc_credit" || (field === "exchange_rate" && parseCurrency(updated[index].fc_credit) > 0)) {
+                    const fcCred = parseCurrency(updated[index].fc_credit);
+                    updated[index].credit = formatCurrencyValue(fcCred * exRate);
+                    updated[index].debit = "";
+                    if (field === "fc_credit" && numVal > 0) updated[index].fc_debit = "";
+                }
+            } else {
+                if (field === "debit" && numVal > 0) updated[index].credit = "";
+                if (field === "credit" && numVal > 0) updated[index].debit = "";
+            }
 
             const suggestion = getSuggestedBalance(updated);
-            const targetIndex = getBalanceTargetIndex(updated, index, field);
 
-            if (index === 0 && prev.length === 2) {
-                const oppositeField = field === "debit" ? "credit" : "debit";
-                if (suggestion) {
-                    updated[1][oppositeField] = formatCurrencyValue(suggestion[oppositeField] ?? 0);
-                    updated[1][field] = "";
+            // Try to auto-balance on debit/credit blur if not FC
+            if (["debit", "credit"].includes(field)) {
+                const targetIndex = getBalanceTargetIndex(updated, index, field);
+
+                if (index === 0 && prev.length === 2) {
+                    const oppositeField = field === "debit" ? "credit" : "debit";
+                    if (suggestion) {
+                        updated[1][oppositeField] = formatCurrencyValue(suggestion[oppositeField] ?? 0);
+                        updated[1][field] = "";
+                    }
+                } else if (suggestion && targetIndex >= 0) {
+                    const oppositeField = field === "debit" ? "credit" : "debit";
+                    updated[targetIndex][oppositeField] = formatCurrencyValue(suggestion[oppositeField] ?? 0);
                 }
-            } else if (suggestion && targetIndex >= 0) {
-                const oppositeField = field === "debit" ? "credit" : "debit";
-                updated[targetIndex][oppositeField] = formatCurrencyValue(suggestion[oppositeField] ?? 0);
             }
 
             return updated;
@@ -212,7 +260,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
         setIsDirty(true);
     };
 
-    const handleSave = (type = 'save') => {
+    const handleSave = (type = 'save', pinOverride = null) => {
         if (Math.abs(totals.debit - totals.credit) > 0.001) {
             alert("Debits and Credits must balance to save this entry.");
             return;
@@ -227,12 +275,22 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
             description: form.memo,
             lines: items
                 .filter(i => i.account_id && (parseCurrency(i.debit) > 0 || parseCurrency(i.credit) > 0))
-                .map(i => ({
-                    ...i,
-                    debit: parseCurrency(i.debit),
-                    credit: parseCurrency(i.credit)
-                }))
+                .map(i => {
+                    const accOpt = accountOptions.find(opt => opt.value === i.account_id);
+                    return {
+                        ...i,
+                        fc_currency_id: accOpt?.currency_id || null,
+                        fc_debit: parseCurrency(i.fc_debit) || null,
+                        fc_credit: parseCurrency(i.fc_credit) || null,
+                        exchange_rate: parseCurrency(i.exchange_rate) || 1,
+                        debit: parseCurrency(i.debit),
+                        credit: parseCurrency(i.credit)
+                    };
+                }),
+            books_pin: pinOverride !== null ? pinOverride : booksPin
         };
+
+        setPendingAction(type);
 
         // Use savedEntryId if we already saved once this session
         const currentId = savedEntryId || journalEntry?.id;
@@ -251,6 +309,10 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 if (!savedEntryId && page.props?.flash?.journal_entry_id) {
                     setSavedEntryId(page.props.flash.journal_entry_id);
                 }
+
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                setBooksPinError(null);
 
                 if (type === 'close') {
                     if (typeof onClose === 'function') {
@@ -273,14 +335,24 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 }
             },
             onError: (errors) => {
-                alert(Object.values(errors).join('\n') || "Error saving entry ❌");
+                if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED' || errors.books_pin) {
+                    setBooksPinError(errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null);
+                    setIsPinModalOpen(true);
+                } else {
+                    alert(Object.values(errors).join('\n') || "Error saving entry ❌");
+                }
             }
         });
     };
     return (
         <TransactionLayout
             historyType="journal_entry"
-            title={`Journal Entry #${form.journalNo}`}
+            title={
+                <div className="flex items-center gap-2">
+                    Journal Entry #{form.journalNo}
+                    <BooksLockIndicator date={form.date} lockDate={auth?.books_lock_date} isEdit={!!(journalEntry?.id || savedEntryId)} />
+                </div>
+            }
             amount={totals.debit.toFixed(2)}
             dirty={isDirty}
             onSave={() => handleSave('save')}
@@ -377,6 +449,21 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 isOpen={isAccountModalOpen}
                 onClose={() => setIsAccountModalOpen(false)}
                 onSuccess={(newAcc) => fetchAccounts()}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setBooksPin('');
+                    setBooksPinError(null);
+                }}
+                onSubmit={(pin) => {
+                    setBooksPin(pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={booksPinError}
             />
         </TransactionLayout>
     );

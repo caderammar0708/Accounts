@@ -219,7 +219,7 @@ class BillReturnController extends Controller
             }
 
             return redirect()->route('bill-return.edit', $journalEntry->id)->with('success', 'Bill Return saved successfully.');
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -413,7 +413,7 @@ class BillReturnController extends Controller
             }
 
             return redirect()->route('bill-return.edit', $journalEntry->id)->with('success', 'Bill Return updated successfully.');
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -454,7 +454,7 @@ class BillReturnController extends Controller
     {
         $journalEntry->load('lines');
         $billReturn = BillReturn::with('items.item', 'items.chartOfAccount', 'supplier', 'company')->findOrFail($journalEntry->transactionable_id);
-        $company = $billReturn->company;
+        $company = $billReturn->company ?? \App\Models\Company::current();
 
         $tableItems = [];
         foreach ($billReturn->items as $item) {
@@ -464,17 +464,16 @@ class BillReturnController extends Controller
             }
             $tableItems[] = [
                 $desc,
-                $item->quantity,
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($item->rate, 2),
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($item->amount, 2),
+                $item->quantity + 0,
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($item->rate, 2),
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($item->amount, 2),
             ];
         }
 
-        $printSetting = \App\Models\PrintSetting::query()
-            ->where('document_type', 'bill_return')
-            ->first();
+        $printSetting = \App\Models\PrintSetting::getForPrint('bill_return');
 
         return view('print.document', [
+            'printSetting' => $printSetting,
             'title' => $printSetting?->custom_title ?: 'Bill Return Note',
             'headerAlignment' => $printSetting?->header_alignment ?: 'left',
             'staticFooterContent' => $printSetting?->static_footer_content ?: null,

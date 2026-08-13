@@ -68,6 +68,7 @@ class ReceivePaymentController extends Controller
         $validated = $request->validated();
 
         try {
+            \App\Services\BooksLockService::check($request->paymentDate, $request->books_pin);
             $journalEntry = DB::transaction(function() use ($request) {
                 $amount = (float) str_replace(',', '', $request->amountReceived);
 
@@ -86,14 +87,22 @@ class ReceivePaymentController extends Controller
 
                 // Allocations (Business Details)
                 if ($request->has('credit_invoices')) {
+                    $allocationsData = [];
+                    $now = now();
                     foreach ($request->credit_invoices as $inv) {
                         if ((float)$inv['amount'] > 0) {
-                            \App\Models\Accounting\ReceivePaymentAllocation::create([
+                            $allocationsData[] = [
+                                'id' => \Illuminate\Support\Str::uuid()->toString(),
                                 'receive_payment_id' => $receivePayment->id,
                                 'credit_invoice_id' => $inv['id'],
                                 'amount' => (float)$inv['amount'],
-                            ]);
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ];
                         }
+                    }
+                    if (!empty($allocationsData)) {
+                        \App\Models\Accounting\ReceivePaymentAllocation::insert($allocationsData);
                     }
                 }
 
@@ -112,31 +121,42 @@ class ReceivePaymentController extends Controller
                     'transactionable_type' => \App\Models\Accounting\ReceivePayment::class,
                 ]);
 
+                $linesData = [];
+                $now = now();
+
                 // Cash/Bank Account (Debit)
-                JournalEntryLine::create([
+                $linesData[] = [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $request->depositTo,
                     'debit' => $amount,
                     'credit' => 0,
                     'memo' => $request->memo,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
 
                 // Accounts Receivable (Credit)
                 $arAccount = ChartOfAcc::getOrCreateDefault('accounts-receivable');
-                JournalEntryLine::create([
+                $linesData[] = [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $arAccount->id,
                     'debit' => 0,
                     'credit' => $amount,
                     'memo' => $request->memo,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+
+                JournalEntryLine::insert($linesData);
 
                 return $journalEntry;
             });
 
             return $this->handleActionRedirect($request, 'receive-payment', $journalEntry->id, 'ReceivePayment received successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -176,6 +196,11 @@ class ReceivePaymentController extends Controller
         $validated = $request->validated();
 
         try {
+            \App\Services\BooksLockService::check($journalEntry->date, $request->books_pin);
+            if (date('Y-m-d', strtotime($journalEntry->date)) !== date('Y-m-d', strtotime($request->paymentDate))) {
+                \App\Services\BooksLockService::check($request->paymentDate, $request->books_pin);
+            }
+
             DB::transaction(function() use ($request, $journalEntry) {
                 $amount = (float) str_replace(',', '', $request->amountReceived);
 
@@ -200,14 +225,22 @@ class ReceivePaymentController extends Controller
                 // 2. Re-create Allocations
                 $receivePayment->allocations()->delete();
                 if ($request->has('credit_invoices')) {
+                    $allocationsData = [];
+                    $now = now();
                     foreach ($request->credit_invoices as $inv) {
                         if ((float)$inv['amount'] > 0) {
-                            \App\Models\Accounting\ReceivePaymentAllocation::create([
+                            $allocationsData[] = [
+                                'id' => \Illuminate\Support\Str::uuid()->toString(),
                                 'receive_payment_id' => $receivePayment->id,
                                 'credit_invoice_id' => $inv['id'],
                                 'amount' => (float)$inv['amount'],
-                            ]);
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ];
                         }
+                    }
+                    if (!empty($allocationsData)) {
+                        \App\Models\Accounting\ReceivePaymentAllocation::insert($allocationsData);
                     }
                 }
 
@@ -223,34 +256,47 @@ class ReceivePaymentController extends Controller
                 // Re-create lines
                 $journalEntry->lines->each->delete();
 
+                $linesData = [];
+                $now = now();
+
                 // Cash/Bank Account (Debit)
-                JournalEntryLine::create([
+                $linesData[] = [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $request->depositTo,
                     'debit' => $amount,
                     'credit' => 0,
                     'memo' => $request->memo,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
 
                 // Accounts Receivable (Credit)
                 $arAccount = ChartOfAcc::getOrCreateDefault('accounts-receivable');
-                JournalEntryLine::create([
+                $linesData[] = [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $arAccount->id,
                     'debit' => 0,
                     'credit' => $amount,
                     'memo' => $request->memo,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+
+                JournalEntryLine::insert($linesData);
             });
 
             return $this->handleActionRedirect($request, 'receive-payment', $journalEntry->id, 'ReceivePayment updated successfully.');
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 
-    public function destroy(JournalEntry $journalEntry)
+    public function destroy(Request $request, JournalEntry $journalEntry)
     {
+        \App\Services\BooksLockService::check($journalEntry->date, $request->input('books_pin'));
+
         $chartOfAccountId = $journalEntry->lines->first()?->chart_of_acc_id
             ?? $journalEntry->lines->first()?->chart_of_account_id
             ?? $journalEntry->lines->first()?->account_id;
@@ -280,7 +326,7 @@ class ReceivePaymentController extends Controller
     {
         $journalEntry->load('lines');
         $receivePayment = \App\Models\Accounting\ReceivePayment::with('customer', 'company', 'allocations.invoice')->findOrFail($journalEntry->transactionable_id);
-        $company = $receivePayment->company;
+        $company = $receivePayment->company ?? \App\Models\Company::current();
 
         $tableItems = [];
         $totalInvoiceAmount = 0;
@@ -290,23 +336,22 @@ class ReceivePaymentController extends Controller
                 $totalInvoiceAmount += $invAmt;
                 $tableItems[] = [
                     "Payment applied to Credit Invoice #" . ($alloc->invoice->invoice_no ?? 'Unknown'),
-                    ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($invAmt, 2),
-                    ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($alloc->amount, 2),
+                    ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($invAmt, 2),
+                    ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($alloc->amount, 2),
                 ];
             }
         } else {
             $tableItems[] = [
                 "Receive Payment Received",
                 "-",
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($receivePayment->amount, 2),
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($receivePayment->amount, 2),
             ];
         }
 
-        $printSetting = \App\Models\PrintSetting::query()
-            ->where('document_type', 'payment_receipt')
-            ->first();
+        $printSetting = \App\Models\PrintSetting::getForPrint('payment_receipt');
 
         return view('print.document', [
+            'printSetting' => $printSetting,
             'title' => $printSetting?->custom_title ?: 'Receive Payment Receipt',
             'headerAlignment' => $printSetting?->header_alignment ?: 'left',
             'staticFooterContent' => $printSetting?->static_footer_content ?: null,

@@ -10,6 +10,8 @@ import QuickAddAccount from "@/Components/QuickAddAccount";
 import InventoryItemSidePanel from "@/Components/InventoryItemSidePanel";
 import QuickAddPaymentMethod from "@/Components/QuickAddPaymentMethod";
 import { showToast } from "@/Components/ToastNotification";
+import PinPromptModal from "@/Components/PinPromptModal";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
 
 export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceiptNo = "", receipt = null }) {
     const company = auth.company;
@@ -34,6 +36,39 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
     const [addingItemRowIndex, setAddingItemRowIndex] = useState(null);
     const [isDirty, setIsDirty] = useState(false);
     const [savedEntryId, setSavedEntryId] = useState(receipt?.id || null);
+
+    // Books Lock PIN Modal
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
+
+    const { data, setData, post, patch, processing, errors, reset, clearErrors, transform } = useForm({
+        customer: receipt?.customer || "",
+        email: receipt?.email || "",
+        billingAddress: receipt?.billingAddress || "",
+        receiptDate: receipt?.receiptDate || localStorage.getItem('last_transaction_date') || new Date().toISOString().split('T')[0],
+        receiptNo: receipt?.receiptNo || (nextReceiptNo ? nextReceiptNo : "RCPT-0001"),
+        paymentMethod: receipt?.paymentMethod || "",
+        depositTo: receipt?.depositTo || "",
+        memo: receipt?.memo || "",
+        statementMessage: receipt?.statementMessage || "",
+        checkDate: receipt?.checkDate || "",
+        checkNumber: receipt?.checkNumber || "",
+        items: receipt?.items ? receipt.items.map(i => ({
+            ...i,
+            qty: i.qty ? parseFloat(i.qty).toLocaleString('en-US', { maximumFractionDigits: 4 }) : "1",
+            rate: parseFloat(i.rate || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            amount: parseFloat(i.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        })) : [
+            { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
+            { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }
+        ],
+        discount_type: receipt?.discountType || 'percent',
+        discount_value: receipt?.discountValue !== undefined ? String(receipt.discountValue) : '0',
+        prefix: receipt?.prefix || '',
+        memo_on_statement: receipt?.memo_on_statement || '',
+        action: 'save',
+        books_pin: ''
+    });
 
     const fetchCustomers = (search = "") => {
         axios.get(route('api.payees', { search, type: 'Customer' })).then(res => setCustomerOptions(res.data));
@@ -80,10 +115,9 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                     ...i,
                     qty: i.qty ? parseFloat(i.qty).toLocaleString('en-US', { maximumFractionDigits: 4 }) : "1",
                     rate: parseFloat(i.rate || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-                    amount: parseFloat(i.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-                    warranty: i.warranty || false
+                    amount: parseFloat(i.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                 })) : [
-                    { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00", warranty: false }
+                    { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }
                 ],
                 action: 'save'
             });
@@ -102,18 +136,28 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 checkDate: "",
                 checkNumber: "",
                 items: [
-                    { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00", warranty: false },
-                    { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00", warranty: false },
+                    { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
+                    { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
                 ],
                 discount_type: 'percent',
                 discount_value: '0',
                 prefix: '',
-                action: 'save'
+                action: 'save',
+                books_pin: ''
             });
 
         }
         clearErrors();
     }, [receipt?.id]);
+
+    useEffect(() => {
+        if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED') {
+            setIsPinModalOpen(true);
+        } else if (errors.books_pin) {
+            // Re-open if invalid pin submitted
+            setIsPinModalOpen(true);
+        }
+    }, [errors.books_pin]);
 
     const COLUMNS = [
         {
@@ -133,37 +177,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
         { key: "qty", label: "Qty", type: "number", min: "0", width: "80px", className: "text-right" },
         { key: "rate", label: "Rate", type: "currency", width: "120px", className: "text-right", inputClass: "text-right" },
         { key: "amount", label: "Amount", type: "currency", width: "140px", className: "text-right", inputClass: "text-right" },
-        { key: "warranty", label: "Warranty", type: "checkbox", width: "90px", className: "text-center" },
     ];
-
-    const { data, setData, post, patch, processing, errors, reset, clearErrors, transform } = useForm({
-        customer: receipt?.customer || "",
-        email: receipt?.email || "",
-        billingAddress: receipt?.billingAddress || "",
-        receiptDate: receipt?.receiptDate || localStorage.getItem('last_transaction_date') || new Date().toISOString().split('T')[0],
-        receiptNo: receipt?.receiptNo || (nextReceiptNo ? nextReceiptNo : "RCPT-0001"),
-        paymentMethod: receipt?.paymentMethod || "",
-        depositTo: receipt?.depositTo || "",
-        memo: receipt?.memo || "",
-        statementMessage: receipt?.statementMessage || "",
-        checkDate: receipt?.checkDate || "",
-        checkNumber: receipt?.checkNumber || "",
-        items: receipt?.items ? receipt.items.map(i => ({
-            ...i,
-            qty: i.qty ? parseFloat(i.qty).toLocaleString('en-US', { maximumFractionDigits: 4 }) : "1",
-            rate: parseFloat(i.rate || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-            amount: parseFloat(i.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-            warranty: i.warranty || false
-        })) : [
-            { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00", warranty: false },
-            { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00", warranty: false },
-        ],
-        discount_type: receipt?.discountType || 'percent',
-        discount_value: receipt?.discountValue !== undefined ? String(receipt.discountValue) : '0',
-        prefix: receipt?.prefix || '',
-        memo_on_statement: receipt?.memo_on_statement || '',
-        action: 'save'
-    });
 
 
     const handlePaymentMethodChange = (val) => {
@@ -192,7 +206,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
     const formatCurrencyValue = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2 });
 
     const subtotal = data.items.reduce((sum, item) => sum + parseCurrency(item.amount), 0);
-    
+
     let discountAmount = 0;
     const dVal = parseFloat(data.discount_value || 0);
     if (dVal > 0) {
@@ -242,13 +256,14 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
         setIsDirty(true);
     };
 
-    const handleSave = (actionType = 'save') => {
+    const handleSave = (actionType = 'save', pinOverride = null) => {
 
         const currentNo = data.receiptNo;
 
         transform((data) => ({
             ...data,
             action: actionType,
+            books_pin: pinOverride !== null ? pinOverride : data.books_pin,
             items: data.items
                 .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount && item.amount !== "0.00" && item.amount !== "0"))
                 .map(item => ({
@@ -258,6 +273,8 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                     amount: String(item.amount).replace(/,/g, '')
                 }))
         }));
+
+        setPendingAction(actionType);
 
         const currentId = savedEntryId || receipt?.id;
         const url = currentId ? route('sales-invoice.update', currentId) : route('sales-invoice.store');
@@ -281,7 +298,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 if (actionType === 'close') {
                     if (typeof onClose === 'function') {
                         onClose();
-                    } 
+                    }
                 }
 
                 if (actionType === 'new') {
@@ -291,19 +308,22 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                         receiptDate: localStorage.getItem('last_transaction_date') || new Date().toISOString().split('T')[0],
                         receiptNo: serverNextNo, paymentMethod: getDefaultCashPaymentMethod() || "", depositTo: "", memo: "", statementMessage: "",
                         items: [
-                            { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00", warranty: false },
-                            { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00", warranty: false },
+                            { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
+                            { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
                         ],
                         discount_type: 'percent',
                         discount_value: '0',
                         prefix: '',
                         memo_on_statement: '',
-                        action: 'save'
+                        action: 'save',
+                        books_pin: ''
                     });
 
                     reset();
                     clearErrors();
                     setIsDirty(false);
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
                 }
             }
         });
@@ -312,7 +332,12 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
     return (
         <TransactionLayout
             historyType="sales_invoice"
-            title={`Sales Invoice #${data.receiptNo}`}
+            title={
+                <div className="flex items-center">
+                    Sales Invoice #{data.receiptNo}
+                    <BooksLockIndicator date={data.receiptDate} lockDate={auth?.books_lock_date} isEdit={!!(receipt?.id || savedEntryId)} />
+                </div>
+            }
             amount={totalAmount}
             processing={processing}
             dirty={isDirty}
@@ -320,10 +345,10 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
             onSaveAndClose={() => handleSave('close')}
             onSaveAndNew={() => handleSave('new')}
             onAddLine={() => {
-                setData("items", [...data.items, { product: "", serviceDate: "", description: "", qty: "1", rate: "0.00", amount: "0.00", warranty: false }]);
+                setData("items", [...data.items, { product: "", serviceDate: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }]);
             }}
             onClearRows={() => {
-                setData("items", [{ product: "", serviceDate: "", description: "", qty: "1", rate: "0.00", amount: "0.00", warranty: false }]);
+                setData("items", [{ product: "", serviceDate: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }]);
             }}
         >
             <Head title="Cash sale" />
@@ -500,9 +525,9 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 columns={COLUMNS}
                 items={data.items}
                 handleItemChange={handleItemChange}
-                addRow={() => setData("items", [...data.items, { product: "", serviceDate: "", description: "", qty: "1", rate: "0.00", amount: "0.00", warranty: false }])}
+                addRow={() => setData("items", [...data.items, { product: "", serviceDate: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }])}
                 removeRow={(index) => setData("items", data.items.filter((_, i) => i !== index))}
-                clearRows={() => setData("items", [{ product: "", serviceDate: "", description: "", qty: "1", rate: "0.00", amount: "0.00", warranty: false }])}
+                clearRows={() => setData("items", [{ product: "", serviceDate: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }])}
                 totals={{ "Total": totalAmount }}
                 currencyPrefix={currencyPrefix}
                 hideActions={true}
@@ -514,10 +539,11 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                     setData(prev => ({ ...prev, discount_value: val, discount_type: type }));
                     setIsDirty(true);
                 }}
+                hideSummaryBlock={true}
             />
 
 
-            <div className="grid grid-cols-2 gap-10 mt-8">
+            <div className="flex justify-between mt-8 items-start">
                 <div className="w-[400px] flex flex-col gap-4">
                     <CommonInput
                         type="textarea"
@@ -538,6 +564,67 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                         size="sm"
                         className="h-24"
                     />
+                </div>
+
+                {/* Subtotal / Discount / Total Summary Block */}
+                <div className="flex flex-col items-end gap-3 min-w-[300px] bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    {/* Subtotal */}
+                    <div className="flex justify-between items-center w-full">
+                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Subtotal</span>
+                        <span className="text-sm font-black text-slate-900 flex items-center gap-1">
+                            <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
+                            {parseFloat(String(subtotal || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                    </div>
+
+                    {/* Discount Input */}
+                    <div className="flex justify-between items-center w-full gap-4 mt-2">
+                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest mt-2">Discount</span>
+                        <div className="flex items-center">
+                            <input
+                                type="text"
+                                value={data.discount_value}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                                    const parts = val.split('.');
+                                    if (parts.length > 2) return;
+                                    setData(prev => ({ ...prev, discount_value: val }));
+                                    setIsDirty(true);
+                                }}
+                                onBlur={(e) => {
+                                    const val = parseFloat(e.target.value || 0).toString();
+                                    setData(prev => ({ ...prev, discount_value: val }));
+                                    setIsDirty(true);
+                                }}
+                                className="w-[80px] h-8 text-right text-sm font-medium border border-slate-300 rounded-l-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none px-2"
+                            />
+                            <div className="flex h-8 bg-slate-100 border border-l-0 border-slate-300 rounded-r-md overflow-hidden">
+                                <button
+                                    type="button"
+                                    onClick={() => { setData(prev => ({ ...prev, discount_type: 'percent' })); setIsDirty(true); }}
+                                    className={`px-2 text-xs font-bold transition-colors ${data.discount_type === 'percent' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                                >
+                                    %
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setData(prev => ({ ...prev, discount_type: 'fixed' })); setIsDirty(true); }}
+                                    className={`px-2 text-xs font-bold transition-colors ${data.discount_type === 'fixed' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                                >
+                                    $
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Total */}
+                    <div className="flex justify-between items-center w-full mt-2 pt-3 border-t border-slate-200">
+                        <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Total</span>
+                        <span className="text-lg font-black text-slate-900 flex items-center gap-1">
+                            <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
+                            {parseFloat(String(totalAmount || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -586,7 +673,21 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
             <QuickAddPaymentMethod
                 isOpen={isMethodModalOpen}
                 onClose={() => setIsMethodModalOpen(false)}
-                onSuccess={() => router.reload({ only: ['paymentMethods'] })}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
 
         </TransactionLayout>

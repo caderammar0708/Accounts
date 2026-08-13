@@ -23,6 +23,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
     multiple = false,
     onTabSelect = null, // Callback after Tab-to-select; receives the selected option
     noAutoSelectOnTab = false, // When true, Tab only confirms an arrow-key highlight; never silently picks the first item
+    allowCustom = false, // Allows creating custom options on the fly
 }, ref) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
@@ -46,9 +47,16 @@ const SearchableSelect = forwardRef(function SearchableSelect({
     const isMulti = multiple || Array.isArray(value);
     const selectedOptions = options.filter(opt => selectedValues.some(val => String(val) === String(opt.value)));
 
-    const filteredOptions = isAsyncMode
+    let filteredOptions = isAsyncMode
         ? searchResults.filter(opt => (opt.label || "").toLowerCase().includes(search.toLowerCase()))
         : options.filter(opt => (opt.label || "").toLowerCase().includes(search.toLowerCase()));
+
+    if (allowCustom && search.trim() !== "") {
+        const exactMatch = filteredOptions.some(opt => String(opt.label).toLowerCase() === search.trim().toLowerCase());
+        if (!exactMatch) {
+            filteredOptions = [{ value: search.trim(), label: search.trim() }, ...filteredOptions];
+        }
+    }
 
     const displayOptions = (search === "" && initialLimit && !isAsyncMode)
         ? filteredOptions.slice(0, initialLimit)
@@ -76,25 +84,36 @@ const SearchableSelect = forwardRef(function SearchableSelect({
         }
     }, [isOpen]);
 
+    const onSearchRef = useRef(onSearch);
+    const fetchUrlRef = useRef(fetchUrl);
+
+    useEffect(() => {
+        onSearchRef.current = onSearch;
+        fetchUrlRef.current = fetchUrl;
+    }, [onSearch, fetchUrl]);
+
     useEffect(() => {
         if (!isOpen) return;
 
-        if (onSearch) {
-            const result = onSearch(search);
+        if (onSearchRef.current) {
+            const result = onSearchRef.current(search);
             if (result && typeof result.then === 'function') {
                 setIsAsyncMode(true);
                 result.then(data => setSearchResults(data || []));
+            } else if (Array.isArray(result)) {
+                setIsAsyncMode(true);
+                setSearchResults(result);
             } else {
                 setIsAsyncMode(false);
             }
-        } else if (fetchUrl) {
+        } else if (fetchUrlRef.current) {
             setIsAsyncMode(true);
-            const separator = fetchUrl.includes('?') ? '&' : '?';
-            axios.get(`${fetchUrl}${separator}search=${encodeURIComponent(search)}`)
+            const separator = fetchUrlRef.current.includes('?') ? '&' : '?';
+            axios.get(`${fetchUrlRef.current}${separator}search=${encodeURIComponent(search)}`)
                 .then(res => setSearchResults(res.data || []))
                 .catch(() => setSearchResults([]));
         }
-    }, [search, isOpen, onSearch, fetchUrl]);
+    }, [search, isOpen]);
 
     useEffect(() => {
         const updatePosition = () => {

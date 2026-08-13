@@ -7,81 +7,23 @@ on:
       - jobalign
       - hallam-city-campus
       - steel-audit
+      - tgl-kandy
   workflow_dispatch:
 
 jobs:
   deploy:
     name: Deploy ${{ github.ref_name }}
     runs-on: ubuntu-latest
+    
+    # THIS IS THE MAGIC LINE:
+    # It automatically pulls the secrets from the environment that matches your branch name!
+    environment: ${{ github.ref_name }} 
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
-
-      - name: Resolve deployment target
-        id: deploy-target
-        shell: bash
-        env:
-          FTP_SERVER_JOBALIGN: ${{ secrets.FTP_SERVER_JOBALIGN }}
-          FTP_USERNAME_JOBALIGN: ${{ secrets.FTP_USERNAME_JOBALIGN }}
-          FTP_PASSWORD_JOBALIGN: ${{ secrets.FTP_PASSWORD_JOBALIGN }}
-          FTP_SERVER_HALLAM: ${{ secrets.FTP_SERVER_HALLAM }}
-          FTP_USERNAME_HALLAM: ${{ secrets.FTP_USERNAME_HALLAM }}
-          FTP_PASSWORD_HALLAM: ${{ secrets.FTP_PASSWORD_HALLAM }}
-          FTP_SERVER_STEEL: ${{ secrets.FTP_SERVER_STEEL }}
-          FTP_USERNAME_STEEL: ${{ secrets.FTP_USERNAME_STEEL }}
-          FTP_PASSWORD_STEEL: ${{ secrets.FTP_PASSWORD_STEEL }}
-          FTP_SERVER_AAASS: ${{ secrets.FTP_SERVER_AAASS }}
-          FTP_USERNAME_AAASS: ${{ secrets.FTP_USERNAME_AAASS }}
-          FTP_PASSWORD_AAASS: ${{ secrets.FTP_PASSWORD_AAASS }}
-        run: |
-          # Helper function to write to GITHUB_ENV safely, stripping newlines
-          set_env() {
-            local key=$1
-            local val
-            val=$(echo "$2" | tr -d '\n\r')
-            echo "$key=$val" >> "$GITHUB_ENV"
-          }
-
-          branch="${GITHUB_REF_NAME:-develop}"
-          case "$branch" in
-            jobalign)
-              echo "env_file=env/.env.prod.jobalign" >> "$GITHUB_OUTPUT"
-              set_env "ftp_server" "$FTP_SERVER_JOBALIGN"
-              set_env "ftp_username" "$FTP_USERNAME_JOBALIGN"
-              set_env "ftp_password" "$FTP_PASSWORD_JOBALIGN"
-              dir="/"
-              ;;
-            hallam-city-campus)
-              echo "env_file=env/.env.prod.hallam-city-campus" >> "$GITHUB_OUTPUT"
-              set_env "ftp_server" "$FTP_SERVER_HALLAM"
-              set_env "ftp_username" "$FTP_USERNAME_HALLAM"
-              set_env "ftp_password" "$FTP_PASSWORD_HALLAM"
-              dir="/"
-              ;;
-            steel-audit)
-              echo "env_file=env/.env.prod.steel-audit" >> "$GITHUB_OUTPUT"
-              set_env "ftp_server" "$FTP_SERVER_STEEL"
-              set_env "ftp_username" "$FTP_USERNAME_STEEL"
-              set_env "ftp_password" "$FTP_PASSWORD_STEEL"
-              dir="/"
-              ;;
-            *)
-              echo "env_file=env/.env.prod.aaass" >> "$GITHUB_OUTPUT"
-              set_env "ftp_server" "$FTP_SERVER_AAASS"
-              set_env "ftp_username" "$FTP_USERNAME_AAASS"
-              set_env "ftp_password" "$FTP_PASSWORD_AAASS"
-              dir="/"
-              ;;
-          esac
-
-          if [ -z "$dir" ]; then
-            dir="/"
-          fi
-
-          echo "ftp_server_dir=$dir" >> "$GITHUB_ENV"
 
       - name: Build assets
         run: npm install && npm run build
@@ -95,11 +37,11 @@ jobs:
       - name: Prepare environment file
         shell: bash
         run: |
-          if [ -f "${{ steps.deploy-target.outputs.env_file }}" ]; then
-            cp "${{ steps.deploy-target.outputs.env_file }}" .env
-          else
-            cp env/.env.prod .env
-          fi
+          cp env/.env.prod.base .env
+          
+          # Extract prod configuration from targets.json for this branch
+          # jq pulls the object, to_entries converts to key/value, and we format it as KEY=VALUE
+          jq -r ".\"${{ github.ref_name }}\".prod | to_entries | .[] | \"\(.key)=\(.value)\"" env/targets.json >> .env
 
       - name: Ensure storage directories exist
         run: |
@@ -125,10 +67,11 @@ jobs:
         env:
           ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
         with:
-          server: ${{ env.ftp_server }}
-          username: ${{ env.ftp_username }}
-          password: ${{ env.ftp_password }}
-          server-dir: ${{ env.ftp_server_dir }}
+          # Now it just uses the generic secret names loaded from the active environment
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ./
           exclude: |
             **/resources/js/**
             **/node_modules/**

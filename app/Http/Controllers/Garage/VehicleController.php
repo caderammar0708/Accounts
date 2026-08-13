@@ -9,6 +9,11 @@ use Inertia\Inertia;
 
 class VehicleController extends Controller
 {
+    public function __construct()
+    {
+        abort_if(!class_exists(\App\Models\CompanySetting::class) || !(\App\Models\CompanySetting::first()?->vehicles_enabled ?? true), 403, 'Vehicles feature is disabled.');
+    }
+
     public function index()
     {
         $vehicles = Vehicle::with('customer')->orderBy('brand')->get();

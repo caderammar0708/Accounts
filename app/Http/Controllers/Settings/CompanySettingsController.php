@@ -6,21 +6,40 @@ use App\Http\Controllers\Controller;
 use App\Models\CompanySetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Artisan;
 use Inertia\Inertia;
 
 class CompanySettingsController extends Controller
 {
+    private function handleModuleMigrations($module, $enabled, $dropTables = false)
+    {
+        $path = 'database/migrations/modules/' . $module;
+        
+        if ($enabled) {
+            Artisan::call('migrate', [
+                '--path' => $path,
+                '--force' => true,
+            ]);
+        } elseif ($dropTables) {
+            Artisan::call('migrate:reset', [
+                '--path' => $path,
+                '--force' => true,
+            ]);
+        }
+    }
     /**
      * Helper to get the active company.
      */
     private function getActiveCompany()
     {
-        return \App\Models\Company::first();
+        return \App\Models\Company::current();
     }
 
     private function getSettings()
     {
-        return CompanySetting::firstOrCreate([]);
+        return CompanySetting::current();
     }
 
     public function index()
@@ -53,6 +72,7 @@ class CompanySettingsController extends Controller
         return Inertia::render('Settings/Index', [
             'settings' => $mergedData,
             'tab' => request('tab', 'company'),
+            'currencies' => \App\Models\Currency::where('is_active', true)->get(),
         ]);
     }
 
@@ -126,13 +146,65 @@ public function updateAccounting(Request $request)
         'acct_method' => 'required|string|max:50',
         'fin_year_start' => 'required|string|max:20',
         'tax_year_start' => 'required|string|max:50',
-        'close_books' => 'required|boolean',
         'tax_form' => 'required|string|max:100',
+        'books_lock_date' => 'nullable|date',
+        'books_lock_pin' => 'nullable|string|size:6',
+        'current_pin' => 'nullable|string',
     ]);
 
-    $this->getSettings()->update($validated);
+    $settings = $this->getSettings();
+    $updateData = [
+        'acct_method' => $validated['acct_method'],
+        'fin_year_start' => $validated['fin_year_start'],
+        'tax_year_start' => $validated['tax_year_start'],
+        'tax_form' => $validated['tax_form'],
+        'books_lock_date' => $validated['books_lock_date'],
+    ];
+
+    if ($validated['books_lock_date']) {
+        if ($settings->books_lock_pin && $settings->books_lock_date) {
+            // Modifying existing lock
+            if (!$validated['current_pin']) {
+                throw ValidationException::withMessages(['current_pin' => 'Current PIN is required to change lock settings.']);
+            }
+            if (!Hash::check($validated['current_pin'], $settings->books_lock_pin)) {
+                throw ValidationException::withMessages(['current_pin' => 'Current PIN is incorrect.']);
+            }
+        }
+        if ($validated['books_lock_pin']) {
+            $updateData['books_lock_pin'] = Hash::make($validated['books_lock_pin']);
+        }
+    } else {
+        // Removing lock
+        if ($settings->books_lock_pin) {
+            if (!$validated['current_pin']) {
+                throw ValidationException::withMessages(['current_pin' => 'Current PIN is required to remove lock.']);
+            }
+            if (!Hash::check($validated['current_pin'], $settings->books_lock_pin)) {
+                throw ValidationException::withMessages(['current_pin' => 'Current PIN is incorrect.']);
+            }
+        }
+        $updateData['books_lock_date'] = null;
+        $updateData['books_lock_pin'] = null;
+    }
+
+    $settings->update($updateData);
     return back()->with('message', 'Accounting settings updated successfully.');
 }
+
+    /**
+     * Update Currency Settings
+     */
+    public function updateCurrency(Request $request)
+    {
+        $validated = $request->validate([
+            'multi_currency_enabled' => 'required|boolean',
+            'home_currency_id' => 'nullable|exists:currencies,id',
+        ]);
+
+        $this->getSettings()->update($validated);
+        return back()->with('message', 'Currency settings updated successfully.');
+    }
 
     /**
      * Update Layout Settings
@@ -151,9 +223,13 @@ public function updateAccounting(Request $request)
     {
         $validated = $request->validate([
             'warranty_layout_enabled' => 'required|boolean',
+            'drop_tables' => 'nullable|boolean',
         ]);
 
-        $this->getSettings()->update($validated);
+        $this->getSettings()->update(['warranty_layout_enabled' => $validated['warranty_layout_enabled']]);
+        
+        $this->handleModuleMigrations('warranty', $validated['warranty_layout_enabled'], $request->boolean('drop_tables'));
+
         return back()->with('message', 'Warranty layout settings updated successfully.');
     }
 
@@ -161,9 +237,13 @@ public function updateAccounting(Request $request)
     {
         $validated = $request->validate([
             'job_layout_enabled' => 'required|boolean',
+            'drop_tables' => 'nullable|boolean',
         ]);
 
-        $this->getSettings()->update($validated);
+        $this->getSettings()->update(['job_layout_enabled' => $validated['job_layout_enabled']]);
+        
+        $this->handleModuleMigrations('jobs', $validated['job_layout_enabled'], $request->boolean('drop_tables'));
+
         return back()->with('message', 'Job layout settings updated successfully.');
     }
 
@@ -175,6 +255,30 @@ public function updateAccounting(Request $request)
 
         $this->getSettings()->update($validated);
         return back()->with('message', 'Customer layout settings updated successfully.');
+    }
+
+    public function updateReportsDisplayStyle(Request $request)
+    {
+        $validated = $request->validate([
+            'reports_display_as_buttons' => 'required|boolean',
+        ]);
+
+        $this->getSettings()->update($validated);
+        return back()->with('message', 'Reports display style updated successfully.');
+    }
+
+    public function updateVehiclesEnabled(Request $request)
+    {
+        $validated = $request->validate([
+            'vehicles_enabled' => 'required|boolean',
+            'drop_tables' => 'nullable|boolean',
+        ]);
+
+        $this->getSettings()->update(['vehicles_enabled' => $validated['vehicles_enabled']]);
+        
+        $this->handleModuleMigrations('vehicles', $validated['vehicles_enabled'], $request->boolean('drop_tables'));
+
+        return back()->with('message', 'Vehicles setting updated successfully.');
     }
 
     /**

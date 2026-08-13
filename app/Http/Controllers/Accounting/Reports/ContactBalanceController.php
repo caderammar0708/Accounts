@@ -129,7 +129,7 @@ class ContactBalanceController extends Controller
                 'end_date' => $endDate,
                 'display_by' => $displayBy,
                 'months' => $months,
-                'type' => $request->query('type') ?? 'custom',
+                'type' => $request->query('type'),
             ],
         ]);
     }
@@ -183,7 +183,7 @@ class ContactBalanceController extends Controller
             'filters' => [
                 'start_date' => $startDate ?? '',
                 'end_date' => $endDate,
-                'type' => $request->query('type') ?? 'custom'
+                'type' => $request->query('type')
             ]
         ]);
     }
@@ -229,7 +229,7 @@ class ContactBalanceController extends Controller
             'filters'     => [
                 'start_date' => $startDate ?? '',
                 'end_date'   => $endDate,
-                'type'       => $request->query('type') ?? 'custom',
+                'type'       => $request->query('type'),
             ],
         ]);
     }
@@ -348,7 +348,7 @@ class ContactBalanceController extends Controller
                 'end_date' => $endDate,
                 'display_by' => $displayBy,
                 'months' => $months,
-                'type' => $request->query('type') ?? 'custom',
+                'type' => $request->query('type'),
             ],
         ]);
     }
@@ -402,7 +402,7 @@ class ContactBalanceController extends Controller
             'filters' => [
                 'start_date' => $startDate ?? '',
                 'end_date' => $endDate,
-                'type' => $request->query('type') ?? 'custom'
+                'type' => $request->query('type')
             ]
         ]);
     }
@@ -448,7 +448,7 @@ class ContactBalanceController extends Controller
             'filters'     => [
                 'start_date' => $startDate ?? '',
                 'end_date'   => $endDate,
-                'type'       => $request->query('type') ?? 'custom',
+                'type'       => $request->query('type'),
             ],
         ]);
     }

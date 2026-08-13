@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import CommonInput from '@/Components/CommonInput';
 import CommonButton from '@/Components/CommonButton';
 
 export default function ReportsIndex() {
     const [searchTerm, setSearchTerm] = useState('');
+    const page = usePage();
+    const displayAsButtons = page.props.auth.reports_display_as_buttons ?? true;
 
     const reportGroups = [
         {
@@ -18,7 +20,7 @@ export default function ReportsIndex() {
         {
             category: 'Customers & Sales',
             reports: [
-                { name: 'Vehicle History', href: route('reports.vehicle-history') },
+                ...(page.props.auth.vehicles_enabled ? [{ name: 'Vehicle History', href: route('reports.vehicle-history') }] : []),
                 { name: 'Customer Balance Summary', href: route('reports.customer-balance') },
                 { name: 'Customer Balance Details', href: route('reports.customer-balance-detail') },
                 { name: 'Sales By Customer', href: route('reports.sales-by-customer') },
@@ -96,13 +98,23 @@ export default function ReportsIndex() {
                                 </div>
                                 <div className="p-6 flex-1 flex flex-col gap-2">
                                     {group.reports.map((item, rIdx) => (
-                                        <Link
-                                            key={rIdx}
-                                            href={item.href}
-                                            className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-primary-500 hover:bg-primary-50 text-sm font-medium text-gray-700 hover:text-primary-700 transition-all shadow-sm"
-                                        >
-                                            {item.name}
-                                        </Link>
+                                        displayAsButtons ? (
+                                            <Link
+                                                key={rIdx}
+                                                href={item.href}
+                                                className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-primary-500 hover:bg-primary-50 text-sm font-medium text-gray-700 hover:text-primary-700 transition-all shadow-sm"
+                                            >
+                                                {item.name}
+                                            </Link>
+                                        ) : (
+                                            <Link
+                                                key={rIdx}
+                                                href={item.href}
+                                                className="text-sm font-medium text-primary-600 hover:text-primary-800 hover:underline underline-offset-2 py-1 transition-colors"
+                                            >
+                                                {item.name}
+                                            </Link>
+                                        )
                                     ))}
                                 </div>
                             </div>

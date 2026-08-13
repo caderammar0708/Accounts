@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import axios from 'axios';
+import PinPromptModal from './PinPromptModal';
+import Modal from './Modal';
+import CommonButton from './CommonButton';
 
 export default function MoreOptionsMenu({
     copyRoute = null,
@@ -9,9 +12,19 @@ export default function MoreOptionsMenu({
     recordId = null,
     listRoute = 'dashboard',
     label = 'More Options',
+    documentType = null,
 }) {
     const [open, setOpen] = useState(false);
     const menuRef = useRef(null);
+
+    // Print Modal State
+    const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+    const [availableTemplates, setAvailableTemplates] = useState([]);
+
+    // Books Lock PIN Modal
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [booksPin, setBooksPin] = useState('');
+    const [booksPinError, setBooksPinError] = useState(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -35,6 +48,30 @@ export default function MoreOptionsMenu({
 
         window.alert('Copy is not available for this record type yet.');
     };
+
+    const handleDeleteSubmit = (pin = '') => {
+        // Use Inertia router for delete — the backend redirect determines where to go next
+        const data = pin ? { books_pin: pin } : {};
+        router.delete(route(deleteRoute, recordId), {
+            data: data,
+            preserveScroll: false,
+            onError: (err) => {
+                if (err.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED' || err.books_pin) {
+                    setBooksPinError(err.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? err.books_pin : null);
+                    setIsPinModalOpen(true);
+                } else {
+                    const message = err?.error || err?.message || 'This record cannot be deleted right now.';
+                    window.alert(message);
+                }
+            },
+            onSuccess: () => {
+                setIsPinModalOpen(false);
+                setBooksPin('');
+                setBooksPinError(null);
+            }
+        });
+    };
+
     const handleDelete = () => {
         if (!deleteRoute || !recordId) {
             window.alert('Delete is not available for this record type yet.');
@@ -46,20 +83,26 @@ export default function MoreOptionsMenu({
 
         setOpen(false);
 
-        // Use Inertia router for delete — the backend redirect determines where to go next
-        router.delete(route(deleteRoute, recordId), {
-            preserveScroll: false,
-            onError: (err) => {
-                const message = err?.response?.data?.message || 'This record cannot be deleted right now.';
-                window.alert(message);
-            }
-        });
+        handleDeleteSubmit(booksPin);
     };
 
-    const handlePrint = () => {
+    const handlePrint = async () => {
         setOpen(false);
         if (printRoute) {
-            window.open(route(printRoute, recordId), '_blank');
+            try {
+                const response = await axios.get(route('print.settings.templates', { document_type: documentType }));
+                const templates = response.data || [];
+                
+                if (templates.length > 1) {
+                    setAvailableTemplates(templates);
+                    setIsPrintModalOpen(true);
+                } else {
+                    window.open(route(printRoute, recordId), '_blank');
+                }
+            } catch (error) {
+                console.error("Failed to fetch print templates", error);
+                window.open(route(printRoute, recordId), '_blank'); // fallback
+            }
         }
     };
 
@@ -109,6 +152,49 @@ export default function MoreOptionsMenu({
                     )}
                 </div>
             )}
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setBooksPin('');
+                    setBooksPinError(null);
+                }}
+                onSubmit={(pin) => {
+                    setBooksPin(pin);
+                    setTimeout(() => handleDeleteSubmit(pin), 0);
+                }}
+                errorMessage={booksPinError}
+            />
+
+            <Modal show={isPrintModalOpen} onClose={() => setIsPrintModalOpen(false)} maxWidth="md">
+                <div className="p-6">
+                    <h3 className="text-lg font-bold text-slate-800 mb-4">Select Print Format</h3>
+                    <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                        {availableTemplates.map(template => (
+                            <button
+                                key={template.id}
+                                type="button"
+                                onClick={() => {
+                                    setIsPrintModalOpen(false);
+                                    window.open(route(printRoute, recordId) + '?template_id=' + template.id, '_blank');
+                                }}
+                                className="w-full text-left p-4 rounded-lg border border-slate-200 hover:border-primary-500 hover:bg-primary-50 transition-colors flex items-center justify-between group"
+                            >
+                                <span className="font-semibold text-slate-700 group-hover:text-primary-700">{template.template_name || 'Standard Format'}</span>
+                                {template.is_default && (
+                                    <span className="text-[10px] uppercase tracking-wider font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Default</span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="mt-6 flex justify-end">
+                        <CommonButton variant="ghost" onClick={() => setIsPrintModalOpen(false)}>
+                            Cancel
+                        </CommonButton>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

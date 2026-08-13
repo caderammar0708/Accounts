@@ -65,9 +65,18 @@ class LookupController extends Controller
         $bankOnly = $request->boolean('bank_only') || strtolower((string) $type) === 'bank_only';
         $includeSelectedId = $request->query('include_selected_id');
 
-        $accounts = \App\Models\Accounting\ChartOfAcc::select('id', 'name', 'account_code', 'balance', 'account_type', 'sub_type', 'currency')
+        $settings = class_exists(\App\Models\CompanySetting::class) ? \App\Models\CompanySetting::current() : null;
+        $homeCurrencyId = $settings?->home_currency_id;
+        $isMultiCurrency = $settings?->multi_currency_enabled;
+        
+        $homeCurrency = $homeCurrencyId ? \App\Models\Currency::find($homeCurrencyId) : null;
+        $homeCurrencyCode = $homeCurrency?->code ?: 'Rs.';
+        $homeCurrencySymbol = $homeCurrency?->symbol ?: 'Rs.';
+
+        $accounts = \App\Models\Accounting\ChartOfAcc::select('id', 'name', 'account_code', 'balance', 'account_type', 'sub_type', 'currency_id')
             ->withSum('journalLines', 'debit')
             ->withSum('journalLines', 'credit')
+            ->with('currency')
             ->when($search, function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('account_code', 'like', "%{$search}%");
@@ -83,10 +92,11 @@ class LookupController extends Controller
             })
             ->orderBy('account_code')
             ->get()
-            ->map(function($acc) {
-                $currencyCode = $acc->currency ?: auth()->user()?->currentCompany()?->home_currency_prefix ?: null;
-                $currencySymbol = $this->getCurrencySymbol($currencyCode);
-                $isMultiCurrency = !empty($currencyCode) && $currencyCode !== (auth()->user()?->currentCompany()?->home_currency_prefix ?: null);
+            ->map(function($acc) use ($homeCurrencyId, $isMultiCurrency, $homeCurrencyCode, $homeCurrencySymbol) {
+                $currencyCode = $acc->currency ? $acc->currency->code : $homeCurrencyCode;
+                $currencySymbol = $acc->currency ? $acc->currency->symbol : $homeCurrencySymbol;
+                
+                $isForeignCurrency = $isMultiCurrency && $acc->currency_id && $acc->currency_id !== $homeCurrencyId;
 
                 return [
                     'value' => $acc->id,
@@ -95,7 +105,8 @@ class LookupController extends Controller
                     'account_type' => $acc->account_type,
                     'currency_code' => $currencyCode,
                     'currency_symbol' => $currencySymbol,
-                    'is_multi_currency' => $isMultiCurrency,
+                    'is_foreign_currency' => $isForeignCurrency,
+                    'currency_id' => $acc->currency_id,
                 ];
             });
 
@@ -109,18 +120,26 @@ class LookupController extends Controller
             return response()->json([ 'error' => 'Account ID is required.' ], 422);
         }
 
-        $account = \App\Models\Accounting\ChartOfAcc::select('id', 'currency')->find($accountId);
+        $account = \App\Models\Accounting\ChartOfAcc::select('id', 'currency_id')->with('currency')->find($accountId);
         if (!$account) {
             return response()->json([ 'error' => 'Account not found.' ], 404);
         }
 
-        $currencyCode = $account->currency ?: auth()->user()?->currentCompany()?->home_currency_prefix ?: null;
-        $currencySymbol = 'Rs.';
+        $settings = class_exists(\App\Models\CompanySetting::class) ? \App\Models\CompanySetting::current() : null;
+        $homeCurrencyId = $settings?->home_currency_id;
+        $isMultiCurrency = $settings?->multi_currency_enabled;
+        
+        $homeCurrency = $homeCurrencyId ? \App\Models\Currency::find($homeCurrencyId) : null;
+        $currencyCode = $account->currency ? $account->currency->code : ($homeCurrency?->code ?: 'Rs.');
+        $currencySymbol = $account->currency ? $account->currency->symbol : ($homeCurrency?->symbol ?: 'Rs.');
+        
+        $isForeignCurrency = $isMultiCurrency && $account->currency_id && $account->currency_id !== $homeCurrencyId;
 
         return response()->json([
-            'is_multi_currency' => false,
+            'is_foreign_currency' => $isForeignCurrency,
             'currency_code' => $currencyCode,
             'currency_symbol' => $currencySymbol,
+            'currency_id' => $account->currency_id,
             'flag' => $this->currencyFlagEmoji($currencyCode),
         ]);
     }
@@ -417,6 +436,8 @@ class LookupController extends Controller
      */
     public function vehicles(Request $request)
     {
+        abort_if(!class_exists(\App\Models\CompanySetting::class) || !(\App\Models\CompanySetting::first()?->vehicles_enabled ?? true), 403, 'Vehicles feature is disabled.');
+
         $search = $request->query('search');
         
         $vehicles = \App\Models\Vehicle::with('customer')

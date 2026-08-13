@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('receipt_no')->nullable();
             $table->uuid('customer_id');
-            $table->foreignId('vehicle_id')->nullable()->constrained('vehicles')->onDelete('set null');
+            $table->unsignedBigInteger('vehicle_id')->nullable();
             $table->string('email')->nullable();
             $table->date('receipt_date');
             $table->uuid('payment_method_id')->nullable();

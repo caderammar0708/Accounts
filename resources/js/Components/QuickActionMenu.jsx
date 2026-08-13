@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react';
 export default function QuickActionMenu({ isOpen, onClose, onOpenQuickAdd }) {
     const menuRef = useRef(null);
     const page = usePage();
+    const displayAsButtons = page.props.auth.reports_display_as_buttons ?? true;
 
     // Close when clicking outside
     useEffect(() => {
@@ -40,14 +41,12 @@ export default function QuickActionMenu({ isOpen, onClose, onOpenQuickAdd }) {
         {
             title: "Suppliers",
             links: [
-
                 { name: "Add Supplier", action: 'supplier', isSolid: true },
                 { name: "Payment", href: route('payment.create') },
                 { name: "Bill", href: route('bill.create') },
                 { name: "Pay Bill", href: route('pay-bill.create') },
                 { name: "Bill Return", href: route('bill-return.create') },
                 { name: "Cheque", href: route('cheque.create') },
-
             ]
         },
         {
@@ -62,6 +61,20 @@ export default function QuickActionMenu({ isOpen, onClose, onOpenQuickAdd }) {
             ]
         }
     ];
+
+    // Style helpers — behaviour is identical; only appearance changes
+    const getLinkClass = (isSolid) => {
+        if (displayAsButtons) {
+            return `block w-full text-left px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${isSolid
+                ? 'border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100 mb-2'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'
+                }`;
+        }
+        return `block w-full text-left text-xs font-medium transition-colors py-1 ${isSolid
+            ? 'text-primary-700 hover:text-primary-900 font-semibold mb-1'
+            : 'text-slate-600 hover:text-slate-900 hover:underline underline-offset-2'
+            }`;
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-start justify-start pl-4 pt-4 lg:pl-6 bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-300">
@@ -79,10 +92,7 @@ export default function QuickActionMenu({ isOpen, onClose, onOpenQuickAdd }) {
                                         key={lIdx}
                                         href={link.href}
                                         onClick={onClose}
-                                        className={`block w-full text-left px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${link.isSolid
-                                            ? 'border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100 mb-2'
-                                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'
-                                            }`}
+                                        className={getLinkClass(link.isSolid)}
                                     >
                                         {link.isSolid && <span className="mr-1.5 font-bold">+</span>}
                                         {link.name}
@@ -98,16 +108,13 @@ export default function QuickActionMenu({ isOpen, onClose, onOpenQuickAdd }) {
                                                 onClose();
                                             }
                                         }}
-                                        className={`block w-full text-left px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${link.isSolid
-                                            ? 'border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100 mb-2'
-                                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'
-                                            }`}
+                                        className={getLinkClass(link.isSolid)}
                                     >
                                         {link.isSolid && <span className="mr-1.5 font-bold">+</span>}
                                         {link.name}
                                     </button>
                                 )
-                            ))}
+            ))}
                         </div>
                     ))}
                 </div>

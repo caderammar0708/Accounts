@@ -16,7 +16,7 @@ class ChartOfAcc extends Model implements Auditable
         'account_type',
         'sub_type',
         'balance',
-        'currency',
+        'currency_id',
         'description',
         'is_active',
         'parent_id',
@@ -24,6 +24,11 @@ class ChartOfAcc extends Model implements Auditable
     ];
 
     protected $appends = ['is_system'];
+
+    public function currency()
+    {
+        return $this->belongsTo(\App\Models\Currency::class, 'currency_id');
+    }
 
     public function parent()
     {

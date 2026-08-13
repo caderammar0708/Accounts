@@ -75,13 +75,17 @@ Route::middleware('auth')->group(function () {
             Route::post('/warranty-layout', 'updateWarrantyLayout')->name('layout.warranty.update');
             Route::post('/job-layout', 'updateJobLayout')->name('layout.job.update');
             Route::post('/customer-layout', 'updateCustomerLayout')->name('layout.customer.update');
+            Route::post('/reports-display-style', 'updateReportsDisplayStyle')->name('layout.reports.update');
+            Route::post('/vehicles-layout', 'updateVehiclesEnabled')->name('layout.vehicles.update');
             Route::post('/alerts', 'updateAlerts')->name('alerts.update');
             Route::post('/time', 'updateTime')->name('time.settings.update');
+            Route::post('/currency', 'updateCurrency')->name('currency.settings.update');
             Route::post('/logo', 'uploadLogo')->name('logo.upload');
         });
-        
-        Route::post('/print', [PrintSettingController::class, 'update'])->name('print.settings.update');
-
+        Route::get('/print/templates', [PrintSettingController::class, 'getTemplates'])->name('print.settings.templates');
+        Route::post('/print', [PrintSettingController::class, 'store'])->name('print.settings.store');
+        Route::post('/print/{printSetting}', [PrintSettingController::class, 'update'])->name('print.settings.update');
+        Route::delete('/print/{printSetting}', [PrintSettingController::class, 'destroy'])->name('print.settings.destroy');
         // Quick routes for settings-managed resources
         Route::post('/payment-methods', [\App\Http\Controllers\Settings\PaymentMethodController::class, 'store'])->name('payment-methods.store');
     });

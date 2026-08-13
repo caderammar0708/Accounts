@@ -83,6 +83,7 @@ class SalesInvoiceController extends Controller
     {
         $validated = $request->validated();
         try {
+            \App\Services\BooksLockService::check($request->receiptDate, $request->books_pin);
             $journalEntry = DB::transaction(function() use ($request) {
                 // Filter out empty items
                 $items = collect($request->items)->filter(function($item) {
@@ -152,14 +153,6 @@ class SalesInvoiceController extends Controller
                         'amount' => (float) str_replace(',', '', $itemData['amount']),
                         'service_date' => $itemData['serviceDate'] ?? null,
                     ]);
-
-                    $this->createWarrantyForInvoiceItem(
-                        $invoiceItem,
-                        $request->vehicle_id,
-                        $customerId,
-                        $request->receiptDate,
-                        $itemData['warranty'] ?? false
-                    );
                 }
 
                 // 2. Save Financial Truth (Journal Entry)
@@ -244,7 +237,7 @@ class SalesInvoiceController extends Controller
             });
 
             return $this->handleActionRedirect($request, 'sales-invoice', $journalEntry->id, 'Sale saved successfully.');
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             \Log::error('Sales invoice save error: ' . $e->getMessage(), [
                 'data' => $request->all(),
                 'trace' => $e->getTraceAsString()
@@ -310,6 +303,11 @@ class SalesInvoiceController extends Controller
         $validated = $request->validated();
 
         try {
+            \App\Services\BooksLockService::check($journalEntry->date, $request->books_pin);
+            if (date('Y-m-d', strtotime($journalEntry->date)) !== date('Y-m-d', strtotime($request->receiptDate))) {
+                \App\Services\BooksLockService::check($request->receiptDate, $request->books_pin);
+            }
+
             DB::transaction(function() use ($request, $journalEntry) {
                 // Filter out empty items
                 $items = collect($request->items)->filter(function($item) {
@@ -388,14 +386,6 @@ class SalesInvoiceController extends Controller
                         'amount' => (float) str_replace(',', '', $itemData['amount']),
                         'service_date' => $itemData['serviceDate'] ?? null,
                     ]);
-
-                    $this->createWarrantyForInvoiceItem(
-                        $invoiceItem,
-                        $request->vehicle_id,
-                        $customerId,
-                        $request->receiptDate,
-                        $itemData['warranty'] ?? false
-                    );
                 }
 
                 // 2. Update Financial Truth (Journal Entry)
@@ -473,13 +463,15 @@ class SalesInvoiceController extends Controller
             });
             return $this->handleActionRedirect($request, 'sales-invoice', $journalEntry->id, 'Cash sale updated successfully.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 
-    public function destroy(JournalEntry $journalEntry)
+    public function destroy(Request $request, JournalEntry $journalEntry)
     {
+        \App\Services\BooksLockService::check($journalEntry->date, $request->input('books_pin'));
+
         $chartOfAccountId = $journalEntry->lines->first()?->chart_of_acc_id
             ?? $journalEntry->lines->first()?->chart_of_account_id
             ?? $journalEntry->lines->first()?->account_id;
@@ -525,7 +517,7 @@ class SalesInvoiceController extends Controller
     {
         $journalEntry->load('lines');
         $salesInvoice = \App\Models\Accounting\SalesInvoice::with('items.item', 'customer', 'company', 'vehicle')->findOrFail($journalEntry->transactionable_id);
-        $company = $salesInvoice->company;
+        $company = $salesInvoice->company ?? \App\Models\Company::current();
 
         $tableItems = [];
         foreach ($salesInvoice->items as $item) {
@@ -535,17 +527,16 @@ class SalesInvoiceController extends Controller
             }
             $tableItems[] = [
                 $desc,
-                $item->quantity,
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($item->rate, 2),
-                ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($item->amount, 2),
+                $item->quantity + 0,
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($item->rate, 2),
+                ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($item->amount, 2),
             ];
         }
 
-        $printSetting = \App\Models\PrintSetting::query()
-            ->where('document_type', 'invoice')
-            ->first();
+        $printSetting = \App\Models\PrintSetting::getForPrint('invoice');
 
         return view('print.document', [
+            'printSetting' => $printSetting,
             'title' => $printSetting?->custom_title ?: 'Receipt / Sales Invoice',
             'headerAlignment' => $printSetting?->header_alignment ?: 'left',
             'staticFooterContent' => $printSetting?->static_footer_content ?: null,
@@ -561,7 +552,7 @@ class SalesInvoiceController extends Controller
             'tableItems' => $tableItems,
             
             'summaryInfo' => [
-                'Total Amount' => ($company->home_currency_prefix ? $company->home_currency_prefix . ' ' : '') . number_format($salesInvoice->total_amount, 2)
+                'Total Amount' => ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($salesInvoice->total_amount, 2)
             ],
             
             'amountInWords' => true,

@@ -38,7 +38,7 @@ class UserObserver
             $authServerUrl = rtrim(config('sso.auth_server_url'), '/');
             $secret = config('sso.client_secret');
 
-            Http::withHeaders([
+            $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $secret,
                 'Accept' => 'application/json',
             ])->post($authServerUrl . '/api/sync/user', [
@@ -48,8 +48,12 @@ class UserObserver
                 'company_id' => $user->currentCompany()?->id ?? null,
                 'domain' => request()->getHost(),
             ]);
+
+            if ($response->failed()) {
+                Log::error('Failed to sync user to central hub (HTTP ' . $response->status() . '): ' . $response->body());
+            }
         } catch (\Exception $e) {
-            Log::error('Failed to sync user to central hub: ' . $e->getMessage());
+            Log::error('Failed to sync user to central hub (Exception): ' . $e->getMessage());
         }
     }
 }

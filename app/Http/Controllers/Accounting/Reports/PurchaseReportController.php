@@ -104,7 +104,7 @@ class PurchaseReportController extends Controller
                 'end_date' => $endDate,
                 'display_by' => $displayBy,
                 'months' => $months,
-                'type' => $request->query('type') ?? 'custom',
+                'type' => $request->query('type'),
             ],
         ]);
     }
@@ -186,7 +186,7 @@ class PurchaseReportController extends Controller
                 'end_date' => $endDate,
                 'display_by' => $displayBy,
                 'months' => $months,
-                'type' => $request->query('type') ?? 'custom',
+                'type' => $request->query('type'),
             ],
         ]);
     }

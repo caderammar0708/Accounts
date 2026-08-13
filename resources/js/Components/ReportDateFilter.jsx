@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import CommonInput from './CommonInput';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 
 export default function ReportDateFilter({ currentFilter, onFilterChange }) {
+    const { auth } = usePage().props;
     const [filterType, setFilterType] = useState('custom');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -30,6 +31,25 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
             end: formatDate(end),
         };
     };
+
+    // ── sessionStorage helpers ────────────────────────────────────────────────
+    const SESSION_KEY = 'reportDateFilter';
+
+    const saveToSession = (type, start, end) => {
+        try {
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify({ type, start_date: start, end_date: end }));
+        } catch (_) {}
+    };
+
+    const loadFromSession = () => {
+        try {
+            const raw = sessionStorage.getItem(SESSION_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch (_) {
+            return null;
+        }
+    };
+    // ─────────────────────────────────────────────────────────────────────────
 
     const handleApply = (type, customStart, customEnd) => {
         let start = '';
@@ -100,6 +120,34 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                 start = formatDate(new Date(y - 1, 0, 1));
                 end = formatDate(new Date(y - 1, 11, 31));
                 break;
+            case 'this_financial_year': {
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                const finStartMonthStr = auth?.financial_year_start_month || 'April';
+                let finStartMonthIdx = monthNames.indexOf(finStartMonthStr);
+                if (finStartMonthIdx < 0) finStartMonthIdx = 3; // Default to April
+                
+                let fyStartYear = y;
+                if (m < finStartMonthIdx) {
+                    fyStartYear = y - 1;
+                }
+                start = formatDate(new Date(fyStartYear, finStartMonthIdx, 1));
+                end = formatDate(new Date(fyStartYear + 1, finStartMonthIdx, 0));
+                break;
+            }
+            case 'last_financial_year': {
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                const finStartMonthStr = auth?.financial_year_start_month || 'April';
+                let finStartMonthIdx = monthNames.indexOf(finStartMonthStr);
+                if (finStartMonthIdx < 0) finStartMonthIdx = 3;
+                
+                let lfyStartYear = y - 1;
+                if (m < finStartMonthIdx) {
+                    lfyStartYear = y - 2;
+                }
+                start = formatDate(new Date(lfyStartYear, finStartMonthIdx, 1));
+                end = formatDate(new Date(lfyStartYear + 1, finStartMonthIdx, 0));
+                break;
+            }
             case 'custom':
                 start = customStart || startDate;
                 end = customEnd || endDate;
@@ -110,26 +158,43 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
         setStartDate(start);
         setEndDate(end);
 
+        // Persist the selection so switching to another report keeps it applied
+        saveToSession(type, start, end);
+
         if (onFilterChange) {
             onFilterChange({ start_date: start, end_date: end, type: type });
         }
     };
 
-    // Determine default filter type based on props
+    // On mount: initialise local state. If the server provided an explicit filter
+    // type via URL params, honour it. Otherwise restore the last filter the user
+    // chose in another report (sessionStorage), so the date doesn't reset when
+    // switching between reports. Falls back to current-month if nothing is saved.
     useEffect(() => {
         if (currentFilter) {
             if (currentFilter.type) {
+                // Server-driven filter (user navigated with query params) — honour it.
                 setFilterType(currentFilter.type);
+                const defaultRange = getCurrentMonthRange();
+                setStartDate(currentFilter.start_date ?? defaultRange.start);
+                setEndDate(currentFilter.end_date ?? defaultRange.end);
+                return;
             }
 
-            const defaultRange = getCurrentMonthRange();
-            const incomingStart = currentFilter.start_date ?? defaultRange.start;
-            const incomingEnd = currentFilter.end_date ?? defaultRange.end;
+            // No explicit type from server — try to restore the previously saved filter.
+            const saved = loadFromSession();
+            if (saved && saved.type) {
+                // Auto-apply so the report re-fetches with the persisted dates.
+                handleApply(saved.type, saved.start_date, saved.end_date);
+                return;
+            }
 
-            setStartDate(incomingStart);
-            setEndDate(incomingEnd);
+            // No saved filter — fall back to current-month defaults.
+            const defaultRange = getCurrentMonthRange();
+            setStartDate(currentFilter.start_date ?? defaultRange.start);
+            setEndDate(currentFilter.end_date ?? defaultRange.end);
         }
-    }, [currentFilter]);
+    }, []); // Run only on mount — each Inertia navigation creates a fresh component instance
 
     return (
         <div className="flex flex-row items-center gap-2 flex-wrap">
@@ -165,6 +230,8 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                     <option value="last_half_year">Last Half Year</option>
                     <option value="this_year">This Year</option>
                     <option value="last_year">Last Year</option>
+                    <option value="this_financial_year">This Financial Year</option>
+                    <option value="last_financial_year">Last Financial Year</option>
                 </select>
             </div>
 
@@ -175,7 +242,23 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                             type="date"
                             value={startDate}
                             onChange={(e) => {
-                                setStartDate(e.target.value);
+                                const newStart = e.target.value;
+                                setStartDate(newStart);
+                                
+                                if (newStart) {
+                                    const [y, m, day] = newStart.split('-');
+                                    const d = new Date(y, m - 1, day);
+                                    
+                                    d.setFullYear(d.getFullYear() + 1);
+                                    d.setDate(d.getDate() - 1);
+                                    
+                                    const today = new Date();
+                                    today.setHours(0, 0, 0, 0);
+                                    d.setHours(0, 0, 0, 0);
+                                    
+                                    const end = d > today ? today : d;
+                                    setEndDate(formatDate(end));
+                                }
                             }}
                         />
                     </div>

@@ -4,6 +4,10 @@ import React, { useState, useRef } from 'react';
 import { useForm, router } from '@inertiajs/react';
 import CommonInput from '@/Components/CommonInput';
 import CommonButton from '@/Components/CommonButton';
+import Modal from '@/Components/Modal';
+import SecondaryButton from '@/Components/SecondaryButton';
+import DangerButton from '@/Components/DangerButton';
+import Checkbox from '@/Components/Checkbox';
 
 export default function CompanySettings({ settings, currencies = [] }) {
     // 1. Logic for Company Info Text (Edit Mode)
@@ -82,14 +86,62 @@ const accountingForm = useForm({
     acct_method: settings?.acct_method || 'Accrual',
     fin_year_start: settings?.fin_year_start || 'January',
     tax_year_start: settings?.tax_year_start || 'Same as financial year',
-    close_books: !!settings?.close_books,
     tax_form: settings?.tax_form || 'Partnership or limited liability company',
+    books_lock_date: settings?.books_lock_date || '',
+    books_lock_pin: '',
+    current_pin: '',
 });
 
 const handleAccountingSubmit = (e) => {
     e.preventDefault();
     accountingForm.post(route('accounting.update'), {
         onSuccess: () => setIsEditingAccounting(false),
+    });
+};
+
+const [confirmingDisable, setConfirmingDisable] = useState(null);
+const [dropTables, setDropTables] = useState(false);
+
+const [isEditingCurrency, setIsEditingCurrency] = useState(false);
+const currencyForm = useForm({
+    multi_currency_enabled: !!settings?.multi_currency_enabled,
+    home_currency_id: settings?.home_currency_id || '',
+});
+
+const handleCurrencySubmit = (e) => {
+    e.preventDefault();
+    currencyForm.post(route('currency.settings.update'), {
+        onSuccess: () => setIsEditingCurrency(false),
+    });
+};
+
+const handleToggleFeature = (feature, currentVal, e) => {
+    const isEnabling = e.target.checked;
+    if (isEnabling) {
+        submitFeatureToggle(feature, true, false);
+    } else {
+        setConfirmingDisable(feature);
+        setDropTables(false);
+    }
+};
+
+const submitFeatureToggle = (feature, enabled, dropData = false) => {
+    let routeName = '';
+    let payload = {};
+    if (feature === 'warranty') {
+        routeName = 'layout.warranty.update';
+        payload = { warranty_layout_enabled: enabled, drop_tables: dropData };
+    } else if (feature === 'job') {
+        routeName = 'layout.job.update';
+        payload = { job_layout_enabled: enabled, drop_tables: dropData };
+    } else if (feature === 'vehicles') {
+        routeName = 'layout.vehicles.update';
+        payload = { vehicles_enabled: enabled, drop_tables: dropData };
+    }
+    
+    router.post(route(routeName), payload, {
+        preserveScroll: true,
+        onSuccess: () => setConfirmingDisable(null)
     });
 };
 
@@ -135,6 +187,7 @@ const handleAccountingSubmit = (e) => {
                         <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                     </div>
                 </div>
+
             </div>
 
             {/* Company Info Card */}
@@ -255,7 +308,7 @@ const handleAccountingSubmit = (e) => {
                 </div>
                 <div className="grid grid-cols-12 pb-2">
                     <div className="col-span-4 text-gray-500 text-xs font-bold">Close the books</div>
-                    <div className="col-span-8 text-xs text-gray-800">{accountingForm.data.close_books ? 'On' : 'Off'}</div>
+                    <div className="col-span-8 text-xs text-gray-800">{accountingForm.data.books_lock_date ? `Locked on or before ${accountingForm.data.books_lock_date}` : 'Off'}</div>
                 </div>
             </div>
         </div>
@@ -303,17 +356,40 @@ const handleAccountingSubmit = (e) => {
                         { label: 'Cash', value: 'Cash' },
                     ]}
                 />
-                <div className="pt-2">
-                    <label className="font-bold text-slate-600 ml-0.5 text-xs mb-1 block">Close the books</label>
-                    <label className="relative inline-flex items-center cursor-pointer scale-90 ml-0.5">
-                        <input
-                            type="checkbox"
-                            className="sr-only peer"
-                            checked={accountingForm.data.close_books}
-                            onChange={e => accountingForm.setData('close_books', e.target.checked)}
-                        />
-                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
-                    </label>
+                <div className="pt-2 border-t border-gray-100 mt-2">
+                    <label className="font-bold text-slate-600 ml-0.5 text-xs mb-1 block">Lock transactions on and before this date</label>
+                    <CommonInput
+                        type="date"
+                        value={accountingForm.data.books_lock_date}
+                        onChange={e => accountingForm.setData('books_lock_date', e.target.value)}
+                        error={accountingForm.errors.books_lock_date}
+                    />
+                    
+                    {accountingForm.data.books_lock_date && (
+                        <div className="mt-2">
+                            <CommonInput
+                                type="password"
+                                label={settings?.books_lock_pin ? "New PIN (leave blank to keep current)" : "Set 6-digit PIN"}
+                                value={accountingForm.data.books_lock_pin}
+                                onChange={e => accountingForm.setData('books_lock_pin', e.target.value)}
+                                error={accountingForm.errors.books_lock_pin}
+                                maxLength={6}
+                            />
+                        </div>
+                    )}
+                    
+                    {settings?.books_lock_pin && (
+                        <div className="mt-2">
+                            <CommonInput
+                                type="password"
+                                label="Current PIN (required to change or remove lock)"
+                                value={accountingForm.data.current_pin}
+                                onChange={e => accountingForm.setData('current_pin', e.target.value)}
+                                error={accountingForm.errors.current_pin}
+                                maxLength={6}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
             <div className="mt-6 flex justify-end gap-2 border-t border-gray-100 pt-4">
@@ -323,6 +399,66 @@ const handleAccountingSubmit = (e) => {
         </form>
     )}
 </div>
+
+            {/* Currency Settings Card */}
+            <div className="bg-white rounded shadow-sm border border-gray-200">
+                {!isEditingCurrency ? (
+                    <div className="p-6">
+                        <div className="flex justify-between items-center mb-3">
+                            <div>
+                                <h2 className="text-sm font-bold text-gray-800">Currency Settings</h2>
+                                <p className="text-gray-400 text-[10px]">Manage your default currency and enable multi-currency support.</p>
+                            </div>
+                            <CommonButton variant="ghost" size="xs" onClick={() => setIsEditingCurrency(true)}>Edit</CommonButton>
+                        </div>
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-12 border-b border-gray-100 pb-2">
+                                <div className="col-span-4 text-gray-500 text-xs font-bold">Home Currency</div>
+                                <div className="col-span-8 text-xs text-gray-800">
+                                    {currencies.find(c => c.id === currencyForm.data.home_currency_id)?.name || 'Not set'}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-12 pb-2">
+                                <div className="col-span-4 text-gray-500 text-xs font-bold">Multi-Currency</div>
+                                <div className="col-span-8 text-xs text-gray-800">{currencyForm.data.multi_currency_enabled ? 'Enabled' : 'Disabled'}</div>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <form onSubmit={handleCurrencySubmit} className="p-6">
+                        <h2 className="text-sm font-bold text-gray-800 mb-4">Edit Currency Settings</h2>
+                        <div className="space-y-3">
+                            <CommonInput
+                                type="select"
+                                label="Home Currency"
+                                value={currencyForm.data.home_currency_id}
+                                onChange={e => currencyForm.setData('home_currency_id', e.target.value)}
+                                options={[
+                                    { label: 'Select currency', value: '' },
+                                    ...currencies.map(c => ({ label: `${c.code} - ${c.name}`, value: c.id }))
+                                ]}
+                            />
+                            <div className="pt-2">
+                                <label className="font-bold text-slate-600 ml-0.5 text-xs mb-1 block">Enable Multi-Currency</label>
+                                <label className="relative inline-flex items-center cursor-pointer scale-90 ml-0.5">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={currencyForm.data.multi_currency_enabled}
+                                        onChange={e => currencyForm.setData('multi_currency_enabled', e.target.checked)}
+                                    />
+                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                                </label>
+                                <p className="text-[10px] text-gray-400 mt-1">Allows you to create accounts and process transactions in foreign currencies.</p>
+                            </div>
+                        </div>
+                        <div className="mt-6 flex justify-end gap-2 border-t border-gray-100 pt-4">
+                            <CommonButton type="button" variant="secondary" onClick={() => setIsEditingCurrency(false)}>Cancel</CommonButton>
+                            <CommonButton type="submit" variant="primary" processing={currencyForm.processing}>Save</CommonButton>
+                        </div>
+                    </form>
+                )}
+            </div>
 
             {/* Legal Info Card */}
             <div className="bg-white rounded shadow-sm border border-gray-200">
@@ -501,11 +637,7 @@ const handleAccountingSubmit = (e) => {
                                     type="checkbox"
                                     className="sr-only peer"
                                     checked={settings?.warranty_layout_enabled || false}
-                                    onChange={(e) => {
-                                        router.post(route('layout.warranty.update'), {
-                                            warranty_layout_enabled: e.target.checked
-                                        }, { preserveScroll: true });
-                                    }}
+                                    onChange={(e) => handleToggleFeature('warranty', settings?.warranty_layout_enabled, e)}
                                 />
                                 <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
                             </label>
@@ -523,11 +655,7 @@ const handleAccountingSubmit = (e) => {
                                     type="checkbox"
                                     className="sr-only peer"
                                     checked={settings?.job_layout_enabled || false}
-                                    onChange={(e) => {
-                                        router.post(route('layout.job.update'), {
-                                            job_layout_enabled: e.target.checked
-                                        }, { preserveScroll: true });
-                                    }}
+                                    onChange={(e) => handleToggleFeature('job', settings?.job_layout_enabled, e)}
                                 />
                                 <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
                             </label>
@@ -556,8 +684,75 @@ const handleAccountingSubmit = (e) => {
                         </div>
                     </div>
 
+                    <div className="space-y-3 pt-3">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h3 className="text-xs font-bold text-gray-800">Reports & Quick Action Style</h3>
+                                <p className="text-gray-400 text-[10px]">If enabled, Reports Center and Quick Action Menu items are shown as buttons; otherwise shown as links.</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer scale-90">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={settings?.reports_display_as_buttons ?? true}
+                                    onChange={(e) => {
+                                        router.post(route('layout.reports.update'), {
+                                            reports_display_as_buttons: e.target.checked
+                                        }, { preserveScroll: true });
+                                    }}
+                                />
+                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3 pt-3">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h3 className="text-xs font-bold text-gray-800">Vehicles</h3>
+                                <p className="text-gray-400 text-[10px]">If enabled, Vehicles will be shown in the sidebar, Reports Center, and POS.</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer scale-90">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={settings?.vehicles_enabled ?? false}
+                                    onChange={(e) => handleToggleFeature('vehicles', settings?.vehicles_enabled, e)}
+                                />
+                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+                    </div>
+
                 </div>
             </div>
+
+            <Modal show={confirmingDisable !== null} onClose={() => setConfirmingDisable(null)}>
+                <div className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900">
+                        Disable Feature
+                    </h2>
+                    <p className="mt-1 text-sm text-gray-600">
+                        Are you sure you want to disable this feature? You can optionally remove all database tables and data associated with it. This action cannot be undone.
+                    </p>
+                    <div className="mt-4">
+                        <label className="flex items-center">
+                            <Checkbox
+                                name="dropTables"
+                                checked={dropTables}
+                                onChange={(e) => setDropTables(e.target.checked)}
+                            />
+                            <span className="ml-2 text-sm text-gray-600">Also remove all database tables and associated data</span>
+                        </label>
+                    </div>
+                    <div className="mt-6 flex justify-end">
+                        <SecondaryButton onClick={() => setConfirmingDisable(null)}>Cancel</SecondaryButton>
+                        <DangerButton className="ml-3" onClick={() => submitFeatureToggle(confirmingDisable, false, dropTables)}>
+                            Disable Feature
+                        </DangerButton>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

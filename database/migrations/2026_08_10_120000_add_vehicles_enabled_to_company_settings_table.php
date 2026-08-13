@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('vehicles', function (Blueprint $table) {
-            $table->integer('latest_odometer')->nullable()->after('vehicle_no');
+        Schema::table('company_settings', function (Blueprint $table) {
+            $table->boolean('vehicles_enabled')->default(false);
         });
     }
 
     public function down(): void
     {
-        Schema::table('vehicles', function (Blueprint $table) {
-            $table->dropColumn('latest_odometer');
+        Schema::table('company_settings', function (Blueprint $table) {
+            $table->dropColumn('vehicles_enabled');
         });
     }
 };

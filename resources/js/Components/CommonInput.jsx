@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useRef, useState, useImperativeHandle } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import SearchableSelect from './SearchableSelect';
 
 /**
  * A highly reusable, premium input component for JBooks.
@@ -276,15 +277,33 @@ export default forwardRef(function CommonInput(
                                             ))}
                                         </select>
 
-                                        <select
-                                            value={date.getFullYear()}
-                                            onChange={({ target: { value } }) => changeYear(Number(value))}
-                                            className="react-datepicker__year-select"
-                                        >
-                                            {Array.from({ length: 61 }, (_, i) => new Date().getFullYear() - 30 + i).map(year => (
-                                                <option key={year} value={year}>{year}</option>
-                                            ))}
-                                        </select>
+                                        <div className="w-20 ml-1">
+                                            <SearchableSelect
+                                                value={date.getFullYear()}
+                                                onChange={(val) => changeYear(Number(val))}
+                                                onSearch={(query) => {
+                                                    // If no search, just show the past 5 years
+                                                    if (!query) {
+                                                        return Array.from({ length: 5 }, (_, i) => {
+                                                            const yr = new Date().getFullYear() - i;
+                                                            return { value: yr, label: String(yr) };
+                                                        });
+                                                    }
+                                                    // If searching, generate a wider range (100 years back, 50 years forward)
+                                                    return Array.from({ length: 151 }, (_, i) => {
+                                                        const yr = new Date().getFullYear() + 50 - i;
+                                                        return { value: yr, label: String(yr) };
+                                                    });
+                                                }}
+                                                options={Array.from({ length: 5 }, (_, i) => {
+                                                    const yr = new Date().getFullYear() - i;
+                                                    return { value: yr, label: String(yr) };
+                                                })}
+                                                allowCustom={true}
+                                                size="sm"
+                                                placeholder="Year"
+                                            />
+                                        </div>
                                     </div>
 
                                     <button

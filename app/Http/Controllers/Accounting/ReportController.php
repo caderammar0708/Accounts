@@ -1393,7 +1393,9 @@ class ReportController extends Controller
 
     public function vehicleHistory(Request $request)
     {
-        $vehicleId = $request->input('vehicle_id');
+        abort_if(!class_exists(\App\Models\CompanySetting::class) || !(\App\Models\CompanySetting::first()?->vehicles_enabled ?? true), 403, 'Vehicles feature is disabled.');
+
+        $vehicleId = $request->query('vehicle_id');
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 

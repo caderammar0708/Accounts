@@ -16,14 +16,21 @@ class DashboardController extends Controller
     {
                 $today = Carbon::today();
         
+        $settings = \App\Models\CompanySetting::current();
+        
         // Service Center Metrics
-        $todaysJobs = \App\Models\JobCard::query()
-            ->whereDate('service_date', $today)
-            ->count();
-            
-        $pendingJobs = \App\Models\JobCard::query()
-            ->whereNotIn('status', ['Ready', 'Delivered', 'Cancelled'])
-            ->count();
+        $todaysJobs = 0;
+        $pendingJobs = 0;
+        
+        if ($settings->job_layout_enabled && \Illuminate\Support\Facades\Schema::hasTable('job_cards')) {
+            $todaysJobs = \App\Models\JobCard::query()
+                ->whereDate('service_date', $today)
+                ->count();
+                
+            $pendingJobs = \App\Models\JobCard::query()
+                ->whereNotIn('status', ['Ready', 'Delivered', 'Cancelled'])
+                ->count();
+        }
             
         // Financial Metrics (simplified for Service Center)
         $currentMonth = Carbon::now()->month;
@@ -60,29 +67,33 @@ class DashboardController extends Controller
 
         $monthlyProfit = $monthlyRevenue - $monthlyExpenses;
 
-        $trendData = collect(range(0, 6))->map(function ($dayIndex) use ($today) {
-            $date = $today->copy()->subDays(6 - $dayIndex);
+        $startDate = $today->copy()->subDays(6)->format('Y-m-d');
+        $endDate = $today->copy()->endOfDay()->format('Y-m-d H:i:s');
 
-            $revenue = JournalEntryLine::whereHas('account', function ($q) {
-                    $q->whereIn('account_type', ['income', 'other_income']);
-                })
-                ->whereHas('journalEntry', function ($q) use ($date) {
-                    $q->whereDate('date', $date);
-                })
-                ->sum(DB::raw('credit - debit'));
+        $revenueTrend = JournalEntryLine::select(DB::raw('DATE(journal_entries.date) as date_val'), DB::raw('SUM(journal_entry_lines.credit - journal_entry_lines.debit) as total'))
+            ->join('journal_entries', 'journal_entries.id', '=', 'journal_entry_lines.journal_entry_id')
+            ->join('chart_of_accs', 'chart_of_accs.id', '=', 'journal_entry_lines.chart_of_acc_id')
+            ->whereIn('chart_of_accs.account_type', ['income', 'other_income'])
+            ->whereBetween('journal_entries.date', [$startDate, $endDate])
+            ->groupBy(DB::raw('DATE(journal_entries.date)'))
+            ->pluck('total', 'date_val');
 
-            $expense = JournalEntryLine::whereHas('account', function ($q) {
-                    $q->whereIn('account_type', ['expense', 'cost_of_goods_sold']);
-                })
-                ->whereHas('journalEntry', function ($q) use ($date) {
-                    $q->whereDate('date', $date);
-                })
-                ->sum(DB::raw('debit - credit'));
+        $expenseTrend = JournalEntryLine::select(DB::raw('DATE(journal_entries.date) as date_val'), DB::raw('SUM(journal_entry_lines.debit - journal_entry_lines.credit) as total'))
+            ->join('journal_entries', 'journal_entries.id', '=', 'journal_entry_lines.journal_entry_id')
+            ->join('chart_of_accs', 'chart_of_accs.id', '=', 'journal_entry_lines.chart_of_acc_id')
+            ->whereIn('chart_of_accs.account_type', ['expense', 'cost_of_goods_sold'])
+            ->whereBetween('journal_entries.date', [$startDate, $endDate])
+            ->groupBy(DB::raw('DATE(journal_entries.date)'))
+            ->pluck('total', 'date_val');
+
+        $trendData = collect(range(0, 6))->map(function ($dayIndex) use ($today, $revenueTrend, $expenseTrend) {
+            $dateObj = $today->copy()->subDays(6 - $dayIndex);
+            $dateKey = $dateObj->format('Y-m-d');
 
             return [
-                'date' => $date->format('M d'),
-                'revenue' => (float) $revenue,
-                'expense' => (float) $expense,
+                'date' => $dateObj->format('M d'),
+                'revenue' => (float) ($revenueTrend[$dateKey] ?? 0),
+                'expense' => (float) ($expenseTrend[$dateKey] ?? 0),
             ];
         })->toArray();
 
@@ -94,10 +105,13 @@ class DashboardController extends Controller
             ->get(['id', 'name', 'quantity_on_hand']);
 
         // Recent Jobs
-        $recentJobs = \App\Models\JobCard::with(['customer', 'device'])
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
+        $recentJobs = [];
+        if ($settings->job_layout_enabled && \Illuminate\Support\Facades\Schema::hasTable('job_cards')) {
+            $recentJobs = \App\Models\JobCard::with(['customer', 'device'])
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get();
+        }
 
         return Inertia::render('Dashboard', [
             'metrics' => [

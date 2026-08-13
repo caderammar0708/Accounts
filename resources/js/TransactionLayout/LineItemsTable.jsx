@@ -20,6 +20,7 @@ export default function LineItemsTable({
     discountType = "percent",
     onDiscountChange = null,
     subtotal = null,
+    hideSummaryBlock = false,
 }) {
     const [draggedIndex, setDraggedIndex] = useState(null);
     const inputRefs = useRef({});
@@ -376,104 +377,107 @@ export default function LineItemsTable({
                 </table>
             </div>
 
-            {/* Footer / Actions */}
-            <div className="px-3 py-2 bg-slate-50/30 flex justify-between items-center border-t border-slate-200">
-                <div className="flex gap-2">
-                    {addRow && (
-                        <CommonButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={addRow}
-                            className="gap-1.5"
-                        >
-                            Add Row
-                        </CommonButton>
-                    )}
-                    {clearRows && (
-                        <CommonButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={clearRows}
-                            className="gap-1.5"
-                        >
-                            Clear All
-                        </CommonButton>
-                    )}
-                </div>
+            {/* Totals Section - Directly below table */}
+            {!hideSummaryBlock && (
+                <div className="flex justify-end py-4 pr-11 bg-white border-t border-slate-100">
+                    {onDiscountChange ? (
+                        <div className="flex flex-col items-end gap-3 min-w-[300px]">
+                            {/* Subtotal */}
+                            <div className="flex justify-between items-center w-full">
+                                <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Subtotal</span>
+                                <span className="text-sm font-black text-slate-900 flex items-center gap-1">
+                                    <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
+                                    {parseFloat(String(subtotal || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </span>
+                            </div>
 
-                {onDiscountChange ? (
-                    <div className="flex flex-col items-end gap-2 pr-4 min-w-[280px]">
-                        {/* Subtotal */}
-                        <div className="flex justify-between items-center w-full">
-                            <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Subtotal</span>
-                            <span className="text-sm font-black text-slate-900 flex items-center gap-1">
-                                <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
-                                {parseFloat(String(subtotal || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                            </span>
-                        </div>
-
-                        {/* Discount Input */}
-                        <div className="flex justify-between items-center w-full gap-4">
-                            <span className="text-xs font-black text-slate-500 uppercase tracking-widest mt-2">Discount</span>
-                            <div className="flex items-center">
-                                <input
-                                    type="text"
-                                    value={discountValue}
-                                    onChange={(e) => {
-                                        // Allow only numbers and a single decimal point
-                                        const val = e.target.value.replace(/[^0-9.]/g, '');
-                                        const parts = val.split('.');
-                                        if (parts.length > 2) return;
-                                        onDiscountChange(val, discountType);
-                                    }}
-                                    onBlur={(e) => {
-                                        const val = parseFloat(e.target.value || 0).toString();
-                                        onDiscountChange(val, discountType);
-                                    }}
-                                    className="w-[80px] h-8 text-right text-sm font-medium border border-slate-300 rounded-l-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none px-2"
-                                />
-                                <div className="flex h-8 bg-slate-100 border border-l-0 border-slate-300 rounded-r-md overflow-hidden">
-                                    <button
-                                        type="button"
-                                        onClick={() => onDiscountChange(discountValue, 'percent')}
-                                        className={`px-2 text-xs font-bold transition-colors ${discountType === 'percent' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
-                                    >
-                                        %
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onDiscountChange(discountValue, 'fixed')}
-                                        className={`px-2 text-xs font-bold transition-colors ${discountType === 'fixed' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
-                                    >
-                                        $
-                                    </button>
+                            {/* Discount Input */}
+                            <div className="flex justify-between items-center w-full gap-4">
+                                <span className="text-xs font-black text-slate-500 uppercase tracking-widest mt-2">Discount</span>
+                                <div className="flex items-center">
+                                    <input
+                                        type="text"
+                                        value={discountValue}
+                                        onChange={(e) => {
+                                            // Allow only numbers and a single decimal point
+                                            const val = e.target.value.replace(/[^0-9.]/g, '');
+                                            const parts = val.split('.');
+                                            if (parts.length > 2) return;
+                                            onDiscountChange(val, discountType);
+                                        }}
+                                        onBlur={(e) => {
+                                            const val = parseFloat(e.target.value || 0).toString();
+                                            onDiscountChange(val, discountType);
+                                        }}
+                                        className="w-[80px] h-8 text-right text-sm font-medium border border-slate-300 rounded-l-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none px-2"
+                                    />
+                                    <div className="flex h-8 bg-slate-100 border border-l-0 border-slate-300 rounded-r-md overflow-hidden">
+                                        <button
+                                            type="button"
+                                            onClick={() => onDiscountChange(discountValue, 'percent')}
+                                            className={`px-2 text-xs font-bold transition-colors ${discountType === 'percent' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                                        >
+                                            %
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => onDiscountChange(discountValue, 'fixed')}
+                                            className={`px-2 text-xs font-bold transition-colors ${discountType === 'fixed' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                                        >
+                                            $
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Total (computed and passed via totals object, but we can just use the first entry or "Total") */}
-                        <div className="flex justify-between items-center w-full mt-2 pt-2 border-t border-slate-200">
-                            <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Total</span>
-                            <span className="text-lg font-black text-slate-900 flex items-center gap-1">
-                                <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
-                                {totals && Object.values(totals)[0] ? parseFloat(String(Object.values(totals)[0]).replace(/,/g, '') || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "0.00"}
-                            </span>
+                            {/* Total */}
+                            <div className="flex justify-between items-center w-full mt-2 pt-3 border-t border-slate-200">
+                                <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Total</span>
+                                <span className="text-lg font-black text-slate-900 flex items-center gap-1">
+                                    <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
+                                    {totals && Object.values(totals)[0] ? parseFloat(String(Object.values(totals)[0]).replace(/,/g, '') || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "0.00"}
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                ) : (
-                    totals && (
-                        <div className="flex items-center gap-8 pr-4">
-                            {Object.entries(totals).map(([label, value]) => (
-                                <div key={label} className="flex items-center gap-3">
-                                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{label}</span>
-                                    <span className="text-sm font-black text-slate-900 flex items-center gap-1">
-                                        <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
-                                        {parseFloat(String(value).replace(/,/g, '') || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )
+                    ) : (
+                        totals && (
+                            <div className="flex items-center gap-8 pr-4">
+                                {Object.entries(totals).map(([label, value]) => (
+                                    <div key={label} className="flex items-center gap-3">
+                                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{label}</span>
+                                        <span className="text-sm font-black text-slate-900 flex items-center gap-1">
+                                            <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
+                                            {parseFloat(String(value).replace(/,/g, '') || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    )}
+                </div>
+            )}
+
+            {/* Footer / Actions */}
+            <div className="px-3 py-3 bg-slate-50/50 flex gap-2 border-t border-slate-200">
+                {addRow && (
+                    <CommonButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={addRow}
+                        className="gap-1.5 bg-white"
+                    >
+                        Add Row
+                    </CommonButton>
+                )}
+                {clearRows && (
+                    <CommonButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={clearRows}
+                        className="gap-1.5 bg-white"
+                    >
+                        Clear All
+                    </CommonButton>
                 )}
 
             </div>

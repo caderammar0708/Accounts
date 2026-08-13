@@ -7,6 +7,8 @@ import CommonButton from '@/Components/CommonButton';
 import AddressForm from '@/Components/AddressForm';
 import ContactsTabs from '@/Components/ContactsTabs';
 
+import ContactsTabs from '@/Components/ContactsTabs';
+
 export default function SupplierIndex({ suppliers = [] }) {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
@@ -83,10 +85,10 @@ export default function SupplierIndex({ suppliers = [] }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="font-bold text-lg text-slate-800 tracking-tight">Suppliers</h2>
+                <h2 className="font-bold text-lg text-slate-800 tracking-tight">Contacts</h2>
             }
         >
-            <Head title="Suppliers" />
+            <Head title="Contacts - Suppliers" />
 
             <div className="p-6">
                 <ContactsTabs />

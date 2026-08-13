@@ -10,6 +10,8 @@ import QuickAddPayee from "@/Components/QuickAddPayee";
 import InventoryItemSidePanel from "@/Components/InventoryItemSidePanel";
 import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import axios from "axios";
+import PinPromptModal from "@/Components/PinPromptModal";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
 
 export default function CreditInvoiceForm({
     auth,
@@ -32,6 +34,10 @@ export default function CreditInvoiceForm({
     const [isDirty, setIsDirty] = useState(false);
 
     const [savedEntryId, setSavedEntryId] = useState(invoice?.id || null);
+
+    // Books Lock PIN Modal
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
 
     const fetchPayees = async (search = "") => {
         const res = await axios.get(route('api.payees', { search, type: 'Customer' }));
@@ -72,7 +78,6 @@ export default function CreditInvoiceForm({
         fetchPayees();
         fetchItems();
     }, []);
-
     // 1. Define CreditInvoice Specific Columns
     const INVOICE_COLUMNS = [
         {
@@ -168,7 +173,8 @@ export default function CreditInvoiceForm({
         ],
         discount_type: invoice?.discountType || 'percent',
         discount_value: invoice?.discountValue !== undefined ? String(invoice.discountValue) : '0',
-        prefix: invoice?.prefix || ''
+        prefix: invoice?.prefix || '',
+        books_pin: ''
     });
 
 
@@ -196,7 +202,8 @@ export default function CreditInvoiceForm({
                 ],
                 discount_type: invoice.discountType || 'percent',
                 discount_value: invoice.discountValue !== undefined ? String(invoice.discountValue) : '0',
-                prefix: invoice.prefix || ''
+                prefix: invoice.prefix || '',
+                books_pin: ''
             }));
         } else {
             const cachedDate = localStorage.getItem('last_transaction_date') || new Date().toISOString().split('T')[0];
@@ -218,7 +225,8 @@ export default function CreditInvoiceForm({
                 ],
                 discount_type: 'percent',
                 discount_value: '0',
-                prefix: ''
+                prefix: '',
+                books_pin: ''
             }));
         }
         clearErrors();
@@ -301,14 +309,16 @@ export default function CreditInvoiceForm({
         }));
     };
 
-    const handleSave = (action = 'save') => {
-        actionRef.current = action;
+    const handleSave = (actionType = 'save', pinOverride = null) => {
+        actionRef.current = actionType;
+        setPendingAction(actionType);
         const currentNo = data.invoiceNo;
         const currentId = savedEntryId || invoice?.id;
 
         transform((currentData) => ({
             ...currentData,
-            action: action,
+            action: actionType,
+            books_pin: pinOverride !== null ? pinOverride : currentData.books_pin,
             items: currentData.items.map(item => ({
                 ...item,
                 qty: String(item.qty).replace(/,/g, ''),
@@ -322,7 +332,7 @@ export default function CreditInvoiceForm({
 
         method(url, {
             preserveScroll: true,
-            preserveState: action === 'save',
+            preserveState: actionType === 'save',
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
@@ -332,13 +342,13 @@ export default function CreditInvoiceForm({
                     setSavedEntryId(newId);
                 }
 
-                if (action === 'close') {
+                if (actionType === 'close') {
                     if (typeof onClose === 'function') {
                         onClose();
-                    } 
+                    }
                 }
 
-                if (action === 'new') {
+                if (actionType === 'new') {
                     setSavedEntryId(null);
                     const num = parseInt(String(currentNo).replace(/[^0-9]/g, '')) || 1000;
                     const nextNo = String(num + 1).padStart(4, '0');
@@ -355,10 +365,13 @@ export default function CreditInvoiceForm({
                         ],
                         discount_type: 'percent',
                         discount_value: '0',
-                        prefix: ''
+                        prefix: '',
+                        books_pin: ''
                     });
                     clearErrors();
                     setIsDirty(false);
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
                 }
             }
         });
@@ -367,7 +380,12 @@ export default function CreditInvoiceForm({
     return (
         <TransactionLayout
             historyType="credit_invoice"
-            title={`Credit Invoice ${data.invoiceNo}`}
+            title={
+                <div className="flex items-center">
+                    Credit Invoice #{data.invoiceNo}
+                    <BooksLockIndicator date={data.invoiceDate} lockDate={auth?.books_lock_date} isEdit={!!(invoice?.id || savedEntryId)} />
+                </div>
+            }
             amount={totalAmount}
             processing={processing}
             dirty={isDirty}
@@ -383,7 +401,7 @@ export default function CreditInvoiceForm({
                 setIsDirty(true);
             }}
         >
-            <Head title={`Credit CreditInvoice ${data.invoiceNo}`} />
+            <Head title={`Credit Invoice ${data.invoiceNo}`} />
             <div className="py-6 px-1 space-y-8">
                 {/* ROW 1: Customer & Email & Balance */}
                 <div className="flex items-start justify-between gap-8">
@@ -528,10 +546,11 @@ export default function CreditInvoiceForm({
                     setData(prev => ({ ...prev, discount_value: val, discount_type: type }));
                     setIsDirty(true);
                 }}
+                hideSummaryBlock={true}
             />
 
 
-            <div className="grid grid-cols-2 gap-10 mt-8">
+            <div className="flex justify-between mt-8 items-start">
                 <div className="w-[400px] flex flex-col gap-4">
                     <CommonInput
                         type="textarea"
@@ -552,14 +571,105 @@ export default function CreditInvoiceForm({
                         className="h-24"
                     />
                 </div>
-                <div className="pt-4 flex flex-col items-end">
+
+                {/* Subtotal / Discount / Total Summary Block */}
+                <div className="flex flex-col items-end gap-3 min-w-[300px] bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    {/* Subtotal */}
+                    <div className="flex justify-between items-center w-full">
+                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Subtotal</span>
+                        <span className="text-sm font-black text-slate-900 flex items-center gap-1">
+                            <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
+                            {parseFloat(String(subtotal || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                    </div>
+
+                    {/* Discount Input */}
+                    <div className="flex justify-between items-center w-full gap-4 mt-2">
+                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest mt-2">Discount</span>
+                        <div className="flex items-center">
+                            <input
+                                type="text"
+                                value={data.discount_value}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                                    const parts = val.split('.');
+                                    if (parts.length > 2) return;
+                                    setData(prev => ({ ...prev, discount_value: val }));
+                                    setIsDirty(true);
+                                }}
+                                onBlur={(e) => {
+                                    const val = parseFloat(e.target.value || 0).toString();
+                                    setData(prev => ({ ...prev, discount_value: val }));
+                                    setIsDirty(true);
+                                }}
+                                className="w-[80px] h-8 text-right text-sm font-medium border border-slate-300 rounded-l-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none px-2"
+                            />
+                            <div className="flex h-8 bg-slate-100 border border-l-0 border-slate-300 rounded-r-md overflow-hidden">
+                                <button
+                                    type="button"
+                                    onClick={() => { setData(prev => ({ ...prev, discount_type: 'percent' })); setIsDirty(true); }}
+                                    className={`px-2 text-xs font-bold transition-colors ${data.discount_type === 'percent' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                                >
+                                    %
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setData(prev => ({ ...prev, discount_type: 'fixed' })); setIsDirty(true); }}
+                                    className={`px-2 text-xs font-bold transition-colors ${data.discount_type === 'fixed' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                                >
+                                    $
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Total */}
+                    <div className="flex justify-between items-center w-full mt-2 pt-3 border-t border-slate-200">
+                        <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Total</span>
+                        <span className="text-lg font-black text-slate-900 flex items-center gap-1">
+                            <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
+                            {parseFloat(String(totalAmount || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                    </div>
+
+                    {/* Payments List */}
+                    {invoice?.payments && invoice.payments.length > 0 && (
+                        <div className="w-full mt-2 pt-3 border-t border-slate-200">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Payments Applied</span>
+                            {invoice.payments.map((payment, idx) => (
+                                <div key={idx} className="flex justify-between items-center w-full mb-1">
+                                    <a href={route('receive-payment.edit', payment.id)} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+                                        Receive Payment # {payment.reference} ({formatDate(payment.date, dateFormat)})
+                                    </a>
+                                    <span className="text-xs font-black text-slate-700 flex items-center gap-1">
+                                        <span className="text-[10px] font-bold text-slate-400">{currencyPrefix}</span>
+                                        {parseFloat(payment.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
-
             <TermModal
                 isOpen={isTermModalOpen}
                 onClose={() => setIsTermModalOpen(false)}
                 onSave={handleAddTerm}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
 
             <QuickAddPayee

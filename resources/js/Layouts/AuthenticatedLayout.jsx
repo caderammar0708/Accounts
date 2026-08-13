@@ -43,8 +43,18 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
     const navigation = [
         { name: 'Dashboard', href: route('dashboard'), icon: 'dashboard' },
         ...(page.props.auth.pos_layout_enabled ? [{ name: 'POS Billing', href: route('pos.index'), icon: 'pos', isPos: true }] : []),
+<<<<<<< HEAD
         { name: 'Contacts', href: route('customers.index'), icon: 'users', activePattern: ['customers.*', 'suppliers.*', 'employees.*'] },
         { name: 'Vehicles', href: route('vehicles.index'), icon: 'vehicle' },
+=======
+        { 
+            name: 'Contacts', 
+            href: route('customers.index'), 
+            icon: 'users',
+            activeRoutes: ['customers.*', 'suppliers.*', 'employees.*']
+        },
+        ...(page.props.auth.vehicles_enabled ? [{ name: 'Vehicles', href: route('vehicles.index'), icon: 'vehicle' }] : []),
+>>>>>>> b3144006cf52da3f0c8ceada0ef75ce30405a799
         ...(page.props.auth.job_enabled ? [{ name: 'Jobs', href: route('job-cards.index'), icon: 'job', isJob: true }] : []),
         ...(page.props.auth.warranties_enabled ? [{ name: 'Warranties', href: route('warranties.index'), icon: 'warranty', isWarranty: true }] : []),
         { name: 'Products & Services', href: route('items.index'), icon: 'inventory' },

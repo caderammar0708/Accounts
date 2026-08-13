@@ -35,6 +35,11 @@ class ReceivePayment extends Model implements Auditable
 
     public function company()
     {
-        return $this->belongsTo(Company::class);
+        return $this->belongsTo(\App\Models\Company::class);
+    }
+
+    public function journalEntry()
+    {
+        return $this->morphOne(JournalEntry::class, 'transactionable');
     }
 }
