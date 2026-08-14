@@ -100,6 +100,7 @@ const handleAccountingSubmit = (e) => {
 };
 
 const [confirmingDisable, setConfirmingDisable] = useState(null);
+const [confirmingEnable, setConfirmingEnable] = useState(null);
 const [dropTables, setDropTables] = useState(false);
 
 const [isEditingCurrency, setIsEditingCurrency] = useState(false);
@@ -118,7 +119,11 @@ const handleCurrencySubmit = (e) => {
 const handleToggleFeature = (feature, currentVal, e) => {
     const isEnabling = e.target.checked;
     if (isEnabling) {
-        submitFeatureToggle(feature, true, false);
+        if (feature === 'branches') {
+            setConfirmingEnable(feature);
+        } else {
+            submitFeatureToggle(feature, true, false);
+        }
     } else {
         setConfirmingDisable(feature);
         setDropTables(false);
@@ -150,7 +155,10 @@ const submitFeatureToggle = (feature, enabled, dropData = false) => {
     
     router.post(route(routeName), payload, {
         preserveScroll: true,
-        onSuccess: () => setConfirmingDisable(null)
+        onSuccess: () => {
+            setConfirmingDisable(null);
+            setConfirmingEnable(null);
+        }
     });
 };
 
@@ -745,35 +753,51 @@ const businessTypeConfirmationModalSubmit = () => {
                 </div>
             </div>
 
-            <Modal show={confirmingDisable !== null} onClose={() => setConfirmingDisable(null)}>
+            <Modal show={confirmingDisable !== null || confirmingEnable !== null} onClose={() => { setConfirmingDisable(null); setConfirmingEnable(null); }}>
                 <div className="p-6">
                     <h2 className="text-lg font-medium text-gray-900">
-                        Disable Feature
+                        {confirmingDisable && confirmingDisable.startsWith('business_type_') ? 'Change Business Type' : 
+                         confirmingEnable ? 'Enable Feature' : 'Disable Feature'}
                     </h2>
                     <p className="mt-1 text-sm text-gray-600">
-                        Are you sure you want to disable this feature? You can optionally remove all database tables and data associated with it. This action cannot be undone.
+                        {confirmingDisable && confirmingDisable.startsWith('business_type_') 
+                            ? 'Are you sure you want to change the business type? You can optionally remove all database tables and data associated with the previous business type. This action cannot be undone.'
+                            : confirmingEnable 
+                                ? 'Are you sure you want to enable this feature?' 
+                                : 'Are you sure you want to disable this feature? You can optionally remove all database tables and data associated with it. This action cannot be undone.'}
                     </p>
-                    <div className="mt-4">
-                        <label className="flex items-center">
-                            <Checkbox
-                                name="dropTables"
-                                checked={dropTables}
-                                onChange={(e) => setDropTables(e.target.checked)}
-                            />
-                            <span className="ml-2 text-sm text-gray-600">Also remove all database tables and associated data</span>
-                        </label>
-                    </div>
+                    {confirmingDisable && (
+                        <div className="mt-4">
+                            <label className="flex items-center">
+                                <Checkbox
+                                    name="dropTables"
+                                    checked={dropTables}
+                                    onChange={(e) => setDropTables(e.target.checked)}
+                                />
+                                <span className="ml-2 text-sm text-gray-600">Also remove all database tables and associated data</span>
+                            </label>
+                        </div>
+                    )}
                     <div className="mt-6 flex justify-end">
-                        <SecondaryButton onClick={() => setConfirmingDisable(null)}>Cancel</SecondaryButton>
-                        <DangerButton className="ml-3" onClick={() => {
-                            if (typeof confirmingDisable === 'string' && confirmingDisable.startsWith('business_type_')) {
-                                businessTypeConfirmationModalSubmit();
-                            } else {
-                                submitFeatureToggle(confirmingDisable, false, dropTables);
-                            }
-                        }}>
-                            Disable Feature
-                        </DangerButton>
+                        <SecondaryButton onClick={() => { setConfirmingDisable(null); setConfirmingEnable(null); }}>Cancel</SecondaryButton>
+                        {confirmingEnable ? (
+                            <CommonButton variant="primary" className="ml-3" onClick={() => {
+                                submitFeatureToggle(confirmingEnable, true, false);
+                                setConfirmingEnable(null);
+                            }}>
+                                Enable Feature
+                            </CommonButton>
+                        ) : (
+                            <DangerButton className="ml-3" onClick={() => {
+                                if (typeof confirmingDisable === 'string' && confirmingDisable.startsWith('business_type_')) {
+                                    businessTypeConfirmationModalSubmit();
+                                } else {
+                                    submitFeatureToggle(confirmingDisable, false, dropTables);
+                                }
+                            }}>
+                                {confirmingDisable && confirmingDisable.startsWith('business_type_') ? 'Change Business Type' : 'Disable Feature'}
+                            </DangerButton>
+                        )}
                     </div>
                 </div>
             </Modal>

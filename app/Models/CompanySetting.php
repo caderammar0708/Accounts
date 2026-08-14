@@ -42,6 +42,10 @@ class CompanySetting extends Model
         'multi_currency_enabled',
         'home_currency_id',
         'business_type',
+        'branches_enabled',
+        'pos_layout_enabled',
+        'customer_layout_modal',
+        'reports_display_as_buttons',
     ];
 
     protected $casts = [

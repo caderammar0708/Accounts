@@ -16,26 +16,32 @@ class SetCurrentLocationMiddleware
         $user = $request->user();
 
         if ($user) {
-            if ($user->location_id) {
-                // Locked user: strictly set session location to assigned location
-                session(['current_location_id' => $user->location_id]);
+            $companySetting = \App\Models\CompanySetting::current();
+            if ($companySetting && $companySetting->branches_enabled) {
+                if ($user->location_id) {
+                    // Locked user: strictly set session location to assigned location
+                    session(['current_location_id' => $user->location_id]);
+                } else {
+                    // Unrestricted user: verify current session location or default to first active branch
+                    $currentId = session('current_location_id');
+
+                    if ($currentId) {
+                        $validLocation = Location::where('id', $currentId)->where('is_active', true)->exists();
+                        if (!$validLocation) {
+                            $currentId = null;
+                        }
+                    }
+
+                    if (!$currentId) {
+                        $defaultLocation = Location::where('is_active', true)->first();
+                        if ($defaultLocation) {
+                            session(['current_location_id' => $defaultLocation->id]);
+                        }
+                    }
+                }
             } else {
-                // Unrestricted user: verify current session location or default to first active branch
-                $currentId = session('current_location_id');
-
-                if ($currentId) {
-                    $validLocation = Location::where('id', $currentId)->where('is_active', true)->exists();
-                    if (!$validLocation) {
-                        $currentId = null;
-                    }
-                }
-
-                if (!$currentId) {
-                    $defaultLocation = Location::where('is_active', true)->first();
-                    if ($defaultLocation) {
-                        session(['current_location_id' => $defaultLocation->id]);
-                    }
-                }
+                // Branches are disabled, clear location session
+                session()->forget('current_location_id');
             }
         }
 
