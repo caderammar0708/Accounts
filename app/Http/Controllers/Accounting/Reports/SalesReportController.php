@@ -11,6 +11,11 @@ class SalesReportController extends Controller
 {
     public function salesByItem(Request $request)
     {
+        $type = $request->query('type');
+        if (!$type && !$request->has('start_date') && !$request->has('end_date')) {
+            $type = 'all_dates';
+        }
+
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date') ?: now()->toDateString();
         $displayBy = $request->query('display_by', 'total');
@@ -19,7 +24,7 @@ class SalesReportController extends Controller
             ->join('sales_invoices', 'sales_invoice_items.sales_invoice_id', '=', 'sales_invoices.id')
             ->join('customers', 'sales_invoices.customer_id', '=', 'customers.id')
             ->join('items', 'sales_invoice_items.item_id', '=', 'items.id')
-            ->join('journal_entries', function($join) {
+            ->leftJoin('journal_entries', function($join) {
                 $join->on('sales_invoices.id', '=', 'journal_entries.transactionable_id')
                      ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\SalesInvoice');
             })
@@ -29,13 +34,13 @@ class SalesReportController extends Controller
             ->join('credit_invoices', 'credit_invoice_items.credit_invoice_id', '=', 'credit_invoices.id')
             ->join('customers', 'credit_invoices.customer_id', '=', 'customers.id')
             ->join('items', 'credit_invoice_items.item_id', '=', 'items.id')
-            ->join('journal_entries', function($join) {
+            ->leftJoin('journal_entries', function($join) {
                 $join->on('credit_invoices.id', '=', 'journal_entries.transactionable_id')
                      ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\CreditInvoice');
             })
             ->where('credit_invoices.status', 'posted');
 
-        if ($request->query('type') !== 'all_dates') {
+        if ($type !== 'all_dates') {
             if ($startDate) {
                 $salesQuery->whereBetween('sales_invoices.receipt_date', [$startDate, $endDate]);
                 $creditQuery->whereBetween('credit_invoices.invoice_date', [$startDate, $endDate]);
@@ -55,7 +60,7 @@ class SalesReportController extends Controller
             'sales_invoice_items.amount',
             'sales_invoices.receipt_no as reference',
             'sales_invoices.receipt_date as date',
-            'journal_entries.id as invoice_id',
+            DB::raw('COALESCE(journal_entries.id, sales_invoices.id) as invoice_id'),
             'customers.display_name as customer_name',
             DB::raw("'sales_invoice' as transaction_type")
         );
@@ -70,7 +75,7 @@ class SalesReportController extends Controller
             'credit_invoice_items.amount',
             'credit_invoices.invoice_no as reference',
             'credit_invoices.invoice_date as date',
-            'journal_entries.id as invoice_id',
+            DB::raw('COALESCE(journal_entries.id, credit_invoices.id) as invoice_id'),
             'customers.display_name as customer_name',
             DB::raw("'credit_invoice' as transaction_type")
         );
@@ -140,13 +145,18 @@ class SalesReportController extends Controller
                 'end_date' => $endDate,
                 'display_by' => $displayBy,
                 'months' => $months,
-                'type' => $request->query('type'),
+                'type' => $type,
             ],
         ]);
     }
 
     public function salesByCustomer(Request $request)
     {
+        $type = $request->query('type');
+        if (!$type && !$request->has('start_date') && !$request->has('end_date')) {
+            $type = 'all_dates';
+        }
+
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date') ?: now()->toDateString();
         $displayBy = $request->query('display_by', 'total');
@@ -159,7 +169,7 @@ class SalesReportController extends Controller
             ->join('customers', 'credit_invoices.customer_id', '=', 'customers.id')
             ->where('credit_invoices.status', 'posted');
 
-        if ($request->query('type') !== 'all_dates') {
+        if ($type !== 'all_dates') {
             if ($startDate) {
                 $salesQuery->whereBetween('sales_invoices.receipt_date', [$startDate, $endDate]);
                 $creditQuery->whereBetween('credit_invoices.invoice_date', [$startDate, $endDate]);
@@ -248,7 +258,7 @@ class SalesReportController extends Controller
                 'end_date' => $endDate,
                 'display_by' => $displayBy,
                 'months' => $months,
-                'type' => $request->query('type'),
+                'type' => $type,
             ],
         ]);
     }

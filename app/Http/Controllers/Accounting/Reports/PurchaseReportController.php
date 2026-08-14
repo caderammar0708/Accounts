@@ -11,6 +11,11 @@ class PurchaseReportController extends Controller
 {
     public function purchaseByItem(Request $request)
     {
+        $type = $request->query('type');
+        if (!$type && !$request->has('start_date') && !$request->has('end_date')) {
+            $type = 'all_dates';
+        }
+
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date') ?: now()->toDateString();
         $displayBy = $request->query('display_by', 'total');
@@ -19,12 +24,18 @@ class PurchaseReportController extends Controller
             ->join('bills', 'bill_items.bill_id', '=', 'bills.id')
             ->join('suppliers', 'bills.supplier_id', '=', 'suppliers.id')
             ->join('items', 'bill_items.item_id', '=', 'items.id')
+            ->leftJoin('journal_entries', function($join) {
+                $join->on('bills.id', '=', 'journal_entries.transactionable_id')
+                     ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\Bill');
+            })
             ->where('bills.status', 'posted');
 
-        if ($startDate) {
-            $query->whereBetween('bills.bill_date', [$startDate, $endDate]);
-        } else {
-            $query->where('bills.bill_date', '<=', $endDate);
+        if ($type !== 'all_dates') {
+            if ($startDate) {
+                $query->whereBetween('bills.bill_date', [$startDate, $endDate]);
+            } else {
+                $query->where('bills.bill_date', '<=', $endDate);
+            }
         }
 
         $months = [];
@@ -48,7 +59,7 @@ class PurchaseReportController extends Controller
                 'bill_items.amount',
                 'bills.bill_no as reference',
                 'bills.bill_date as date',
-                'bills.id as bill_id',
+                DB::raw('COALESCE(journal_entries.id, bills.id) as bill_id'),
                 'suppliers.display_name as supplier_name'
             )
             ->orderBy('bills.bill_date', 'asc')
@@ -104,13 +115,18 @@ class PurchaseReportController extends Controller
                 'end_date' => $endDate,
                 'display_by' => $displayBy,
                 'months' => $months,
-                'type' => $request->query('type'),
+                'type' => $type,
             ],
         ]);
     }
 
     public function purchaseBySupplier(Request $request)
     {
+        $type = $request->query('type');
+        if (!$type && !$request->has('start_date') && !$request->has('end_date')) {
+            $type = 'all_dates';
+        }
+
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date') ?: now()->toDateString();
         $displayBy = $request->query('display_by', 'total');
@@ -119,10 +135,12 @@ class PurchaseReportController extends Controller
             ->join('suppliers', 'bills.supplier_id', '=', 'suppliers.id')
             ->where('bills.status', 'posted');
 
-        if ($startDate) {
-            $query->whereBetween('bills.bill_date', [$startDate, $endDate]);
-        } else {
-            $query->where('bills.bill_date', '<=', $endDate);
+        if ($type !== 'all_dates') {
+            if ($startDate) {
+                $query->whereBetween('bills.bill_date', [$startDate, $endDate]);
+            } else {
+                $query->where('bills.bill_date', '<=', $endDate);
+            }
         }
 
         $months = [];
@@ -186,7 +204,7 @@ class PurchaseReportController extends Controller
                 'end_date' => $endDate,
                 'display_by' => $displayBy,
                 'months' => $months,
-                'type' => $request->query('type'),
+                'type' => $type,
             ],
         ]);
     }

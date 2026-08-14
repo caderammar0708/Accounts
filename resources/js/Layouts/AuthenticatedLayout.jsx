@@ -141,13 +141,6 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                             </Link>
                         )}
 
-                        {/* warranties Billing Shortcut */}
-                        {page.props.auth.warranties_enabled && (
-                            <Link href={route('warranties.index')} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors relative" title="warranties Billing">
-                                <span className="material-symbols-outlined text-[20px] leading-none block">shield</span>
-                            </Link>
-                        )}
-
                         {/* job Shortcut */}
                         {page.props.auth.job_enabled && (
                             <Link href={route('job-cards.index')} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors relative" title="Job Registrations">
