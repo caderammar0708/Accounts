@@ -40,11 +40,18 @@ return new class extends Migration
             $table->uuid('payee_id')->nullable();
             $table->string('payee_type')->nullable();
 
+            $table->uuid('fc_currency_id')->nullable();
+            $table->decimal('exchange_rate', 15, 6)->nullable();
+            $table->decimal('fc_debit', 15, 2)->nullable();
+            $table->decimal('fc_credit', 15, 2)->nullable();
+            
             $table->decimal('debit', 15, 2)->default(0);
             $table->decimal('credit', 15, 2)->default(0);
             $table->text('memo')->nullable();
             $table->date('service_date')->nullable();
             $table->timestamps();
+            
+            $table->foreign('fc_currency_id')->references('id')->on('currencies')->onDelete('set null');
         });
     }
 

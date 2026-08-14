@@ -184,6 +184,7 @@ class CreditInvoiceController extends Controller
                             'debit' => $cogsAmount,
                             'credit' => 0,
                             'memo' => 'Cost of goods sold: ' . ($lineItem['description'] ?? $itemModel->name) . " (Qty: {$qty})",
+                            'service_date' => null,
                             'created_at' => $now,
                             'updated_at' => $now,
                         ];
@@ -195,6 +196,7 @@ class CreditInvoiceController extends Controller
                             'debit' => 0,
                             'credit' => $cogsAmount,
                             'memo' => 'Inventory reduction: ' . ($lineItem['description'] ?? $itemModel->name) . " (Qty: {$qty})",
+                            'service_date' => null,
                             'created_at' => $now,
                             'updated_at' => $now,
                         ];
@@ -211,6 +213,7 @@ class CreditInvoiceController extends Controller
                 'debit' => $totalAmount,
                 'credit' => 0,
                 'memo' => $request->memo,
+                'service_date' => null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
@@ -225,6 +228,7 @@ class CreditInvoiceController extends Controller
                     'debit' => $discountAmount,
                     'credit' => 0,
                     'memo' => 'Discount for ' . $request->invoiceNo,
+                    'service_date' => null,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
@@ -510,6 +514,7 @@ class CreditInvoiceController extends Controller
                             'debit' => $cogsAmount,
                             'credit' => 0,
                             'memo' => 'Cost of goods sold: ' . ($lineItem['description'] ?? $itemModel->name) . " (Qty: {$qty})",
+                            'service_date' => null,
                             'created_at' => $now,
                             'updated_at' => $now,
                         ];
@@ -521,6 +526,7 @@ class CreditInvoiceController extends Controller
                             'debit' => 0,
                             'credit' => $cogsAmount,
                             'memo' => 'Inventory reduction: ' . ($lineItem['description'] ?? $itemModel->name) . " (Qty: {$qty})",
+                            'service_date' => null,
                             'created_at' => $now,
                             'updated_at' => $now,
                         ];
@@ -536,6 +542,7 @@ class CreditInvoiceController extends Controller
                 'debit' => $totalAmount,
                 'credit' => 0,
                 'memo' => $request->memo,
+                'service_date' => null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
@@ -550,6 +557,7 @@ class CreditInvoiceController extends Controller
                     'debit' => $discountAmount,
                     'credit' => 0,
                     'memo' => 'Discount for ' . $request->invoiceNo,
+                    'service_date' => null,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];

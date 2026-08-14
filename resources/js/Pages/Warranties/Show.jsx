@@ -169,7 +169,7 @@ export default function Show({ auth, warranty, resolvedInvoices = [] }) {
                             value={claimData.issue_description}
                             onChange={(e) => setClaimData('issue_description', e.target.value)}
                             rows="3"
-                            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm leading-snug"
                             required
                         />
                     </div>
@@ -218,7 +218,7 @@ export default function Show({ auth, warranty, resolvedInvoices = [] }) {
                             value={resolutionData.resolution}
                             onChange={(e) => setResolutionData('resolution', e.target.value)}
                             rows="3"
-                            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm leading-snug"
                         />
                     </div>
 

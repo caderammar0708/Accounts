@@ -12,6 +12,7 @@ import QuickAddPaymentMethod from "@/Components/QuickAddPaymentMethod";
 import { showToast } from "@/Components/ToastNotification";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceiptNo = "", receipt = null }) {
     const company = auth.company;
@@ -36,10 +37,6 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
     const [addingItemRowIndex, setAddingItemRowIndex] = useState(null);
     const [isDirty, setIsDirty] = useState(false);
     const [savedEntryId, setSavedEntryId] = useState(receipt?.id || null);
-
-    // Books Lock PIN Modal
-    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-    const [pendingAction, setPendingAction] = useState(null);
 
     const { data, setData, post, patch, processing, errors, reset, clearErrors, transform } = useForm({
         customer: receipt?.customer || "",
@@ -98,7 +95,8 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
 
     useEffect(() => {
         if (receipt) {
-            setData({
+            setData(prev => ({
+                ...prev,
                 customer: receipt.customer || "",
                 email: receipt.email || "",
                 billingAddress: receipt.billingAddress || "",
@@ -119,10 +117,15 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 })) : [
                     { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }
                 ],
-                action: 'save'
-            });
+                discount_type: receipt.discountType || 'percent',
+                discount_value: receipt.discountValue !== undefined ? String(receipt.discountValue) : '0',
+                prefix: receipt.prefix || '',
+                action: 'save',
+                books_pin: ''
+            }));
         } else {
-            setData({
+            setData(prev => ({
+                ...prev,
                 customer: "",
                 email: "",
                 billingAddress: "",
@@ -144,20 +147,12 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 prefix: '',
                 action: 'save',
                 books_pin: ''
-            });
-
+            }));
         }
         clearErrors();
     }, [receipt?.id]);
 
-    useEffect(() => {
-        if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED') {
-            setIsPinModalOpen(true);
-        } else if (errors.books_pin) {
-            // Re-open if invalid pin submitted
-            setIsPinModalOpen(true);
-        }
-    }, [errors.books_pin]);
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
     const COLUMNS = [
         {
@@ -257,6 +252,12 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
     };
 
     const handleSave = (actionType = 'save', pinOverride = null) => {
+        const isEdit = !!(receipt?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.receiptDate, auth?.books_lock_date, isEdit)) {
+            setPendingAction(actionType);
+            setIsPinModalOpen(true);
+            return;
+        }
 
         const currentNo = data.receiptNo;
 
@@ -282,10 +283,14 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
 
         submitMethod(url, {
             preserveScroll: true,
-            preserveState: actionType === 'save',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || actionType === 'save',
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.receipt?.id

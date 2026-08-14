@@ -37,7 +37,13 @@ class User extends Authenticatable
         'invite_token',
         'invite_expires_at',
         'is_invited',
+        'location_id',
     ];
+
+    public function location()
+    {
+        return $this->belongsTo(Location::class);
+    }
 
     protected $casts = [
         'email_verified_at' => 'datetime',

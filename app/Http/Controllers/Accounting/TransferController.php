@@ -15,6 +15,8 @@ use App\Http\Requests\Accounting\TransferRequest;
 
 class TransferController extends Controller
 {
+    use \App\Traits\AccountingControllerTrait;
+
     public function create()
     {
         return Inertia::render('Transaction/Transfer/TransferForm');
@@ -23,6 +25,7 @@ class TransferController extends Controller
     public function store(TransferRequest $request)
     {
         $validated = $request->validated();
+        $this->checkBooksLock($request->date, $request->books_pin);
 
         try {
             $journalEntry = DB::transaction(function() use ($request) {
@@ -109,6 +112,8 @@ class TransferController extends Controller
     public function update(TransferRequest $request, JournalEntry $journalEntry)
     {
         $validated = $request->validated();
+        $this->checkBooksLock($journalEntry->date, $request->books_pin);
+        $this->checkBooksLock($request->date, $request->books_pin);
 
         try {
             DB::transaction(function() use ($request, $journalEntry) {
@@ -172,6 +177,7 @@ class TransferController extends Controller
 
     public function destroy(JournalEntry $journalEntry)
     {
+        $this->checkBooksLock($journalEntry->date, request()->input('books_pin'));
         $chartOfAccountId = $journalEntry->lines->first()?->chart_of_acc_id
             ?? $journalEntry->lines->first()?->chart_of_account_id
             ?? $journalEntry->lines->first()?->account_id;

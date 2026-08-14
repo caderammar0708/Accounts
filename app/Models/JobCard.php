@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
+use App\Traits\BelongsToLocation;
+
 class JobCard extends Model
 {
-    use HasUuids;
+    use HasUuids, BelongsToLocation;
 
     protected $fillable = [
         'customer_id',
@@ -21,7 +23,8 @@ class JobCard extends Model
         'estimated_cost',
         'photos',
         'customer_signature',
-        'status'
+        'status',
+        'location_id',
     ];
 
     protected $casts = [

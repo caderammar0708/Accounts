@@ -50,4 +50,16 @@ trait AccountingControllerTrait
         $nextNo = ($lastRef && is_numeric($lastRef->reference)) ? (int) $lastRef->reference + 1 : $defaultStart;
         return (string) str_pad($nextNo, 4, '0', STR_PAD_LEFT);
     }
+
+    /**
+     * Check if transaction date is locked and validate provided PIN.
+     *
+     * @param string|\Carbon\Carbon $date
+     * @param string|null $providedPin
+     * @return void
+     */
+    protected function checkBooksLock($date, ?string $providedPin = null)
+    {
+        \App\Services\BooksLockService::check($date, $providedPin);
+    }
 }

@@ -10,6 +10,9 @@ import QuickAddPayee from "@/Components/QuickAddPayee";
 import InventoryItemSidePanel from "@/Components/InventoryItemSidePanel";
 import TermModal from "@/Components/TermModal";
 import { useDateFormat, formatDate } from "@/Utils/dateFormat";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import PinPromptModal from "@/Components/PinPromptModal";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 import axios from "axios";
 
 export default function BillForm({
@@ -163,8 +166,11 @@ export default function BillForm({
             { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
             { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
         ],
-        action: 'save'
+        action: 'save',
+        books_pin: ''
     });
+
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
     useEffect(() => {
         if (bill) {
@@ -196,7 +202,7 @@ export default function BillForm({
             });
         }
         clearErrors();
-    }, [bill]);
+    }, [bill?.id]);
 
     useEffect(() => {
         if (errors.error) {
@@ -304,14 +310,42 @@ export default function BillForm({
         setIsDirty(true);
     };
 
-    const handleSave = (action = 'save') => {
+    const handleSave = (action = 'save', pinOverride = null) => {
         if (parseFloat(totalAmount) > 9999999999999.99) {
             showToast('error', 'Total amount is too large. Please enter a smaller value.');
             return;
         }
 
+        const isEdit = !!(bill?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.billDate, auth?.books_lock_date, isEdit)) {
+            actionRef.current = action;
+            setPendingAction(action);
+            setIsPinModalOpen(true);
+            return;
+        }
+
         actionRef.current = action;
-        const currentNo = data.billNo;
+        setPendingAction(action);
+
+        transform((d) => ({
+            ...d,
+            action,
+            books_pin: pinOverride !== null ? pinOverride : d.books_pin,
+            items: d.items
+                .filter(item => item.category || item.description || (item.amount && item.amount !== "0.00" && item.amount !== "0"))
+                .map(item => ({
+                    ...item,
+                    amount: String(item.amount).replace(/,/g, '')
+                })),
+            itemDetails: d.itemDetails
+                .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount && item.amount !== "0.00" && item.amount !== "0"))
+                .map(item => ({
+                    ...item,
+                    qty: String(item.qty).replace(/,/g, ''),
+                    rate: String(item.rate).replace(/,/g, ''),
+                    amount: String(item.amount).replace(/,/g, '')
+                }))
+        }));
 
         const currentId = savedEntryId || bill?.id;
         const url = currentId ? route('bill.update', currentId) : route('bill.store');
@@ -319,10 +353,14 @@ export default function BillForm({
 
         method(url, {
             preserveScroll: true,
-            preserveState: action === 'save',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || action === 'save',
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.bill?.id
@@ -412,7 +450,12 @@ export default function BillForm({
     return (
         <TransactionLayout
             historyType="bill"
-            title={`Bill #${data.billNo}`}
+            title={
+                <div className="flex items-center">
+                    {`Bill #${data.billNo}`}
+                    <BooksLockIndicator date={data.billDate} lockDate={auth?.books_lock_date} isEdit={!!(bill?.id || savedEntryId)} />
+                </div>
+            }
             amount={totalAmount}
             processing={processing}
             dirty={isDirty}
@@ -662,6 +705,21 @@ export default function BillForm({
                         setAddingItemRowIndex(null);
                     });
                 }}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
         </TransactionLayout>
     );

@@ -10,6 +10,9 @@ import { showToast } from "@/Components/ToastNotification";
 import QuickAddAccount from "@/Components/QuickAddAccount";
 import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import CommonButton from "@/Components/CommonButton";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import PinPromptModal from "@/Components/PinPromptModal";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function PayBill({ paymentMethods = [], payment = null }) {
     const { auth } = usePage().props;
@@ -45,7 +48,10 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
         checkDate: payment?.checkDate || "",
         checkNumber: payment?.checkNumber || "",
         action: 'save',
+        books_pin: ''
     });
+
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
     useEffect(() => {
         if (!payment?.id && !data.paymentMethod && paymentMethods.length > 0) {
@@ -310,8 +316,31 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
         }));
     }, [transform, data.amount, bills]);
 
-    const submit = (action = 'save') => {
+    const submit = (action = 'save', pinOverride = null) => {
+        const isEdit = !!payment?.id;
+        if (!pinOverride && isBooksLocked(data.paymentDate, auth?.books_lock_date, isEdit)) {
+            actionRef.current = action;
+            setPendingAction(action);
+            setIsPinModalOpen(true);
+            return;
+        }
+
         actionRef.current = action;
+        setPendingAction(action);
+
+        transform((d) => ({
+            ...d,
+            amount: String(d.amount).replace(/,/g, ''),
+            action: action,
+            books_pin: pinOverride !== null ? pinOverride : d.books_pin,
+            bills: bills
+                .filter(bill => bill.applied > 0)
+                .map(bill => ({
+                    id: bill.id,
+                    amount: String(bill.applied)
+                }))
+        }));
+
         const currentRefNo = data.referenceNo; // capture BEFORE submit
 
         const url = payment?.id ? route('pay-bill.update', payment.id) : route('pay-bill.store');
@@ -319,10 +348,14 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
 
         submitMethod(url, {
             preserveScroll: true,
-            preserveState: action !== 'new',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || action !== 'new',
             onSuccess: () => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
                 if (action === 'close') {
                     if (typeof onClose === 'function') {
                         onClose();
@@ -350,7 +383,12 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
     return (
         <TransactionLayout
             historyType="pay_bill"
-            title={`Pay Bill #${data.referenceNo}`}
+            title={
+                <div className="flex items-center">
+                    {`Pay Bill #${data.referenceNo}`}
+                    <BooksLockIndicator date={data.paymentDate} lockDate={auth?.books_lock_date} isEdit={!!payment?.id} />
+                </div>
+            }
             amount={parseFloat(String(data.amount || 0).replace(/,/g, '')).toFixed(2)}
             onSave={() => submit('save')}
             onSaveAndClose={() => submit('close')}
@@ -684,6 +722,21 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
                 onSuccess={(newMethod) => {
                     router.reload({ only: ['paymentMethods'] });
                 }}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    submit(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
 
         </TransactionLayout>

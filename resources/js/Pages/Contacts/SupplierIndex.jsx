@@ -5,7 +5,6 @@ import SlideOver from '@/Components/SlideOver';
 import CommonInput from '@/Components/CommonInput';
 import CommonButton from '@/Components/CommonButton';
 import AddressForm from '@/Components/AddressForm';
-
 import ContactsTabs from '@/Components/ContactsTabs';
 
 export default function SupplierIndex({ suppliers = [] }) {
@@ -89,9 +88,8 @@ export default function SupplierIndex({ suppliers = [] }) {
         >
             <Head title="Contacts - Suppliers" />
 
-            <ContactsTabs />
-
-            <div className="p-6 pt-0">
+            <div className="p-6">
+                <ContactsTabs />
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     {/* Toolbar */}
                     <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between gap-4">
@@ -251,7 +249,7 @@ export default function SupplierIndex({ suppliers = [] }) {
                             <div className="mt-4">
                                 <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Address</label>
                                 <textarea
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#00713D] focus:border-[#00713D] outline-none transition-all font-sans text-sm"
+                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#00713D] focus:border-[#00713D] outline-none transition-all font-sans text-sm leading-snug"
                                     rows="3"
                                     value={data.address}
                                     onChange={(e) => setData("address", e.target.value)}

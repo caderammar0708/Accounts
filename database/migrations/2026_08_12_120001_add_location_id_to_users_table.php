@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('company_settings', function (Blueprint $table) {
-            $table->boolean('pos_layout_enabled')->default(false);
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreignId('location_id')->nullable()->after('id')->constrained('locations')->nullOnDelete();
         });
     }
 
@@ -21,8 +21,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('company_settings', function (Blueprint $table) {
-            $table->dropColumn('pos_layout_enabled');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['location_id']);
+            $table->dropColumn('location_id');
         });
     }
 };

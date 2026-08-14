@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Models\User;
 use OwenIt\Auditing\Contracts\Auditable;
 
+use App\Traits\BelongsToLocation;
+
 class JournalEntry extends Model implements Auditable
 {
-    use HasUuids, \OwenIt\Auditing\Auditable;
+    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
 
     protected $fillable = [
         'date',
@@ -24,6 +26,7 @@ class JournalEntry extends Model implements Auditable
         'total_amount',
         'status',
         'created_by',
+        'location_id',
     ];
 
     public function transactionable()

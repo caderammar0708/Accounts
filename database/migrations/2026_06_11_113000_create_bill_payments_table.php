@@ -17,6 +17,8 @@ return new class extends Migration
             $table->decimal('amount', 15, 2)->default(0);
             $table->date('payment_date');
             $table->uuid('payment_method_id')->nullable();
+            $table->date('check_date')->nullable();
+            $table->string('check_number')->nullable();
             $table->uuid('payment_account_id');
             $table->string('reference_no')->nullable();
             $table->text('memo')->nullable();

@@ -19,6 +19,7 @@ return new class extends Migration
             $table->decimal('total_amount', 15, 2)->default(0);
             $table->text('memo')->nullable();
             $table->text('statement_message')->nullable();
+            $table->string('prefix')->nullable();
             $table->string('status')->default('draft');
             $table->timestamps();
 
