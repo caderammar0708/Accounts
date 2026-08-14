@@ -15,21 +15,33 @@ class SalesReportController extends Controller
         $endDate = $request->query('end_date') ?: now()->toDateString();
         $displayBy = $request->query('display_by', 'total');
 
-        $query = DB::table('sales_invoice_items')
+        $salesQuery = DB::table('sales_invoice_items')
             ->join('sales_invoices', 'sales_invoice_items.sales_invoice_id', '=', 'sales_invoices.id')
             ->join('customers', 'sales_invoices.customer_id', '=', 'customers.id')
             ->join('items', 'sales_invoice_items.item_id', '=', 'items.id')
             ->where('sales_invoices.status', 'posted');
 
+        $creditQuery = DB::table('credit_invoice_items')
+            ->join('credit_invoices', 'credit_invoice_items.credit_invoice_id', '=', 'credit_invoices.id')
+            ->join('customers', 'credit_invoices.customer_id', '=', 'customers.id')
+            ->join('items', 'credit_invoice_items.item_id', '=', 'items.id')
+            ->where('credit_invoices.status', 'posted');
+
         if ($startDate) {
-            $query->whereBetween('sales_invoices.receipt_date', [$startDate, $endDate]);
+            $salesQuery->whereBetween('sales_invoices.receipt_date', [$startDate, $endDate]);
+            $creditQuery->whereBetween('credit_invoices.invoice_date', [$startDate, $endDate]);
         } else {
-            $query->where('sales_invoices.receipt_date', '<=', $endDate);
+            $salesQuery->where('sales_invoices.receipt_date', '<=', $endDate);
+            $creditQuery->where('credit_invoices.invoice_date', '<=', $endDate);
         }
 
         $months = [];
         if ($displayBy === 'month') {
-            $minDate = $startDate ?: (clone $query)->min('sales_invoices.receipt_date') ?: $endDate;
+            $minSalesDate = (clone $salesQuery)->min('sales_invoices.receipt_date');
+            $minCreditDate = (clone $creditQuery)->min('credit_invoices.invoice_date');
+            $minDates = array_filter([$minSalesDate, $minCreditDate]);
+            $minDate = $startDate ?: (!empty($minDates) ? min($minDates) : $endDate);
+            
             $startDt = new \DateTime(substr($minDate, 0, 7) . '-01');
             $endDt = new \DateTime(substr($endDate, 0, 7) . '-01');
             while ($startDt <= $endDt) {
@@ -38,7 +50,7 @@ class SalesReportController extends Controller
             }
         }
 
-        $allLines = $query->select(
+        $salesData = $salesQuery->select(
                 'sales_invoice_items.id as line_id',
                 'sales_invoice_items.item_id',
                 'items.name as item_name',
@@ -48,11 +60,27 @@ class SalesReportController extends Controller
                 'sales_invoice_items.amount',
                 'sales_invoices.receipt_no as reference',
                 'sales_invoices.receipt_date as date',
-                'sales_invoices.id as sales_invoice_id',
-                'customers.display_name as customer_name'
-            )
-            ->orderBy('sales_invoices.receipt_date', 'asc')
-            ->get();
+                'sales_invoices.id as journal_entry_id',
+                'customers.display_name as customer_name',
+                DB::raw("'sales_invoice' as transaction_type")
+            )->get();
+
+        $creditData = $creditQuery->select(
+                'credit_invoice_items.id as line_id',
+                'credit_invoice_items.item_id',
+                'items.name as item_name',
+                'items.sku as item_sku',
+                'credit_invoice_items.quantity',
+                'credit_invoice_items.rate',
+                'credit_invoice_items.amount',
+                'credit_invoices.invoice_no as reference',
+                'credit_invoices.invoice_date as date',
+                'credit_invoices.id as journal_entry_id',
+                'customers.display_name as customer_name',
+                DB::raw("'credit_invoice' as transaction_type")
+            )->get();
+
+        $allLines = $salesData->concat($creditData)->sortBy('date')->values();
 
         $reportData = $allLines->groupBy('item_id')->map(function ($lines, $itemId) use ($displayBy, $months) {
             $firstLine = $lines->first();
@@ -84,9 +112,9 @@ class SalesReportController extends Controller
                 'lines' => $displayBy === 'month' ? [] : $lines->map(function ($line) {
                     return [
                         'id' => $line->line_id,
-                        'journal_entry_id' => $line->sales_invoice_id,
+                        'journal_entry_id' => $line->journal_entry_id,
                         'date' => $line->date,
-                        'transaction_type' => 'sales_invoice',
+                        'transaction_type' => $line->transaction_type,
                         'reference' => $line->reference,
                         'contact_name' => $line->customer_name,
                         'qty' => (float) $line->quantity,
@@ -115,19 +143,29 @@ class SalesReportController extends Controller
         $endDate = $request->query('end_date') ?: now()->toDateString();
         $displayBy = $request->query('display_by', 'total');
 
-        $query = DB::table('sales_invoices')
+        $salesQuery = DB::table('sales_invoices')
             ->join('customers', 'sales_invoices.customer_id', '=', 'customers.id')
             ->where('sales_invoices.status', 'posted');
+            
+        $creditQuery = DB::table('credit_invoices')
+            ->join('customers', 'credit_invoices.customer_id', '=', 'customers.id')
+            ->where('credit_invoices.status', 'posted');
 
         if ($startDate) {
-            $query->whereBetween('sales_invoices.receipt_date', [$startDate, $endDate]);
+            $salesQuery->whereBetween('sales_invoices.receipt_date', [$startDate, $endDate]);
+            $creditQuery->whereBetween('credit_invoices.invoice_date', [$startDate, $endDate]);
         } else {
-            $query->where('sales_invoices.receipt_date', '<=', $endDate);
+            $salesQuery->where('sales_invoices.receipt_date', '<=', $endDate);
+            $creditQuery->where('credit_invoices.invoice_date', '<=', $endDate);
         }
 
         $months = [];
         if ($displayBy === 'month') {
-            $minDate = $startDate ?: (clone $query)->min('sales_invoices.receipt_date') ?: $endDate;
+            $minSalesDate = (clone $salesQuery)->min('sales_invoices.receipt_date');
+            $minCreditDate = (clone $creditQuery)->min('credit_invoices.invoice_date');
+            $minDates = array_filter([$minSalesDate, $minCreditDate]);
+            $minDate = $startDate ?: (!empty($minDates) ? min($minDates) : $endDate);
+            
             $startDt = new \DateTime(substr($minDate, 0, 7) . '-01');
             $endDt = new \DateTime(substr($endDate, 0, 7) . '-01');
             while ($startDt <= $endDt) {
@@ -137,46 +175,79 @@ class SalesReportController extends Controller
         }
 
         if ($displayBy === 'month') {
-            $reportData = $query->select(
+            $salesData = $salesQuery->select(
                     'sales_invoices.customer_id',
                     'customers.display_name as customer_name',
                     'sales_invoices.receipt_date as date',
                     'sales_invoices.total_amount',
-                    'sales_invoices.id' // Need something to count
-                )
-                ->get()
+                    'sales_invoices.id as tx_id'
+                )->get();
+                
+            $creditData = $creditQuery->select(
+                    'credit_invoices.customer_id',
+                    'customers.display_name as customer_name',
+                    'credit_invoices.invoice_date as date',
+                    'credit_invoices.total_amount',
+                    'credit_invoices.id as tx_id'
+                )->get();
+
+            $reportData = $salesData->concat($creditData)
                 ->groupBy('customer_id')
-                ->map(function ($invoices, $customerId) use ($months) {
-                    $customerName = $invoices->first()->customer_name;
+                ->map(function ($txs, $customerId) use ($months) {
+                    $customerName = $txs->first()->customer_name;
                     $monthlyTotals = [];
                     foreach ($months as $m) {
                         $monthlyTotals[$m] = ['invoice_count' => 0, 'amount' => 0];
                     }
-                    foreach ($invoices as $inv) {
-                        $m = substr($inv->date, 0, 7);
+                    foreach ($txs as $tx) {
+                        $m = substr($tx->date, 0, 7);
                         if (isset($monthlyTotals[$m])) {
                             $monthlyTotals[$m]['invoice_count'] += 1;
-                            $monthlyTotals[$m]['amount'] += (float)$inv->total_amount;
+                            $monthlyTotals[$m]['amount'] += (float)$tx->total_amount;
                         }
                     }
                     return [
                         'customer_id' => $customerId,
                         'customer_name' => $customerName,
-                        'invoice_count' => $invoices->count(),
-                        'total_amount' => $invoices->sum('total_amount'),
+                        'invoice_count' => $txs->count(),
+                        'total_amount' => $txs->sum('total_amount'),
                         'monthly_totals' => $monthlyTotals,
                     ];
                 })->values()->sortByDesc('total_amount')->values();
         } else {
-            $reportData = $query->select(
+            $salesData = $salesQuery->select(
                     'sales_invoices.customer_id',
                     'customers.display_name as customer_name',
                     DB::raw('COUNT(sales_invoices.id) as invoice_count'),
                     DB::raw('SUM(sales_invoices.total_amount) as total_amount')
                 )
                 ->groupBy('sales_invoices.customer_id', 'customers.display_name')
-                ->orderByDesc('total_amount')
                 ->get();
+                
+            $creditData = $creditQuery->select(
+                    'credit_invoices.customer_id',
+                    'customers.display_name as customer_name',
+                    DB::raw('COUNT(credit_invoices.id) as invoice_count'),
+                    DB::raw('SUM(credit_invoices.total_amount) as total_amount')
+                )
+                ->groupBy('credit_invoices.customer_id', 'customers.display_name')
+                ->get();
+                
+            $reportData = collect();
+            foreach ([$salesData, $creditData] as $data) {
+                foreach ($data as $row) {
+                    $existing = $reportData->firstWhere('customer_id', $row->customer_id);
+                    if ($existing) {
+                        $existing->invoice_count += $row->invoice_count;
+                        $existing->total_amount += $row->total_amount;
+                    } else {
+                        $row->invoice_count = (int)$row->invoice_count;
+                        $row->total_amount = (float)$row->total_amount;
+                        $reportData->push($row);
+                    }
+                }
+            }
+            $reportData = $reportData->sortByDesc('total_amount')->values();
         }
 
         return Inertia::render('Reports/SalesByCustomer', [

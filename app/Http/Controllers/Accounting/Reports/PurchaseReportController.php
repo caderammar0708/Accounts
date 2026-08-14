@@ -15,21 +15,33 @@ class PurchaseReportController extends Controller
         $endDate = $request->query('end_date') ?: now()->toDateString();
         $displayBy = $request->query('display_by', 'total');
 
-        $query = DB::table('bill_items')
+        $billsQuery = DB::table('bill_items')
             ->join('bills', 'bill_items.bill_id', '=', 'bills.id')
-            ->join('suppliers', 'bills.supplier_id', '=', 'suppliers.id')
+            ->leftJoin('suppliers', 'bills.supplier_id', '=', 'suppliers.id')
             ->join('items', 'bill_items.item_id', '=', 'items.id')
             ->where('bills.status', 'posted');
 
+        $expensesQuery = DB::table('payment_items')
+            ->join('payments', 'payment_items.payment_id', '=', 'payments.id')
+            ->leftJoin('suppliers', 'payments.payee_id', '=', 'suppliers.id')
+            ->join('items', 'payment_items.item_id', '=', 'items.id')
+            ->where('payments.status', 'posted');
+
         if ($startDate) {
-            $query->whereBetween('bills.bill_date', [$startDate, $endDate]);
+            $billsQuery->whereBetween('bills.bill_date', [$startDate, $endDate]);
+            $expensesQuery->whereBetween('payments.payment_date', [$startDate, $endDate]);
         } else {
-            $query->where('bills.bill_date', '<=', $endDate);
+            $billsQuery->where('bills.bill_date', '<=', $endDate);
+            $expensesQuery->where('payments.payment_date', '<=', $endDate);
         }
 
         $months = [];
         if ($displayBy === 'month') {
-            $minDate = $startDate ?: (clone $query)->min('bills.bill_date') ?: $endDate;
+            $minBillDate = (clone $billsQuery)->min('bills.bill_date');
+            $minExpDate = (clone $expensesQuery)->min('payments.payment_date');
+            $minDates = array_filter([$minBillDate, $minExpDate]);
+            $minDate = $startDate ?: (!empty($minDates) ? min($minDates) : $endDate);
+            
             $startDt = new \DateTime(substr($minDate, 0, 7) . '-01');
             $endDt = new \DateTime(substr($endDate, 0, 7) . '-01');
             while ($startDt <= $endDt) {
@@ -38,7 +50,7 @@ class PurchaseReportController extends Controller
             }
         }
 
-        $allLines = $query->select(
+        $billsData = $billsQuery->select(
                 'bill_items.id as line_id',
                 'bill_items.item_id',
                 'items.name as item_name',
@@ -48,11 +60,27 @@ class PurchaseReportController extends Controller
                 'bill_items.amount',
                 'bills.bill_no as reference',
                 'bills.bill_date as date',
-                'bills.id as bill_id',
-                'suppliers.display_name as supplier_name'
-            )
-            ->orderBy('bills.bill_date', 'asc')
-            ->get();
+                'bills.id as journal_entry_id',
+                'suppliers.display_name as supplier_name',
+                DB::raw("'bill' as transaction_type")
+            )->get();
+
+        $expensesData = $expensesQuery->select(
+                'payment_items.id as line_id',
+                'payment_items.item_id',
+                'items.name as item_name',
+                'items.sku as item_sku',
+                'payment_items.quantity',
+                'payment_items.rate',
+                'payment_items.amount',
+                'payments.expense_number as reference',
+                'payments.payment_date as date',
+                'payments.id as journal_entry_id',
+                'suppliers.display_name as supplier_name',
+                DB::raw("'payment' as transaction_type")
+            )->get();
+
+        $allLines = $billsData->concat($expensesData)->sortBy('date')->values();
 
         $reportData = $allLines->groupBy('item_id')->map(function ($lines, $itemId) use ($displayBy, $months) {
             $firstLine = $lines->first();
@@ -84,9 +112,9 @@ class PurchaseReportController extends Controller
                 'lines' => $displayBy === 'month' ? [] : $lines->map(function ($line) {
                     return [
                         'id' => $line->line_id,
-                        'journal_entry_id' => $line->bill_id,
+                        'journal_entry_id' => $line->journal_entry_id,
                         'date' => $line->date,
-                        'transaction_type' => 'bill',
+                        'transaction_type' => $line->transaction_type,
                         'reference' => $line->reference,
                         'contact_name' => $line->supplier_name,
                         'qty' => (float) $line->quantity,
@@ -115,19 +143,30 @@ class PurchaseReportController extends Controller
         $endDate = $request->query('end_date') ?: now()->toDateString();
         $displayBy = $request->query('display_by', 'total');
 
-        $query = DB::table('bills')
+        $billsQuery = DB::table('bills')
             ->join('suppliers', 'bills.supplier_id', '=', 'suppliers.id')
             ->where('bills.status', 'posted');
+            
+        $expensesQuery = DB::table('payments')
+            ->join('suppliers', 'payments.payee_id', '=', 'suppliers.id')
+            ->where('payments.payee_type', \App\Models\Supplier::class)
+            ->where('payments.status', 'posted');
 
         if ($startDate) {
-            $query->whereBetween('bills.bill_date', [$startDate, $endDate]);
+            $billsQuery->whereBetween('bills.bill_date', [$startDate, $endDate]);
+            $expensesQuery->whereBetween('payments.payment_date', [$startDate, $endDate]);
         } else {
-            $query->where('bills.bill_date', '<=', $endDate);
+            $billsQuery->where('bills.bill_date', '<=', $endDate);
+            $expensesQuery->where('payments.payment_date', '<=', $endDate);
         }
 
         $months = [];
         if ($displayBy === 'month') {
-            $minDate = $startDate ?: (clone $query)->min('bills.bill_date') ?: $endDate;
+            $minBillDate = (clone $billsQuery)->min('bills.bill_date');
+            $minExpDate = (clone $expensesQuery)->min('payments.payment_date');
+            $minDates = array_filter([$minBillDate, $minExpDate]);
+            $minDate = $startDate ?: (!empty($minDates) ? min($minDates) : $endDate);
+            
             $startDt = new \DateTime(substr($minDate, 0, 7) . '-01');
             $endDt = new \DateTime(substr($endDate, 0, 7) . '-01');
             while ($startDt <= $endDt) {
@@ -137,46 +176,79 @@ class PurchaseReportController extends Controller
         }
 
         if ($displayBy === 'month') {
-            $reportData = $query->select(
+            $billsData = $billsQuery->select(
                     'bills.supplier_id',
                     'suppliers.display_name as supplier_name',
                     'bills.bill_date as date',
                     'bills.total_amount',
-                    'bills.id'
-                )
-                ->get()
+                    'bills.id as tx_id'
+                )->get();
+                
+            $expensesData = $expensesQuery->select(
+                    'payments.payee_id as supplier_id',
+                    'suppliers.display_name as supplier_name',
+                    'payments.payment_date as date',
+                    'payments.total_amount',
+                    'payments.id as tx_id'
+                )->get();
+
+            $reportData = $billsData->concat($expensesData)
                 ->groupBy('supplier_id')
-                ->map(function ($bills, $supplierId) use ($months) {
-                    $supplierName = $bills->first()->supplier_name;
+                ->map(function ($txs, $supplierId) use ($months) {
+                    $supplierName = $txs->first()->supplier_name;
                     $monthlyTotals = [];
                     foreach ($months as $m) {
                         $monthlyTotals[$m] = ['tx_count' => 0, 'amount' => 0];
                     }
-                    foreach ($bills as $bill) {
-                        $m = substr($bill->date, 0, 7);
+                    foreach ($txs as $tx) {
+                        $m = substr($tx->date, 0, 7);
                         if (isset($monthlyTotals[$m])) {
                             $monthlyTotals[$m]['tx_count'] += 1;
-                            $monthlyTotals[$m]['amount'] += (float)$bill->total_amount;
+                            $monthlyTotals[$m]['amount'] += (float)$tx->total_amount;
                         }
                     }
                     return [
                         'supplier_id' => $supplierId,
                         'supplier_name' => $supplierName,
-                        'tx_count' => $bills->count(),
-                        'total_amount' => $bills->sum('total_amount'),
+                        'tx_count' => $txs->count(),
+                        'total_amount' => $txs->sum('total_amount'),
                         'monthly_totals' => $monthlyTotals,
                     ];
                 })->values()->sortByDesc('total_amount')->values();
         } else {
-            $reportData = $query->select(
+            $billsData = $billsQuery->select(
                     'bills.supplier_id',
                     'suppliers.display_name as supplier_name',
                     DB::raw('COUNT(bills.id) as tx_count'),
                     DB::raw('SUM(bills.total_amount) as total_amount')
                 )
                 ->groupBy('bills.supplier_id', 'suppliers.display_name')
-                ->orderByDesc('total_amount')
                 ->get();
+                
+            $expensesData = $expensesQuery->select(
+                    'payments.payee_id as supplier_id',
+                    'suppliers.display_name as supplier_name',
+                    DB::raw('COUNT(payments.id) as tx_count'),
+                    DB::raw('SUM(payments.total_amount) as total_amount')
+                )
+                ->groupBy('payments.payee_id', 'suppliers.display_name')
+                ->get();
+                
+            $reportData = collect();
+            foreach ([$billsData, $expensesData] as $data) {
+                foreach ($data as $row) {
+                    $existing = $reportData->firstWhere('supplier_id', $row->supplier_id);
+                    if ($existing) {
+                        $existing->tx_count += $row->tx_count;
+                        $existing->total_amount += $row->total_amount;
+                    } else {
+                        $row->tx_count = (int)$row->tx_count;
+                        $row->total_amount = (float)$row->total_amount;
+                        $reportData->push($row);
+                    }
+                }
+            }
+            $reportData = $reportData->sortByDesc('total_amount')->values();
         }
 
         return Inertia::render('Reports/PurchaseBySupplier', [

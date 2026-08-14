@@ -215,7 +215,7 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
                                             className="bg-slate-50/50 hover:bg-slate-100 cursor-pointer transition-colors"
                                             onClick={() => toggleGroup(group.item.id)}
                                         >
-                                            <td colSpan="7" className="py-2 px-3 font-bold text-gray-800">
+                                            <td colSpan="4" className="py-2 px-3 font-bold text-gray-800">
                                                 <div className="flex items-center gap-2 whitespace-nowrap">
                                                     <svg
                                                         className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}
@@ -226,6 +226,13 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
                                                     <span className="truncate">{displayName}</span>
                                                     {group.item.sku && <span className="text-gray-500 font-normal text-xs ml-2">SKU: {group.item.sku}</span>}
                                                 </div>
+                                            </td>
+                                            <td className="py-2 px-3 text-right font-semibold text-gray-900 tabular-nums">
+                                                {formatQty(group.item.total_qty)}
+                                            </td>
+                                            <td className="py-2 px-3"></td>
+                                            <td className="py-2 px-3 text-right font-semibold text-gray-900 tabular-nums">
+                                                <Currency value={group.item.total_amount} />
                                             </td>
                                         </tr>
 
