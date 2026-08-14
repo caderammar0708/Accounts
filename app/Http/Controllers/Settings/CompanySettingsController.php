@@ -281,9 +281,16 @@ public function updateAccounting(Request $request)
     {
         $validated = $request->validate([
             'branches_enabled' => 'required|boolean',
+            'drop_tables' => 'nullable|boolean',
         ]);
 
         $this->getSettings()->update(['branches_enabled' => $validated['branches_enabled']]);
+        
+        if ($validated['branches_enabled']) {
+            $this->handleModuleMigrations('location', true);
+        } elseif ($request->boolean('drop_tables')) {
+            $this->handleModuleMigrations('location', false, true);
+        }
 
         return back()->with('message', 'Branches setting updated successfully.');
     }

@@ -12,12 +12,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Load all module migrations automatically
-        $modulesPath = database_path('migrations/modules');
-        if (is_dir($modulesPath)) {
-            $directories = glob($modulesPath . '/*', GLOB_ONLYDIR);
-            $this->loadMigrationsFrom($directories);
-        }
+        // Module migrations are loaded dynamically via CompanySettingsController.
     }
 
     /**

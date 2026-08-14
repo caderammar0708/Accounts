@@ -71,7 +71,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
         { name: 'Products & Services', href: route('items.index'), icon: 'inventory' },
         { name: 'Chart of Accounts', href: route('chart-of-account.index'), icon: 'accounting' },
         { name: 'Reports', href: route('reports.index'), adminOnly: true, icon: 'finance' },
-        ...(page.props.auth.branches_enabled ? [{ name: 'Branches', href: route('locations.index'), adminOnly: true, icon: 'accounting' }] : []),
+        ...(page.props.auth.location ? [{ name: 'Locations', href: route('locations.index'), adminOnly: true, icon: 'accounting' }] : []),
     ];
 
     return (
@@ -193,15 +193,15 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                         )}
 
                         {/* Branch Switcher / Location Indicator */}
-                        {locations && locations.length > 0 && (
+                        {page.props.auth.location && locations && locations.length > 0 && (
                             <div className="flex items-center">
-                                {page.props.auth.is_location_locked ? (
+                                {page.props.auth.location.is_locked ? (
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
                                         <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        <span>{page.props.auth.current_location?.name || 'Branch'}</span>
+                                        <span>{page.props.auth.location.current?.name || 'Branch'}</span>
                                     </div>
                                 ) : (
                                     <Dropdown>
@@ -211,7 +211,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                                 </svg>
-                                                <span>{page.props.auth.current_location?.name || 'Select Branch'}</span>
+                                                <span>{page.props.auth.location.current?.name || 'Select Branch'}</span>
                                                 <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                                                 </svg>
@@ -226,7 +226,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                                                 <button
                                                     key={loc.id}
                                                     onClick={() => router.post(route('locations.switch'), { location_id: loc.id })}
-                                                    className={`w-full text-left px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${page.props.auth.current_location_id === loc.id ? 'font-bold text-[#00713D] bg-green-50/50' : 'text-slate-700'
+                                                    className={`w-full text-left px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${page.props.auth.location.current_id === loc.id ? 'font-bold text-[#00713D] bg-green-50/50' : 'text-slate-700'
                                                         }`}
                                                 >
                                                     <span>{loc.name}</span>

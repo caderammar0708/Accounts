@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('print_settings', function (Blueprint $table) {
-            $table->boolean('show_logo')->default(true)->after('is_default');
-        });
+        if (Schema::hasTable('print_settings') && !Schema::hasColumn('print_settings', 'show_logo')) {
+            Schema::table('print_settings', function (Blueprint $table) {
+                $table->boolean('show_logo')->default(true);
+            });
+        }
     }
 
     /**

@@ -12,12 +12,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('company_settings', function (Blueprint $table) {
-            $table->dropColumn([
-                'fuel_station_enabled',
-                'warranty_layout_enabled',
-                'job_layout_enabled',
-                'vehicles_enabled'
-            ]);
+            $columnsToDrop = [];
+            
+            if (Schema::hasColumn('company_settings', 'fuel_station_enabled')) {
+                $columnsToDrop[] = 'fuel_station_enabled';
+            }
+            if (Schema::hasColumn('company_settings', 'warranty_layout_enabled')) {
+                $columnsToDrop[] = 'warranty_layout_enabled';
+            }
+            if (Schema::hasColumn('company_settings', 'job_layout_enabled')) {
+                $columnsToDrop[] = 'job_layout_enabled';
+            }
+            if (Schema::hasColumn('company_settings', 'vehicles_enabled')) {
+                $columnsToDrop[] = 'vehicles_enabled';
+            }
+            
+            if (!empty($columnsToDrop)) {
+                $table->dropColumn($columnsToDrop);
+            }
         });
     }
 
