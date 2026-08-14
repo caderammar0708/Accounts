@@ -18,6 +18,7 @@ use App\Http\Requests\Accounting\BillReturnRequest;
 
 class BillReturnController extends Controller
 {
+    use \App\Traits\AccountingControllerTrait;
     // public function index()
     // {
     //     return Inertia::render('Transaction/SupplierCredit', [
@@ -80,6 +81,7 @@ class BillReturnController extends Controller
     public function store(BillReturnRequest $request)
     {
         $request->validated();
+        $this->checkBooksLock($request->date, $request->books_pin);
 
         try {
             $journalEntry = DB::transaction(function() use ($request) {
@@ -268,6 +270,8 @@ class BillReturnController extends Controller
     public function update(BillReturnRequest $request, JournalEntry $journalEntry)
     {
         $request->validated();
+        $this->checkBooksLock($journalEntry->date, $request->books_pin);
+        $this->checkBooksLock($request->date, $request->books_pin);
 
         try {
             DB::transaction(function() use ($request, $journalEntry) {
@@ -420,6 +424,7 @@ class BillReturnController extends Controller
 
     public function destroy(JournalEntry $journalEntry)
     {
+        $this->checkBooksLock($journalEntry->date, request()->input('books_pin'));
         $chartOfAccountId = $journalEntry->lines->first()?->chart_of_acc_id 
             ?? $journalEntry->lines->first()?->chart_of_account_id 
             ?? $journalEntry->lines->first()?->account_id;

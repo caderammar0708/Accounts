@@ -207,7 +207,7 @@ export default forwardRef(function CommonInput(
                         {...props}
                         value={normalizedValue}
                         ref={inputRef}
-                        className={`${baseInputClasses} ${errorClasses} py-1.5 resize-y ${className} ${inputClass}`}
+                        className={`${baseInputClasses} ${errorClasses} py-1.5 resize-y leading-snug ${className} ${inputClass}`}
                     />
                 ) : type === 'select' ? (
                     <select
@@ -251,52 +251,62 @@ export default forwardRef(function CommonInput(
                                 prevMonthButtonDisabled,
                                 nextMonthButtonDisabled,
                             }) => (
-                                <div className="flex items-center justify-between px-2 py-1">
+                                <div className="flex items-center justify-between px-1 py-1 gap-1 w-full">
                                     <button
-                                        onClick={(e) => { e.preventDefault(); decreaseMonth(); }}
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); decreaseMonth(); }}
                                         disabled={prevMonthButtonDisabled}
                                         type="button"
-                                        className="text-slate-500 hover:text-green-500 disabled:opacity-50 p-1"
+                                        className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-25 disabled:pointer-events-none"
+                                        title="Previous Month"
+                                        aria-label="Previous Month"
                                     >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+                                        <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                                        </svg>
                                     </button>
 
-                                    <div className="flex gap-1 items-center">
-                                        <select
-                                            value={date.getMonth()}
-                                            onChange={({ target: { value } }) => changeMonth(Number(value))}
-                                            className="react-datepicker__month-select"
-                                        >
-                                            {[
-                                                "January", "February", "March", "April", "May", "June",
-                                                "July", "August", "September", "October", "November", "December"
-                                            ].map((option, index) => (
-                                                <option key={option} value={index}>
-                                                    {option}
-                                                </option>
-                                            ))}
-                                        </select>
+                                    <div className="flex items-center justify-center gap-1.5 min-w-0 flex-1">
+                                        <div className="w-[115px] flex-shrink-0">
+                                            <SearchableSelect
+                                                value={date.getMonth()}
+                                                onChange={(val) => changeMonth(Number(val))}
+                                                options={[
+                                                    { value: 0, label: "January" },
+                                                    { value: 1, label: "February" },
+                                                    { value: 2, label: "March" },
+                                                    { value: 3, label: "April" },
+                                                    { value: 4, label: "May" },
+                                                    { value: 5, label: "June" },
+                                                    { value: 6, label: "July" },
+                                                    { value: 7, label: "August" },
+                                                    { value: 8, label: "September" },
+                                                    { value: 9, label: "October" },
+                                                    { value: 10, label: "November" },
+                                                    { value: 11, label: "December" }
+                                                ]}
+                                                size="sm"
+                                                placeholder="Month"
+                                            />
+                                        </div>
 
-                                        <div className="w-20 ml-1">
+                                        <div className="w-[76px] flex-shrink-0">
                                             <SearchableSelect
                                                 value={date.getFullYear()}
                                                 onChange={(val) => changeYear(Number(val))}
                                                 onSearch={(query) => {
-                                                    // If no search, just show the past 5 years
                                                     if (!query) {
-                                                        return Array.from({ length: 5 }, (_, i) => {
-                                                            const yr = new Date().getFullYear() - i;
+                                                        return Array.from({ length: 13 }, (_, i) => {
+                                                            const yr = new Date().getFullYear() + 2 - i;
                                                             return { value: yr, label: String(yr) };
                                                         });
                                                     }
-                                                    // If searching, generate a wider range (100 years back, 50 years forward)
                                                     return Array.from({ length: 151 }, (_, i) => {
                                                         const yr = new Date().getFullYear() + 50 - i;
                                                         return { value: yr, label: String(yr) };
                                                     });
                                                 }}
-                                                options={Array.from({ length: 5 }, (_, i) => {
-                                                    const yr = new Date().getFullYear() - i;
+                                                options={Array.from({ length: 13 }, (_, i) => {
+                                                    const yr = new Date().getFullYear() + 2 - i;
                                                     return { value: yr, label: String(yr) };
                                                 })}
                                                 allowCustom={true}
@@ -307,12 +317,16 @@ export default forwardRef(function CommonInput(
                                     </div>
 
                                     <button
-                                        onClick={(e) => { e.preventDefault(); increaseMonth(); }}
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); increaseMonth(); }}
                                         disabled={nextMonthButtonDisabled}
                                         type="button"
-                                        className="text-slate-500 hover:text-green-500 disabled:opacity-50 p-1"
+                                        className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-25 disabled:pointer-events-none"
+                                        title="Next Month"
+                                        aria-label="Next Month"
                                     >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                                        <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                        </svg>
                                     </button>
                                 </div>
                             )}

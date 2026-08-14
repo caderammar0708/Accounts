@@ -8,13 +8,15 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Models\Supplier;
 use OwenIt\Auditing\Contracts\Auditable;
 
+use App\Traits\BelongsToLocation;
+
 class Bill extends Model implements Auditable
 {
-    use HasUuids, \OwenIt\Auditing\Auditable;
+    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
 
     protected $fillable = [
         'supplier_id', 'email', 'bill_date',
-        'due_date', 'bill_no', 'total_amount', 'memo', 'status'
+        'due_date', 'bill_no', 'total_amount', 'memo', 'status', 'location_id',
     ];
 
     public function items()

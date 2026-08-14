@@ -6,8 +6,10 @@ import TransactionLayout from "@/TransactionLayout/TransactionLayout";
 import SearchableSelect from "@/Components/SearchableSelect";
 import CommonInput from "@/Components/CommonInput";
 import QuickAddAccount from "@/Components/QuickAddAccount";
-import { showToast } from "@/Components/ToastNotification";
 import { useDateFormat, formatDate } from "@/Utils/dateFormat";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import PinPromptModal from "@/Components/PinPromptModal";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = null, outstandingCheques = [], selectedChequeIds = [], onModeChange = null, onClose = null }) {
     const company = auth.company;
@@ -64,8 +66,11 @@ export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = 
         depositNo: deposit?.depositNo || nextDepositNo || "1001",
         memo: deposit?.memo || "",
         selectedCheques: selectedChequeIds || [],
-        action: 'save'
+        action: 'save',
+        books_pin: ''
     });
+
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
     useEffect(() => {
         if (deposit) {
@@ -83,7 +88,7 @@ export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = 
             })));
         }
         clearErrors();
-    }, [deposit]);
+    }, [deposit?.id]);
 
     const handleChequeCheckToggle = (id, isChecked) => {
         setCheques(prev => prev.map(chk => 
@@ -126,8 +131,20 @@ export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = 
         .reduce((sum, chk) => sum + parseFloat(chk.amount || 0), 0)
         .toFixed(2);
 
-    const handleSave = (action = 'save') => {
-        transform((d) => ({ ...d, action }));
+    const handleSave = (action = 'save', pinOverride = null) => {
+        const isEdit = !!(deposit?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.depositDate, auth?.books_lock_date, isEdit)) {
+            setPendingAction(action);
+            setIsPinModalOpen(true);
+            return;
+        }
+
+        setPendingAction(action);
+        transform((d) => ({
+            ...d,
+            action,
+            books_pin: pinOverride !== null ? pinOverride : d.books_pin,
+        }));
         const url = deposit?.id ? route('cheque-deposit.update', deposit.id) : route('cheque-deposit.store');
         const method = deposit?.id ? patch : post;
 
@@ -135,6 +152,10 @@ export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = 
             onSuccess: async (page) => {
                 showToast('success', 'Cheque deposit saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.deposit?.id
@@ -187,7 +208,12 @@ export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = 
     return (
         <TransactionLayout
             historyType="cheque_deposit"
-            title={deposit?.id ? `Edit Cheque Deposit #${data.depositNo}` : `Cheque Deposit #${data.depositNo}`}
+            title={
+                <div className="flex items-center">
+                    {deposit?.id ? `Edit Cheque Deposit #${data.depositNo}` : `Cheque Deposit #${data.depositNo}`}
+                    <BooksLockIndicator date={data.depositDate} lockDate={auth?.books_lock_date} isEdit={!!(deposit?.id || savedEntryId)} />
+                </div>
+            }
             amount={parseFloat(totalAmount)}
             processing={processing}
             dirty={isDirty}
@@ -397,6 +423,21 @@ export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = 
                         setData("depositTo", newAccount.value);
                     }
                 }}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
         </TransactionLayout>
     );

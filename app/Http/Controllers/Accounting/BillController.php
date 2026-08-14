@@ -77,6 +77,7 @@ class BillController extends Controller
     public function store(BillRequest $request)
     {
         $request->validated();
+        $this->checkBooksLock($request->billDate, $request->books_pin);
 
         try {
             $journalEntry = DB::transaction(function() use ($request) {
@@ -267,6 +268,8 @@ class BillController extends Controller
     public function update(BillRequest $request, JournalEntry $journalEntry)
     {
         $request->validated();
+        $this->checkBooksLock($journalEntry->date, $request->books_pin);
+        $this->checkBooksLock($request->billDate, $request->books_pin);
 
         try {
             DB::transaction(function() use ($request, $journalEntry) {
@@ -421,6 +424,7 @@ class BillController extends Controller
 
     public function destroy(JournalEntry $journalEntry)
     {
+        $this->checkBooksLock($journalEntry->date, request()->input('books_pin'));
         $chartOfAccountId = $journalEntry->lines->first()?->chart_of_acc_id 
             ?? $journalEntry->lines->first()?->chart_of_account_id 
             ?? $journalEntry->lines->first()?->account_id;

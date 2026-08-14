@@ -5,6 +5,9 @@ import SearchableSelect from "@/Components/SearchableSelect";
 import CommonInput from "@/Components/CommonInput";
 import QuickAddAccount from "@/Components/QuickAddAccount";
 import { showToast } from "@/Components/ToastNotification";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import PinPromptModal from "@/Components/PinPromptModal";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 import axios from "axios";
 
 export default function TransferForm({ transfer = null }) {
@@ -26,7 +29,10 @@ export default function TransferForm({ transfer = null }) {
         date: transfer?.date || localStorage.getItem('last_transaction_date') || new Date().toISOString().split('T')[0],
         memo: transfer?.memo || "",
         referenceNo: transfer?.referenceNo || "",
+        books_pin: ''
     });
+
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
     useEffect(() => {
         transform((data) => ({
@@ -69,18 +75,37 @@ export default function TransferForm({ transfer = null }) {
         }
     };
 
-    const handleSave = (type = 'save') => {
+    const handleSave = (type = 'save', pinOverride = null) => {
+        const isEdit = !!(transfer?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.date, auth?.books_lock_date, isEdit)) {
+            setCurrentAction(type);
+            setPendingAction(type);
+            setIsPinModalOpen(true);
+            return;
+        }
+
         setCurrentAction(type);
+        setPendingAction(type);
+        transform((d) => ({
+            ...d,
+            amount: String(d.amount).replace(/,/g, ''),
+            action: type,
+            books_pin: pinOverride !== null ? pinOverride : d.books_pin,
+        }));
         const url = transfer?.id ? route('transfer.update', transfer.id) : route('transfer.store');
         const method = transfer?.id ? patch : post;
 
         method(url, {
             preserveScroll: true,
-            preserveState: type === 'save',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || type === 'save',
             replace: true,
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.transfer?.id
@@ -108,7 +133,12 @@ export default function TransferForm({ transfer = null }) {
     return (
         <TransactionLayout
             historyType="transfer"
-            title="Transfer Funds"
+            title={
+                <div className="flex items-center">
+                    Transfer Funds
+                    <BooksLockIndicator date={data.date} lockDate={auth?.books_lock_date} isEdit={!!(transfer?.id || savedEntryId)} />
+                </div>
+            }
             amount={parseFloat(String(data.amount || 0).replace(/,/g, '')).toFixed(2)}
             onSave={() => handleSave('save')}
             onSaveAndClose={() => handleSave('close')}
@@ -234,6 +264,21 @@ export default function TransferForm({ transfer = null }) {
                         setData(accountModalType === 'asset' ? 'transfer_from' : 'transfer_to', newAcc.value);
                     }
                 }}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
         </TransactionLayout>
     );

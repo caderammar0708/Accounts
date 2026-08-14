@@ -184,6 +184,7 @@ class CreditInvoiceController extends Controller
                             'debit' => $cogsAmount,
                             'credit' => 0,
                             'memo' => 'Cost of goods sold: ' . ($lineItem['description'] ?? $itemModel->name) . " (Qty: {$qty})",
+                            'service_date' => null,
                             'created_at' => $now,
                             'updated_at' => $now,
                         ];
@@ -514,6 +515,7 @@ class CreditInvoiceController extends Controller
                             'debit' => $cogsAmount,
                             'credit' => 0,
                             'memo' => 'Cost of goods sold: ' . ($lineItem['description'] ?? $itemModel->name) . " (Qty: {$qty})",
+                            'service_date' => null,
                             'created_at' => $now,
                             'updated_at' => $now,
                         ];

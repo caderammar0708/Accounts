@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Models\Accounting\ChartOfAcc;
 
+use App\Traits\BelongsToLocation;
+
 class Item extends Model
 {
-    use HasUuids;
+    use HasUuids, BelongsToLocation;
 
     protected $fillable = [
         'type',
@@ -30,6 +32,7 @@ class Item extends Model
         'preferred_supplier_id',
         'is_sold',
         'is_purchased',
+        'location_id',
     ];
 
     public function category()

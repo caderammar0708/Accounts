@@ -12,6 +12,7 @@ import CommonButton from "@/Components/CommonButton";
 import QuickAddAccount from "@/Components/QuickAddAccount";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function ReceivePaymentForm({ paymentMethods = [], payment = null, nextPaymentNo = "" }) {
     const { auth } = usePage().props;
@@ -32,15 +33,6 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
     const [savedEntryId, setSavedEntryId] = useState(payment?.id || null);
     const defaultCurrencyCode = auth?.company?.home_currency || auth?.company?.home_currency_prefix || '';
 
-    // Books Lock PIN Modal
-    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-    const [pendingAction, setPendingAction] = useState(null);
-
-    const getDefaultCashPaymentMethod = () => {
-        const cashMethod = paymentMethods.find((pm) => pm.name?.toLowerCase() === 'cash' || pm.slug?.toLowerCase() === 'cash');
-        return cashMethod?.id || '';
-    };
-
     const { data, setData, post, patch, processing, errors, reset, clearErrors, transform } = useForm({
         customer: payment?.customer || "",
         email: payment?.email || "",
@@ -56,13 +48,12 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
         books_pin: ''
     });
 
-    useEffect(() => {
-        if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED') {
-            setIsPinModalOpen(true);
-        } else if (errors.books_pin) {
-            setIsPinModalOpen(true);
-        }
-    }, [errors.books_pin]);
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
+
+    const getDefaultCashPaymentMethod = () => {
+        const cashMethod = paymentMethods.find((pm) => pm.name?.toLowerCase() === 'cash' || pm.slug?.toLowerCase() === 'cash');
+        return cashMethod?.id || '';
+    };
 
     useEffect(() => {
         if (!payment?.id && !data.paymentMethod && paymentMethods.length > 0) {
@@ -339,6 +330,13 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
     }, [errors.books_pin]);
 
     const submit = (action = 'save', pinOverride = null) => {
+        const isEdit = !!(payment?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.paymentDate, auth?.books_lock_date, isEdit)) {
+            setPendingAction(action);
+            setIsPinModalOpen(true);
+            return;
+        }
+
         setPendingAction(action);
         const currentId = savedEntryId || payment?.id;
         const url = currentId ? route('receive-payment.update', currentId) : route('receive-payment.store');
@@ -361,12 +359,14 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
 
         submitMethod(url, {
             preserveScroll: true,
-            preserveState: action === 'save',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || action === 'save',
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
                 setIsPinModalOpen(false);
                 setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.payment?.id;

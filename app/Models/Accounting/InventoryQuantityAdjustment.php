@@ -8,9 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use OwenIt\Auditing\Contracts\Auditable;
 
+use App\Traits\BelongsToLocation;
+
 class InventoryQuantityAdjustment extends Model implements Auditable
 {
-    use HasUuids, \OwenIt\Auditing\Auditable;
+    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
 
     protected $fillable = [
         'adjustment_date',
@@ -18,6 +20,7 @@ class InventoryQuantityAdjustment extends Model implements Auditable
         'adjustment_reason',
         'inventory_adjustment_account_id',
         'memo',
+        'location_id',
     ];
 
     protected $casts = [

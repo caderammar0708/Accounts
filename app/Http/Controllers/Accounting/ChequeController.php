@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 
 class ChequeController extends Controller
 {
+    use \App\Traits\AccountingControllerTrait;
     public function index()
     {
         // For standard indexing, not specifically requested, but good for completeness
@@ -83,7 +84,8 @@ class ChequeController extends Controller
         $paymentDate = $request->input('date', $request->input('paymentDate'));
         $chequeNo = $request->input('cheque_no', $request->input('ref'));
 
-        
+        $this->checkBooksLock($paymentDate, $request->books_pin);
+
         try {
             $journalEntry = DB::transaction(function() use ($request, $bankAccount, $paymentDate, $chequeNo) {
                 $categoryItems = collect($request->items)->filter(function($item) {
@@ -214,7 +216,9 @@ class ChequeController extends Controller
         $paymentDate = $request->input('date', $request->input('paymentDate'));
         $chequeNo = $request->input('cheque_no', $request->input('ref'));
 
-        
+        $this->checkBooksLock($journalEntry->date, $request->books_pin);
+        $this->checkBooksLock($paymentDate, $request->books_pin);
+
         try {
             DB::transaction(function() use ($request, $journalEntry, $bankAccount, $paymentDate, $chequeNo) {
                 $categoryItems = collect($request->items)->filter(function($item) {
@@ -306,6 +310,7 @@ class ChequeController extends Controller
 
     public function destroy(JournalEntry $journalEntry)
     {
+        $this->checkBooksLock($journalEntry->date, request()->input('books_pin'));
         // Must grab this BEFORE the transaction deletes the lines
         $paymentAccountId = $journalEntry->lines()
             ->where('credit', '>', 0)

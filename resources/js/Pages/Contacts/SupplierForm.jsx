@@ -72,7 +72,7 @@ export default function SupplierForm() {
                             <div className="col-span-2">
                                 <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Address</label>
                                 <textarea
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#00713D] focus:border-[#00713D] outline-none transition-all font-sans text-sm"
+                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#00713D] focus:border-[#00713D] outline-none transition-all font-sans text-sm leading-snug"
                                     rows="3"
                                     value={data.address}
                                     onChange={(e) => setData("address", e.target.value)}

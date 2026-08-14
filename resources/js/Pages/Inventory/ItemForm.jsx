@@ -567,7 +567,7 @@ export default function ItemForm({
                                 value={data.description}
                                 onChange={e => setData('description', e.target.value)}
                                 rows="3"
-                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-sm text-xs focus:border-green-500 focus:ring-2 focus:ring-green-500/20 shadow-sm transition-all resize-none"
+                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-sm text-xs leading-snug focus:border-green-500 focus:ring-2 focus:ring-green-500/20 shadow-sm transition-all resize-none"
                                 placeholder="Description for credit_invoices..."
                             />
                             {errors.description && <p className="mt-1 text-xs text-red-600">{errors.description}</p>}
@@ -619,7 +619,7 @@ export default function ItemForm({
                                 value={data.purchase_description}
                                 onChange={e => setData('purchase_description', e.target.value)}
                                 rows="3"
-                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-sm text-xs focus:border-green-500 focus:ring-2 focus:ring-green-500/20 shadow-sm transition-all resize-none"
+                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-sm text-xs leading-snug focus:border-green-500 focus:ring-2 focus:ring-green-500/20 shadow-sm transition-all resize-none"
                                 placeholder="Description for purchase orders/bills..."
                             />
                             {errors.purchase_description && <p className="mt-1 text-xs text-red-600">{errors.purchase_description}</p>}
