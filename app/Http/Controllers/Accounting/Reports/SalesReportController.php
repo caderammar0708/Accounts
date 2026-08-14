@@ -176,7 +176,7 @@ class SalesReportController extends Controller
         $salesQuery = DB::table('sales_invoices')
             ->join('customers', 'sales_invoices.customer_id', '=', 'customers.id')
             ->where('sales_invoices.status', 'posted');
-
+            
         $creditQuery = DB::table('credit_invoices')
             ->join('customers', 'credit_invoices.customer_id', '=', 'customers.id')
             ->where('credit_invoices.status', 'posted');
@@ -242,24 +242,24 @@ class SalesReportController extends Controller
                 )
                 ->get()
                 ->groupBy('customer_id')
-                ->map(function ($invoices, $customerId) use ($months) {
-                    $customerName = $invoices->first()->customer_name;
+                ->map(function ($txs, $customerId) use ($months) {
+                    $customerName = $txs->first()->customer_name;
                     $monthlyTotals = [];
                     foreach ($months as $m) {
                         $monthlyTotals[$m] = ['invoice_count' => 0, 'amount' => 0];
                     }
-                    foreach ($invoices as $inv) {
-                        $m = substr($inv->date, 0, 7);
+                    foreach ($txs as $tx) {
+                        $m = substr($tx->date, 0, 7);
                         if (isset($monthlyTotals[$m])) {
                             $monthlyTotals[$m]['invoice_count'] += 1;
-                            $monthlyTotals[$m]['amount'] += (float)$inv->total_amount;
+                            $monthlyTotals[$m]['amount'] += (float)$tx->total_amount;
                         }
                     }
                     return [
                         'customer_id' => $customerId,
                         'customer_name' => $customerName,
-                        'invoice_count' => $invoices->count(),
-                        'total_amount' => $invoices->sum('total_amount'),
+                        'invoice_count' => $txs->count(),
+                        'total_amount' => $txs->sum('total_amount'),
                         'monthly_totals' => $monthlyTotals,
                     ];
                 })->values()->sortByDesc('total_amount')->values();

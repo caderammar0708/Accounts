@@ -5,7 +5,6 @@ import SlideOver from '@/Components/SlideOver';
 import CommonInput from '@/Components/CommonInput';
 import CommonButton from '@/Components/CommonButton';
 import AddressForm from '@/Components/AddressForm';
-
 import ContactsTabs from '@/Components/ContactsTabs';
 
 export default function SupplierIndex({ suppliers = [] }) {
@@ -89,9 +88,8 @@ export default function SupplierIndex({ suppliers = [] }) {
         >
             <Head title="Contacts - Suppliers" />
 
-            <ContactsTabs />
-
-            <div className="p-6 pt-0">
+            <div className="p-6">
+                <ContactsTabs />
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     {/* Toolbar */}
                     <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between gap-4">

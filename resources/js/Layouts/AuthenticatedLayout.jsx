@@ -54,10 +54,11 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
     const navigation = [
         { name: 'Dashboard', href: route('dashboard'), icon: 'dashboard' },
         ...(page.props.auth.pos_layout_enabled ? [{ name: 'POS Billing', href: route('pos.index'), icon: 'pos', isPos: true }] : []),
-        { 
-            name: 'Contacts', 
-            href: route('customers.index'), 
+        {
+            name: 'Contacts',
+            href: route('customers.index'),
             icon: 'users',
+            activePattern: ['customers.*', 'suppliers.*', 'employees.*'],
             activeRoutes: ['customers.*', 'suppliers.*', 'employees.*']
         },
         ...(isServiceStation ? [{ name: 'Vehicles', href: route('vehicles.index'), icon: 'vehicle' }] : []),
@@ -225,9 +226,8 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                                                 <button
                                                     key={loc.id}
                                                     onClick={() => router.post(route('locations.switch'), { location_id: loc.id })}
-                                                    className={`w-full text-left px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${
-                                                        page.props.auth.current_location_id === loc.id ? 'font-bold text-[#00713D] bg-green-50/50' : 'text-slate-700'
-                                                    }`}
+                                                    className={`w-full text-left px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${page.props.auth.current_location_id === loc.id ? 'font-bold text-[#00713D] bg-green-50/50' : 'text-slate-700'
+                                                        }`}
                                                 >
                                                     <span>{loc.name}</span>
                                                     {loc.code && <span className="text-2xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{loc.code}</span>}
