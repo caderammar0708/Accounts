@@ -71,7 +71,7 @@ class PaymentController extends Controller
     private function getNextExpenseNo()
     {
         $last = JournalEntry::query()
-            ->where('transaction_type', 'expense')
+            ->where('transaction_type', 'payment')
             ->orderByRaw('CAST(REGEXP_REPLACE(reference, "[^0-9]", "") AS UNSIGNED) DESC')
             ->first();
 
@@ -173,7 +173,7 @@ class PaymentController extends Controller
                     'date' => $paymentDate,
                     'reference' => $referenceNo,
                     'description' => $request->memo,
-                    'transaction_type' => 'expense',
+                    'transaction_type' => 'payment',
                     'payee_id' => $request->payee,
                     'payee_type' => $request->payeeType == 'customer' ? Customer::class : (\App\Models\Supplier::class),
                     'total_amount' => $totalAmount,

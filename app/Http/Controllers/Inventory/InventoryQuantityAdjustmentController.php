@@ -15,6 +15,7 @@ use Inertia\Inertia;
 
 class InventoryQuantityAdjustmentController extends Controller
 {
+    use \App\Traits\AccountingControllerTrait;
     public function create()
     {
         
@@ -53,6 +54,8 @@ class InventoryQuantityAdjustmentController extends Controller
             'items.*.new_qty' => 'required|numeric',
             'items.*.change_in_qty' => 'required|numeric',
         ]);
+
+        $this->checkBooksLock($request->adjustment_date, $request->books_pin);
 
         
         try {
@@ -225,6 +228,9 @@ class InventoryQuantityAdjustmentController extends Controller
             'items.*.change_in_qty' => 'required|numeric',
         ]);
 
+        $this->checkBooksLock($journalEntry->date, $request->books_pin);
+        $this->checkBooksLock($request->adjustment_date, $request->books_pin);
+
         try {
             DB::transaction(function () use ($validated, $journalEntry) {
                 $adjustment = InventoryQuantityAdjustment::findOrFail($journalEntry->transactionable_id);
@@ -337,6 +343,7 @@ class InventoryQuantityAdjustmentController extends Controller
 
     public function destroy(JournalEntry $journalEntry)
     {
+        $this->checkBooksLock($journalEntry->date, request()->input('books_pin'));
         DB::transaction(function () use ($journalEntry) {
             $adjustment = InventoryQuantityAdjustment::find($journalEntry->transactionable_id);
 

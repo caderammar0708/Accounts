@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use OwenIt\Auditing\Contracts\Auditable;
 
+use App\Traits\BelongsToLocation;
+
 class Cheque extends Model implements Auditable
 {
-    use HasUuids, \OwenIt\Auditing\Auditable, SoftDeletes;
+    use HasUuids, \OwenIt\Auditing\Auditable, SoftDeletes, BelongsToLocation;
 
     protected $fillable = [
         'payee_id',
@@ -21,6 +23,7 @@ class Cheque extends Model implements Auditable
         'mailing_address',
         'memo',
         'status',
+        'location_id',
     ];
 
     protected $casts = [

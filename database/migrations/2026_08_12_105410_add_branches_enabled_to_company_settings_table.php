@@ -12,9 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('company_settings', function (Blueprint $table) {
-            $table->boolean('multi_currency_enabled')->default(false);
-            $table->uuid('home_currency_id')->nullable();
-            $table->foreign('home_currency_id')->references('id')->on('currencies')->onDelete('set null');
+            $table->boolean('branches_enabled')->default(false);
         });
     }
 
@@ -24,8 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('company_settings', function (Blueprint $table) {
-            $table->dropForeign(['home_currency_id']);
-            $table->dropColumn(['multi_currency_enabled', 'home_currency_id']);
+            $table->dropColumn('branches_enabled');
         });
     }
 };

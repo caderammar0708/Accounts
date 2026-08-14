@@ -6,6 +6,12 @@ import CommonInput from '@/Components/CommonInput';
 export default function PinPromptModal({ isOpen, onClose, onSubmit, errorMessage }) {
     const [pin, setPin] = useState('');
 
+    React.useEffect(() => {
+        if (!isOpen) {
+            setPin('');
+        }
+    }, [isOpen]);
+
     const handleSubmit = (e) => {
         e.preventDefault();
         onSubmit(pin);

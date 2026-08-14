@@ -281,6 +281,17 @@ public function updateAccounting(Request $request)
         return back()->with('message', 'Vehicles setting updated successfully.');
     }
 
+    public function updateBranchesEnabled(Request $request)
+    {
+        $validated = $request->validate([
+            'branches_enabled' => 'required|boolean',
+        ]);
+
+        $this->getSettings()->update(['branches_enabled' => $validated['branches_enabled']]);
+
+        return back()->with('message', 'Branches setting updated successfully.');
+    }
+
     /**
      * Handle Logo Upload
      */

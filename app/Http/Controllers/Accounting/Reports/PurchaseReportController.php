@@ -30,6 +30,14 @@ class PurchaseReportController extends Controller
             })
             ->where('bills.status', 'posted');
 
+        if (session()->has('current_location_id')) {
+            $locId = session('current_location_id');
+            $query->where(function($q) use ($locId) {
+                $q->where('bills.location_id', $locId)
+                  ->orWhereNull('bills.location_id');
+            });
+        }
+
         if ($type !== 'all_dates') {
             if ($startDate) {
                 $query->whereBetween('bills.bill_date', [$startDate, $endDate]);
@@ -134,6 +142,14 @@ class PurchaseReportController extends Controller
         $query = DB::table('bills')
             ->join('suppliers', 'bills.supplier_id', '=', 'suppliers.id')
             ->where('bills.status', 'posted');
+
+        if (session()->has('current_location_id')) {
+            $locId = session('current_location_id');
+            $query->where(function($q) use ($locId) {
+                $q->where('bills.location_id', $locId)
+                  ->orWhereNull('bills.location_id');
+            });
+        }
 
         if ($type !== 'all_dates') {
             if ($startDate) {

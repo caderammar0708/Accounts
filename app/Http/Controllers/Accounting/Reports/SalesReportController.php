@@ -40,6 +40,18 @@ class SalesReportController extends Controller
             })
             ->where('credit_invoices.status', 'posted');
 
+        if (session()->has('current_location_id')) {
+            $locId = session('current_location_id');
+            $salesQuery->where(function($q) use ($locId) {
+                $q->where('sales_invoices.location_id', $locId)
+                  ->orWhereNull('sales_invoices.location_id');
+            });
+            $creditQuery->where(function($q) use ($locId) {
+                $q->where('credit_invoices.location_id', $locId)
+                  ->orWhereNull('credit_invoices.location_id');
+            });
+        }
+
         if ($type !== 'all_dates') {
             if ($startDate) {
                 $salesQuery->whereBetween('sales_invoices.receipt_date', [$startDate, $endDate]);
@@ -168,6 +180,18 @@ class SalesReportController extends Controller
         $creditQuery = DB::table('credit_invoices')
             ->join('customers', 'credit_invoices.customer_id', '=', 'customers.id')
             ->where('credit_invoices.status', 'posted');
+
+        if (session()->has('current_location_id')) {
+            $locId = session('current_location_id');
+            $salesQuery->where(function($q) use ($locId) {
+                $q->where('sales_invoices.location_id', $locId)
+                  ->orWhereNull('sales_invoices.location_id');
+            });
+            $creditQuery->where(function($q) use ($locId) {
+                $q->where('credit_invoices.location_id', $locId)
+                  ->orWhereNull('credit_invoices.location_id');
+            });
+        }
 
         if ($type !== 'all_dates') {
             if ($startDate) {

@@ -7,6 +7,9 @@ import CommonInput from "@/Components/CommonInput";
 import QuickAddAccount from "@/Components/QuickAddAccount";
 import QuickAddPayee from "@/Components/QuickAddPayee";
 import { showToast } from "@/Components/ToastNotification";
+import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import PinPromptModal from "@/Components/PinPromptModal";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 import axios from "axios";
 
 export default function ChequeForm({
@@ -81,8 +84,11 @@ export default function ChequeForm({
         items: cheque?.items && cheque.items.length > 0 ? cheque.items.map(i => ({ ...i, amount: parseFloat(i.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })) : [
             { category: "", description: "", amount: "0.00", customer_id: "" },
         ],
-        action: 'save'
+        action: 'save',
+        books_pin: ''
     });
+
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
     const actionRef = useRef('save');
 
@@ -156,8 +162,29 @@ export default function ChequeForm({
         setIsDirty(true);
     };
 
-    const handleSave = (action = 'save') => {
+    const handleSave = (action = 'save', pinOverride = null) => {
+        const isEdit = !!(cheque?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.date, auth?.books_lock_date, isEdit)) {
+            actionRef.current = action;
+            setPendingAction(action);
+            setIsPinModalOpen(true);
+            return;
+        }
+
         actionRef.current = action;
+        setPendingAction(action);
+
+        transform((d) => ({
+            ...d,
+            action,
+            books_pin: pinOverride !== null ? pinOverride : d.books_pin,
+            items: d.items
+                .filter(item => item.category && (parseFloat(String(item.amount).replace(/,/g, '')) > 0))
+                .map(item => ({
+                    ...item,
+                    amount: String(item.amount).replace(/,/g, '')
+                })),
+        }));
 
         const currentId = savedEntryId || cheque?.id;
         const url = currentId ? route('cheque.update', currentId) : route('cheque.store');
@@ -165,10 +192,14 @@ export default function ChequeForm({
 
         method(url, {
             preserveScroll: true,
-            preserveState: action === 'save',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || action === 'save',
             onSuccess: (page) => {
                 showToast('success', 'Cheque saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.cheque?.id
@@ -239,7 +270,12 @@ export default function ChequeForm({
     return (
         <TransactionLayout
             historyType="cheque"
-            title={cheque?.id ? `Edit Cheque no.${data.cheque_no}` : "New Cheque"}
+            title={
+                <div className="flex items-center">
+                    {cheque?.id ? `Edit Cheque no.${data.cheque_no}` : "New Cheque"}
+                    <BooksLockIndicator date={data.date} lockDate={auth?.books_lock_date} isEdit={!!(cheque?.id || savedEntryId)} />
+                </div>
+            }
             amount={totalAmount}
             processing={processing}
             dirty={isDirty}
@@ -409,6 +445,21 @@ export default function ChequeForm({
                         setData("account", newAcc.value);
                     }
                 }}
+            />
+
+            <PinPromptModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                    setData('books_pin', '');
+                    clearErrors('books_pin');
+                }}
+                onSubmit={(pin) => {
+                    setData('books_pin', pin);
+                    handleSave(pendingAction, pin);
+                }}
+                errorMessage={errors.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? errors.books_pin : null}
             />
 
         </TransactionLayout>

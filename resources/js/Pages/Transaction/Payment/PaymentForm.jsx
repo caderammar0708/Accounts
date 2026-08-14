@@ -14,6 +14,7 @@ import { showToast } from "@/Components/ToastNotification";
 import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function PaymentForm({
     auth,
@@ -47,10 +48,6 @@ export default function PaymentForm({
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [accountModalType, setAccountModalType] = useState('asset');
     const [addingItemRowIndex, setAddingItemRowIndex] = useState(null);
-
-    // Books Lock PIN Modal
-    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-    const [pendingAction, setPendingAction] = useState(null);
 
     // Fetch payees from API
     const fetchPayees = (search = "") => {
@@ -129,13 +126,7 @@ export default function PaymentForm({
         books_pin: ''
     });
 
-    useEffect(() => {
-        if (errors.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED') {
-            setIsPinModalOpen(true);
-        } else if (errors.books_pin) {
-            setIsPinModalOpen(true);
-        }
-    }, [errors.books_pin]);
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
     const actionRef = useRef('save');
 
@@ -310,6 +301,14 @@ export default function PaymentForm({
     };
 
     const handleSave = (action = 'save', pinOverride = null) => {
+        const isEdit = !!(expense?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.paymentDate, auth?.books_lock_date, isEdit)) {
+            actionRef.current = action;
+            setPendingAction(action);
+            setIsPinModalOpen(true);
+            return;
+        }
+
         actionRef.current = action;
         setPendingAction(action);
         const currentRef = data.ref;
@@ -326,10 +325,14 @@ export default function PaymentForm({
 
         method(url, {
             preserveScroll: true,
-            preserveState: action === 'save',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || action === 'save',
             onSuccess: async (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
 
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.expense?.id

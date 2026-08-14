@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Carbon\Carbon;
 
+use App\Traits\BelongsToLocation;
+
 class Warranty extends Model
 {
-    use HasUuids;
+    use HasUuids, BelongsToLocation;
 
     protected $fillable = [
         'warranty_policy_id',
@@ -21,6 +23,7 @@ class Warranty extends Model
         'end_odometer',
         'status',
         'resolved_invoice_id',
+        'location_id',
     ];
 
     protected $casts = [

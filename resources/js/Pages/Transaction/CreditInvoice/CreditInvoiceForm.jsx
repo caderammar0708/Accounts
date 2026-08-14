@@ -12,6 +12,7 @@ import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import axios from "axios";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
+import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function CreditInvoiceForm({
     auth,
@@ -34,10 +35,6 @@ export default function CreditInvoiceForm({
     const [isDirty, setIsDirty] = useState(false);
 
     const [savedEntryId, setSavedEntryId] = useState(invoice?.id || null);
-
-    // Books Lock PIN Modal
-    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-    const [pendingAction, setPendingAction] = useState(null);
 
     const fetchPayees = async (search = "") => {
         const res = await axios.get(route('api.payees', { search, type: 'Customer' }));
@@ -177,6 +174,8 @@ export default function CreditInvoiceForm({
         books_pin: ''
     });
 
+    const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
+
 
     useEffect(() => {
         if (invoice) {
@@ -310,6 +309,14 @@ export default function CreditInvoiceForm({
     };
 
     const handleSave = (actionType = 'save', pinOverride = null) => {
+        const isEdit = !!(invoice?.id || savedEntryId);
+        if (!pinOverride && isBooksLocked(data.invoiceDate, auth?.books_lock_date, isEdit)) {
+            actionRef.current = actionType;
+            setPendingAction(actionType);
+            setIsPinModalOpen(true);
+            return;
+        }
+
         actionRef.current = actionType;
         setPendingAction(actionType);
         const currentNo = data.invoiceNo;
@@ -332,10 +339,14 @@ export default function CreditInvoiceForm({
 
         method(url, {
             preserveScroll: true,
-            preserveState: actionType === 'save',
+            preserveState: (page) => Object.keys(page.props.errors).length > 0 || actionType === 'save',
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
                 setIsDirty(false);
+                setIsPinModalOpen(false);
+                setPendingAction(null);
+                clearErrors('books_pin');
+                setData('books_pin', '');
                 const newId = page.props?.flash?.journal_entry_id
                     || page.props?.invoice?.id;
                 if (newId && !savedEntryId) {
