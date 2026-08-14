@@ -46,6 +46,16 @@ export default function TransactionLayout({
                 listRoute: 'dashboard'
             };
         }
+        if (currentPath.startsWith('/sales-invoice/')) {
+            return {
+                copyRoute: 'sales-invoice.create',
+                deleteRoute: 'sales-invoice.destroy',
+                printRoute: 'sales-invoice.print',
+                documentType: 'sales_invoice',
+                recordId: props.receipt?.id,
+                listRoute: 'dashboard'
+            };
+        }
         if (currentPath.startsWith('/credit-invoice/')) {
             return {
                 copyRoute: 'credit-invoice.create',

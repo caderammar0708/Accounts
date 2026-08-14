@@ -23,10 +23,11 @@ export default function PrintSettings({ settings }) {
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         document_type: selectedDocType,
         template_name: '',
+        custom_title: '',
         is_default: false,
+        show_logo: true,
         static_footer_content: '',
         html_template: '',
-        primary_color: '#111827',
         text_color: '#374151',
         letterhead_image: null,
         page_setup: { size: 'A4', margin_top: '0', margin_right: '0', margin_bottom: '0', margin_left: '0' }
@@ -50,10 +51,11 @@ export default function PrintSettings({ settings }) {
         setData({
             document_type: template.document_type,
             template_name: template.template_name || '',
+            custom_title: template.custom_title || '',
             is_default: !!template.is_default,
+            show_logo: template.show_logo ?? true,
             static_footer_content: template.static_footer_content || '',
             html_template: template.html_template || '',
-            primary_color: template.primary_color || '#111827',
             text_color: template.text_color || '#374151',
             letterhead_image: null,
             page_setup: template.page_setup || { size: 'A4', margin_top: '0', margin_right: '0', margin_bottom: '0', margin_left: '0' }
@@ -68,10 +70,11 @@ export default function PrintSettings({ settings }) {
         setData({
             document_type: selectedDocType,
             template_name: '',
+            custom_title: '',
             is_default: templatesForCurrentType.length === 0,
+            show_logo: true,
             static_footer_content: '',
             html_template: '',
-            primary_color: '#111827',
             text_color: '#374151',
             letterhead_image: null,
             page_setup: { size: 'A4', margin_top: '0', margin_right: '0', margin_bottom: '0', margin_left: '0' }
@@ -206,8 +209,24 @@ export default function PrintSettings({ settings }) {
                             required
                             error={errors.template_name}
                         />
+                        <CommonInput
+                            label="Custom Title"
+                            value={data.custom_title}
+                            onChange={(e) => setData('custom_title', e.target.value)}
+                            placeholder="e.g., TAX INVOICE"
+                            error={errors.custom_title}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <CommonInput
+                            type="color"
+                            label="Text Color"
+                            value={data.text_color}
+                            onChange={(e) => setData('text_color', e.target.value)}
+                        />
                         
-                        <div className="flex items-center pt-8">
+                        <div className="flex flex-col gap-3 justify-center pt-2">
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
                                     type="checkbox"
@@ -217,22 +236,17 @@ export default function PrintSettings({ settings }) {
                                 />
                                 <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">Set as Default Template</span>
                             </label>
+                            
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={data.show_logo}
+                                    onChange={(e) => setData('show_logo', e.target.checked)}
+                                    className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                                />
+                                <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">Show Company Logo</span>
+                            </label>
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <CommonInput
-                            type="color"
-                            label="Primary Color"
-                            value={data.primary_color}
-                            onChange={(e) => setData('primary_color', e.target.value)}
-                        />
-                        <CommonInput
-                            type="color"
-                            label="Text Color"
-                            value={data.text_color}
-                            onChange={(e) => setData('text_color', e.target.value)}
-                        />
                     </div>
 
                     <div className="bg-slate-50 p-4 rounded-md border border-slate-200">

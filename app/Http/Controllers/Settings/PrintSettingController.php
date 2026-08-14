@@ -9,6 +9,14 @@ use Illuminate\Support\Facades\Storage;
 
 class PrintSettingController extends Controller
 {
+    public function index()
+    {
+        return \Inertia\Inertia::render('Settings/Print', [
+            'settings' => [
+                'print_settings' => \App\Models\PrintSetting::query()->get(),
+            ]
+        ]);
+    }
     public function getTemplates(Request $request)
     {
         $type = $request->query('document_type');
@@ -21,12 +29,13 @@ class PrintSettingController extends Controller
         $validated = $request->validate([
             'document_type' => 'required|string',
             'template_name' => 'required|string',
+            'custom_title' => 'nullable|string',
             'is_default' => 'boolean',
+            'show_logo' => 'boolean',
             'static_footer_content' => 'nullable|string',
             'html_template' => 'nullable|string',
             'page_setup' => 'nullable|array',
             'letterhead_image' => 'nullable|image|max:2048',
-            'primary_color' => 'nullable|string',
             'text_color' => 'nullable|string'
         ]);
 
@@ -48,10 +57,11 @@ class PrintSettingController extends Controller
             'company_id' => $companyId,
             'document_type' => $validated['document_type'],
             'template_name' => $validated['template_name'],
+            'custom_title' => $validated['custom_title'] ?? null,
             'is_default' => $validated['is_default'] ?? false,
+            'show_logo' => $validated['show_logo'] ?? true,
             'static_footer_content' => $validated['static_footer_content'] ?? null,
             'html_template' => $validated['html_template'] ?? null,
-            'primary_color' => $validated['primary_color'] ?? '#111827',
             'text_color' => $validated['text_color'] ?? '#374151',
             'page_setup' => $validated['page_setup'] ?? ['size' => 'A4'],
             'letterhead_image_path' => $letterheadPath,
@@ -64,12 +74,13 @@ class PrintSettingController extends Controller
     {
         $validated = $request->validate([
             'template_name' => 'required|string',
+            'custom_title' => 'nullable|string',
             'is_default' => 'boolean',
+            'show_logo' => 'boolean',
             'static_footer_content' => 'nullable|string',
             'html_template' => 'nullable|string',
             'page_setup' => 'nullable|array',
             'letterhead_image' => 'nullable|image|max:2048',
-            'primary_color' => 'nullable|string',
             'text_color' => 'nullable|string'
         ]);
 
@@ -82,10 +93,11 @@ class PrintSettingController extends Controller
 
         $updateData = [
             'template_name' => $validated['template_name'],
+            'custom_title' => $validated['custom_title'] ?? null,
             'is_default' => $validated['is_default'] ?? false,
+            'show_logo' => $validated['show_logo'] ?? true,
             'static_footer_content' => $validated['static_footer_content'] ?? null,
             'html_template' => $validated['html_template'] ?? null,
-            'primary_color' => $validated['primary_color'] ?? '#111827',
             'text_color' => $validated['text_color'] ?? '#374151',
             'page_setup' => $validated['page_setup'] ?? ['size' => 'A4'],
         ];

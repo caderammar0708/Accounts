@@ -49,7 +49,7 @@
         @break
 
     @case('title')
-        <h1 class="text-3xl font-bold text-primary uppercase tracking-widest mb-4" {!! $styleAttr !!}>{{ $title }}</h1>
+        <h1 class="text-xl font-bold text-primary uppercase tracking-widest mb-4" {!! $styleAttr !!}>{{ $title }}</h1>
         @break
 
     @case('document_info')
@@ -68,12 +68,15 @@
 
     @case('bill_to')
         @if(isset($partyName) && $partyName)
-        <div class="mb-8" {!! $styleAttr !!}>
+        <div class="mb-4" {!! $styleAttr !!}>
             <h3 class="text-xs font-bold text-primary opacity-60 uppercase tracking-wider mb-2" style="{{ $titleFontSize }}">
                 {{ $partyLabel ?? 'Bill To' }}
             </h3>
+            @if(isset($partyPrefix) && $partyPrefix)
+            <div class="text-gray-600 text-sm mb-1">{{ $partyPrefix }}</div>
+            @endif
             <div class="text-primary font-semibold text-lg" style="{{ $nameFontSize }}">
-                {{ $partyName ?? '' }}
+                {!! nl2br(e($partyName ?? '')) !!}
             </div>
             <div class="text-base text-sm mt-1">
                 {!! nl2br(e($partyAddress ?? '')) !!}
@@ -85,7 +88,7 @@
 
     @case('shipping_to')
         @if(isset($shippingAddress) && $shippingAddress)
-        <div class="mb-8" {!! $styleAttr !!}>
+        <div class="mb-4" {!! $styleAttr !!}>
             <h3 class="text-xs font-bold text-primary opacity-60 uppercase tracking-wider mb-2" style="{{ $titleFontSize }}">
                 Ship To
             </h3>
@@ -98,11 +101,11 @@
 
     @case('items_table')
         @if(isset($tableItems) && count($tableItems) > 0)
-        <table class="w-full text-left border-collapse mb-8 text-base" {!! $styleAttr !!}>
+        <table class="w-full text-left border-collapse mb-4 text-base" {!! $styleAttr !!}>
             <thead>
-                <tr class="border-b-2 border-primary">
+                <tr class="border-b-2 border-primary bg-slate-50">
                     @foreach($tableHeaders as $index => $header)
-                        <th class="py-3 px-2 font-bold text-primary {{ $index === 0 ? 'w-1/2' : 'text-right' }}" style="{{ $headingFontSize }}">{{ $header }}</th>
+                        <th class="py-2 px-2 font-bold text-primary {{ $index === 0 ? 'w-1/2' : 'text-right' }}" style="{{ $headingFontSize }}">{{ $header }}</th>
                     @endforeach
                 </tr>
             </thead>
@@ -110,7 +113,7 @@
                 @foreach($tableItems as $row)
                 <tr class="border-b border-gray-200" style="{{ $rowFontSize }}">
                     @foreach($row as $index => $cell)
-                        <td class="py-4 px-2 {{ $index === 0 ? '' : 'text-right' }} {!! $index === count($row) - 1 ? 'font-semibold text-primary' : 'text-base' !!}">
+                        <td class="py-2 px-2 {{ $index === 0 ? '' : 'text-right' }} {!! $index === count($row) - 1 ? 'font-semibold text-primary' : 'text-base' !!}">
                             {!! $cell !!}
                         </td>
                     @endforeach

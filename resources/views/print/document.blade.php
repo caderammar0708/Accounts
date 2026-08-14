@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title }} {{ $documentNo ?? '' }}</title>
-    <link rel="icon" type="image/x-icon" href="{{ isset($company) && $company->logo_url ? $company->logo_url : asset('favicon.ico') }}">
+    <link rel="icon" type="image/x-icon" href="{{ isset($company) && $company->logo_url ? $company->logo_url : 'data:,' }}">
     <script src="https://cdn.tailwindcss.com"></script>
     @php
         $pageSetup = $pageSetup ?? [];
@@ -59,7 +59,7 @@
             padding: {{ $marginTop ?: '15' }}mm {{ $marginRight ?: '15' }}mm {{ $marginBottom ?: '15' }}mm {{ $marginLeft ?: '15' }}mm;
             background-color: {{ $pageSetup['background_color'] ?? '#fff' }};
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
-            font-size: 14px;
+            font-size: 13px;
             line-height: 24px;
             font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
             color: var(--text-color);
@@ -83,9 +83,9 @@
 
     @php
         $defaultLayout = [
-            'header_left' => ['logo', 'company_details'],
+            'header_left' => ['logo', 'company_details', 'bill_to'],
             'header_right' => ['title', 'document_info'],
-            'body' => ['bill_to', 'shipping_to', 'items_table'],
+            'body' => ['shipping_to', 'items_table'],
             'footer_left' => ['static_content'],
             'footer_right' => ['totals'],
         ];
@@ -116,7 +116,7 @@
                  style="position: absolute; top: 0; left: 0; width: 100%; z-index: -1;">
         @endif
         <!-- Header Section -->
-        <div class="flex justify-between items-start border-b border-gray-200 pb-8 mb-8">
+        <div class="flex justify-between items-start border-b border-gray-200 pb-4 mb-4">
             <div class="w-1/2">
                 @foreach($layout['header_left'] ?? [] as $blockId)
                     @include('print.block', ['blockId' => $blockId])
@@ -137,8 +137,8 @@
         </div>
 
         <!-- Footer Section -->
-        <div class="flex justify-between items-start pt-8">
-            <div class="w-1/2 pr-8">
+        <div class="flex justify-between items-start pt-4">
+            <div class="w-1/2 pr-4">
                 @foreach($layout['footer_left'] ?? [] as $blockId)
                     @include('print.block', ['blockId' => $blockId])
                 @endforeach

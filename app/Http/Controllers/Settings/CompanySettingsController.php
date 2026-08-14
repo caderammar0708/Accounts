@@ -69,9 +69,8 @@ class CompanySettingsController extends Controller
             ],
         ]);
 
-        return Inertia::render('Settings/Index', [
+        return Inertia::render('Settings/Company', [
             'settings' => $mergedData,
-            'tab' => request('tab', 'company'),
             'currencies' => \App\Models\Currency::where('is_active', true)->get(),
         ]);
     }

@@ -82,7 +82,7 @@ class HandleInertiaRequests extends Middleware
                 'job_enabled'             => (bool) $companySetting?->job_layout_enabled,
                 'customer_layout_modal'      => (bool) $companySetting?->customer_layout_modal,
                 'reports_display_as_buttons' => $companySetting?->reports_display_as_buttons ?? true,
-                'vehicles_enabled'           => $companySetting?->vehicles_enabled ?? true,
+                'vehicles_enabled'           => (bool) ($companySetting?->vehicles_enabled ?? false),
                 'currency_prefix'         => $companySetting?->homeCurrency?->symbol ?? $userCompany?->home_currency_prefix ?? 'Rs.',
                 'financial_year_start_month' => $companySetting?->fin_year_start ?? 'January',
                 'multi_currency_enabled' => (bool) $companySetting?->multi_currency_enabled,

@@ -195,6 +195,7 @@ class CreditInvoiceController extends Controller
                             'debit' => 0,
                             'credit' => $cogsAmount,
                             'memo' => 'Inventory reduction: ' . ($lineItem['description'] ?? $itemModel->name) . " (Qty: {$qty})",
+                            'service_date' => null,
                             'created_at' => $now,
                             'updated_at' => $now,
                         ];
@@ -211,6 +212,7 @@ class CreditInvoiceController extends Controller
                 'debit' => $totalAmount,
                 'credit' => 0,
                 'memo' => $request->memo,
+                'service_date' => null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
@@ -225,6 +227,7 @@ class CreditInvoiceController extends Controller
                     'debit' => $discountAmount,
                     'credit' => 0,
                     'memo' => 'Discount for ' . $request->invoiceNo,
+                    'service_date' => null,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
@@ -347,7 +350,7 @@ class CreditInvoiceController extends Controller
             $totalPayments += $alloc->amount;
             $paymentsTable[] = [
                 'date' => $alloc->payment->payment_date ?? '',
-                'desc' => 'Payment #' . ($alloc->payment->payment_no ?? ''),
+                'desc' => 'Payment' . ($alloc->payment->reference_no ? ' #' . $alloc->payment->reference_no : ''),
                 'amount' => $currency . number_format($alloc->amount, 2),
             ];
         }
@@ -371,8 +374,9 @@ class CreditInvoiceController extends Controller
             'date' => $creditInvoice->invoice_date,
             'dueDate' => $creditInvoice->due_date,
             'partyLabel' => 'Bill To',
+            'partyPrefix' => $creditInvoice->prefix,
             'partyName' => $creditInvoice->customer->display_name ?? $creditInvoice->customer->company_name,
-            'partyAddress' => $creditInvoice->billing_address,
+            'partyAddress' => trim(($creditInvoice->customer?->address ? $creditInvoice->customer->address . "\n" : '') . ($creditInvoice->customer?->phone_number ? $creditInvoice->customer->phone_number : '')),
             'partyEmail' => $creditInvoice->email,
             'tableHeaders' => ['Description', 'Qty', 'Rate', 'Amount'],
             'tableItems' => $tableItems,
@@ -521,6 +525,7 @@ class CreditInvoiceController extends Controller
                             'debit' => 0,
                             'credit' => $cogsAmount,
                             'memo' => 'Inventory reduction: ' . ($lineItem['description'] ?? $itemModel->name) . " (Qty: {$qty})",
+                            'service_date' => null,
                             'created_at' => $now,
                             'updated_at' => $now,
                         ];
@@ -536,6 +541,7 @@ class CreditInvoiceController extends Controller
                 'debit' => $totalAmount,
                 'credit' => 0,
                 'memo' => $request->memo,
+                'service_date' => null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
@@ -550,6 +556,7 @@ class CreditInvoiceController extends Controller
                     'debit' => $discountAmount,
                     'credit' => 0,
                     'memo' => 'Discount for ' . $request->invoiceNo,
+                    'service_date' => null,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];

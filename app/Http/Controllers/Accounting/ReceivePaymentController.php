@@ -335,7 +335,7 @@ class ReceivePaymentController extends Controller
                 $invAmt = $alloc->invoice ? $alloc->invoice->total_amount : 0;
                 $totalInvoiceAmount += $invAmt;
                 $tableItems[] = [
-                    "Payment applied to Credit Invoice #" . ($alloc->invoice->invoice_no ?? 'Unknown'),
+                    "Payment for Invoice #" . ($alloc->invoice->invoice_no ?? 'Unknown'),
                     ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($invAmt, 2),
                     ($company?->home_currency_prefix ? $company?->home_currency_prefix . ' ' : '') . number_format($alloc->amount, 2),
                 ];
@@ -360,7 +360,7 @@ class ReceivePaymentController extends Controller
             'textColor' => $printSetting?->text_color,
             'pageSetup' => $printSetting?->page_setup,
             'blockStyles' => $printSetting?->block_styles,
-            'documentNo' => $receivePayment->reference_no,
+            'documentNo' => $receivePayment->reference_no ?? '-',
             'date' => $receivePayment->payment_date,
             'dueDate' => null,
             'partyLabel' => 'Received From',

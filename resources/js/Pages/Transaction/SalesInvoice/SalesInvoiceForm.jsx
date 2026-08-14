@@ -119,6 +119,9 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 })) : [
                     { serviceDate: "", product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }
                 ],
+                discount_type: receipt.discountType || 'percent',
+                discount_value: receipt.discountValue !== undefined ? String(receipt.discountValue) : '0',
+                prefix: receipt.prefix || "",
                 action: 'save'
             });
         } else {

@@ -541,12 +541,17 @@ class SalesInvoiceController extends Controller
             'headerAlignment' => $printSetting?->header_alignment ?: 'left',
             'staticFooterContent' => $printSetting?->static_footer_content ?: null,
             'layoutConfig' => $printSetting?->layout_config,
+            'pageSetup' => $printSetting?->page_setup,
             
             'company' => $company,
             'documentNo' => $salesInvoice->receipt_no,
             'date' => \Carbon\Carbon::parse($salesInvoice->receipt_date)->format('M d, Y'),
             
-            'billedTo' => $salesInvoice->customer,
+            'partyLabel' => 'Bill To',
+            'partyPrefix' => $salesInvoice->prefix,
+            'partyName' => $salesInvoice->customer?->display_name ?? $salesInvoice->customer?->company_name,
+            'partyAddress' => trim(($salesInvoice->customer?->address ? $salesInvoice->customer->address . "\n" : '') . ($salesInvoice->customer?->phone_number ? $salesInvoice->customer->phone_number : '')),
+            'partyEmail' => $salesInvoice->email,
             
             'tableHeaders' => ['PRODUCT/SERVICE', 'QTY', 'RATE', 'AMOUNT'],
             'tableItems' => $tableItems,

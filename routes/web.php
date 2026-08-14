@@ -65,7 +65,8 @@ Route::middleware('auth')->group(function () {
 
     // Settings
     Route::prefix('settings')->group(function () {
-        Route::get('/', [CompanySettingsController::class, 'index'])->name('settings.index');
+        Route::get('/company', [CompanySettingsController::class, 'index'])->name('settings.company');
+        Route::get('/print', [PrintSettingController::class, 'index'])->name('settings.print');
         
         Route::controller(CompanySettingsController::class)->group(function () {
             Route::post('/company', 'update')->name('company.update');
