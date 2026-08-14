@@ -31,6 +31,9 @@ class EmployeeController extends Controller
             'email' => 'nullable|email|unique:employees,email',
             'designation' => 'required|string|max:255',
             'salary' => 'nullable|numeric',
+            'salary_type' => 'nullable|string|in:Fixed,Hourly',
+            'hours_per_day' => 'nullable|numeric|min:0|max:24',
+            'sales_commission_rate' => 'nullable|numeric|min:0|max:100',
             'join_date' => 'nullable|date',
         ]);
 
@@ -40,6 +43,9 @@ class EmployeeController extends Controller
             'email' => $request->email,
             'designation' => $request->designation,
             'salary' => $request->salary,
+            'salary_type' => $request->salary_type,
+            'hours_per_day' => $request->hours_per_day,
+            'sales_commission_rate' => $request->sales_commission_rate,
             'join_date' => $request->join_date,
             'employee_id' => 'EMP-' . rand(1000, 9999),
         ]);
@@ -61,10 +67,13 @@ class EmployeeController extends Controller
             'email' => 'nullable|email|unique:employees,email,' . $employee->id,
             'designation' => 'required|string|max:255',
             'salary' => 'nullable|numeric',
+            'salary_type' => 'nullable|string|in:Fixed,Hourly',
+            'hours_per_day' => 'nullable|numeric|min:0|max:24',
+            'sales_commission_rate' => 'nullable|numeric|min:0|max:100',
             'join_date' => 'nullable|date',
         ]);
 
-        $employee->update($request->only(['name', 'email', 'designation', 'salary', 'join_date']));
+        $employee->update($request->only(['name', 'email', 'designation', 'salary', 'salary_type', 'hours_per_day', 'sales_commission_rate', 'join_date']));
 
         return redirect()->back()->with('success', 'Employee updated successfully.');
     }

@@ -26,6 +26,6 @@ class SalesInvoiceItem extends Model implements Auditable
 
     public function warranty()
     {
-        return $this->hasOne(\App\Models\Warranty::class, 'invoice_item_id');
+        return $this->hasOne(\App\Models\ServiceStation\Warranty::class, 'invoice_item_id');
     }
 }

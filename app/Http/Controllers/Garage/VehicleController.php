@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Garage;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Vehicle;
+use App\Models\ServiceStation\Vehicle;
 use Inertia\Inertia;
 
 class VehicleController extends Controller
@@ -17,14 +17,14 @@ class VehicleController extends Controller
     public function index()
     {
         $vehicles = Vehicle::with('customer')->orderBy('brand')->get();
-        return Inertia::render('vehicle/Index', [
+        return Inertia::render('ServiceStation/Vehicles/Index', [
             'vehicles' => $vehicles
         ]);
     }
 
     public function create()
     {
-        return Inertia::render('vehicle/Form', [
+        return Inertia::render('ServiceStation/Vehicles/Form', [
             'customers' => \App\Models\Customer::orderBy('display_name')->get()
         ]);
     }
@@ -47,7 +47,7 @@ class VehicleController extends Controller
 
     public function edit(Vehicle $vehicle)
     {
-        return Inertia::render('vehicle/Form', [
+        return Inertia::render('ServiceStation/Vehicles/Form', [
             'vehicle' => $vehicle,
             'customers' => \App\Models\Customer::orderBy('display_name')->get()
         ]);

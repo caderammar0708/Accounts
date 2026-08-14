@@ -9,6 +9,9 @@ export default function EmployeeForm() {
         email: "",
         designation: "",
         salary: "",
+        salary_type: "Fixed",
+        hours_per_day: "",
+        sales_commission_rate: "",
         join_date: "",
     });
 
@@ -54,22 +57,51 @@ export default function EmployeeForm() {
                             placeholder="e.g. Software Engineer"
                         />
                         <div className="grid grid-cols-2 gap-6">
+                            <CommonInput
+                                type="select"
+                                label="Salary Type"
+                                value={data.salary_type}
+                                onChange={e => setData('salary_type', e.target.value)}
+                                options={[
+                                    { label: 'Fixed', value: 'Fixed' },
+                                    { label: 'Hourly', value: 'Hourly' }
+                                ]}
+                                error={errors.salary_type}
+                            />
                             <CommonInput 
-                                label="Salary" 
+                                label="Salary Amount" 
                                 type="number"
                                 value={data.salary} 
                                 onChange={e => setData('salary', e.target.value)} 
                                 error={errors.salary}
                                 placeholder="0.00"
                             />
-                            <CommonInput 
-                                label="Join Date" 
-                                type="date"
-                                value={data.join_date} 
-                                onChange={e => setData('join_date', e.target.value)} 
-                                error={errors.join_date}
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                            <CommonInput
+                                label="Hours per Day"
+                                type="number"
+                                step="0.1"
+                                value={data.hours_per_day}
+                                onChange={e => setData('hours_per_day', e.target.value)}
+                                error={errors.hours_per_day}
+                            />
+                            <CommonInput
+                                label="Sales Comm. Rate (%)"
+                                type="number"
+                                step="0.01"
+                                value={data.sales_commission_rate}
+                                onChange={e => setData('sales_commission_rate', e.target.value)}
+                                error={errors.sales_commission_rate}
                             />
                         </div>
+                        <CommonInput 
+                            label="Join Date" 
+                            type="date"
+                            value={data.join_date} 
+                            onChange={e => setData('join_date', e.target.value)} 
+                            error={errors.join_date}
+                        />
                         
 
                         <div className="pt-6 border-t border-slate-100 flex justify-end gap-4">

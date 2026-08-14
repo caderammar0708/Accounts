@@ -79,6 +79,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/reports-display-style', 'updateReportsDisplayStyle')->name('layout.reports.update');
             Route::post('/vehicles-layout', 'updateVehiclesEnabled')->name('layout.vehicles.update');
             Route::post('/branches-layout', 'updateBranchesEnabled')->name('layout.branches.update');
+            Route::post('/business-type-layout', 'updateBusinessType')->name('layout.business_type.update');
             Route::post('/alerts', 'updateAlerts')->name('alerts.update');
             Route::post('/time', 'updateTime')->name('time.settings.update');
             Route::post('/currency', 'updateCurrency')->name('currency.settings.update');
@@ -306,6 +307,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/inventory-summary', [\App\Http\Controllers\Accounting\Reports\InventoryReportController::class, 'inventorySummary'])->name('reports.inventory-summary');
         Route::get('/inventory-detail-all', [\App\Http\Controllers\Accounting\Reports\InventoryReportController::class, 'inventoryDetailAll'])->name('reports.inventory-detail-all');
         Route::get('/inventory-detail/{item}', [\App\Http\Controllers\Accounting\Reports\InventoryReportController::class, 'inventoryDetail'])->name('reports.inventory-detail');
+
+        // Fuel Station Modules
+        Route::resource('tanks', \App\Http\Controllers\Inventory\TankController::class);
+        Route::resource('pumps', \App\Http\Controllers\Inventory\PumpController::class);
+        Route::post('shifts/{shift}/settle', [\App\Http\Controllers\Inventory\PumpShiftController::class, 'settle'])->name('shifts.settle');
+        Route::get('shifts/{shift}/export-pdf', [\App\Http\Controllers\Inventory\PumpShiftController::class, 'exportPdf'])->name('shifts.export-pdf');
+        Route::resource('shifts', \App\Http\Controllers\Inventory\PumpShiftController::class);
+
+        // Warranty Module
+        Route::resource('warranties', \App\Http\Controllers\Operations\WarrantyController::class);
 
         // Sales
         Route::get('/sales-by-item', [\App\Http\Controllers\Accounting\Reports\SalesReportController::class, 'salesByItem'])->name('reports.sales-by-item');

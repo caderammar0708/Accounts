@@ -9,7 +9,7 @@ import QuickAddAccount from "@/Components/QuickAddAccount";
 import { Head, usePage, router } from "@inertiajs/react";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
-import { isBooksLocked } from "@/Hooks/useBooksLock";
+import { isBooksLocked, useBooksLock } from "@/Hooks/useBooksLock";
 
 export default function JournalEntryForm({ journalEntry = null, nextJournalNo = "" }) {
     const isEditing = Boolean(journalEntry?.id);

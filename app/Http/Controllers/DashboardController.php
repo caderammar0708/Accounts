@@ -23,11 +23,11 @@ class DashboardController extends Controller
         $pendingJobs = 0;
         
         if ($settings->job_layout_enabled && \Illuminate\Support\Facades\Schema::hasTable('job_cards')) {
-            $todaysJobs = \App\Models\JobCard::query()
+            $todaysJobs = \App\Models\ServiceStation\JobCard::query()
                 ->whereDate('service_date', $today)
                 ->count();
                 
-            $pendingJobs = \App\Models\JobCard::query()
+            $pendingJobs = \App\Models\ServiceStation\JobCard::query()
                 ->whereNotIn('status', ['Ready', 'Delivered', 'Cancelled'])
                 ->count();
         }
@@ -107,7 +107,7 @@ class DashboardController extends Controller
         // Recent Jobs
         $recentJobs = [];
         if ($settings->job_layout_enabled && \Illuminate\Support\Facades\Schema::hasTable('job_cards')) {
-            $recentJobs = \App\Models\JobCard::with(['customer', 'device'])
+            $recentJobs = \App\Models\ServiceStation\JobCard::with(['customer', 'device'])
                 ->orderBy('created_at', 'desc')
                 ->take(5)
                 ->get();

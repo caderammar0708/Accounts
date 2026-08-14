@@ -140,12 +140,36 @@ const submitFeatureToggle = (feature, enabled, dropData = false) => {
     } else if (feature === 'branches') {
         routeName = 'layout.branches.update';
         payload = { branches_enabled: enabled, drop_tables: dropData };
+    } else if (feature === 'fuel_station') {
+        routeName = 'layout.fuel_station.update';
+        payload = { fuel_station_enabled: enabled, drop_tables: dropData };
+    } else if (feature === 'business_type') {
+        routeName = 'layout.business_type.update';
+        payload = { business_type: enabled, drop_tables: dropData }; // enabled here holds the new business type string
     }
     
     router.post(route(routeName), payload, {
         preserveScroll: true,
         onSuccess: () => setConfirmingDisable(null)
     });
+};
+
+const handleBusinessTypeChange = (e) => {
+    const newType = e.target.value;
+    // If switching away from Fuel Station or Service Station, prompt confirmation
+    const currentType = settings?.fuel_station_enabled ? 'Fuel Station' : ((settings?.job_layout_enabled || settings?.warranty_layout_enabled || settings?.vehicles_enabled) ? 'Service Station' : 'Normal');
+    
+    if (currentType !== 'Normal' && currentType !== newType) {
+        setConfirmingDisable('business_type_' + newType); // Pass the new type so we know what to switch to after confirm
+        setDropTables(false);
+    } else {
+        submitFeatureToggle('business_type', newType, false);
+    }
+};
+
+const businessTypeConfirmationModalSubmit = () => {
+    const newType = confirmingDisable.replace('business_type_', '');
+    submitFeatureToggle('business_type', newType, dropTables);
 };
 
     return (
@@ -610,6 +634,33 @@ const submitFeatureToggle = (feature, enabled, dropData = false) => {
                     <div className="space-y-3 pt-3">
                         <div className="flex justify-between items-center">
                             <div>
+                                <h3 className="text-xs font-bold text-gray-800">Business Type</h3>
+                                <p className="text-gray-400 text-[10px]">Select your primary business type to automatically configure layout features.</p>
+                            </div>
+                            <div className="w-48">
+                                <CommonInput
+                                    type="select"
+                                    value={settings?.fuel_station_enabled ? 'Fuel Station' : ((settings?.job_layout_enabled || settings?.warranty_layout_enabled || settings?.vehicles_enabled) ? 'Service Station' : 'Normal')}
+                                    onChange={handleBusinessTypeChange}
+                                    options={[
+                                        { label: 'Normal', value: 'Normal' },
+                                        { label: 'Fuel Station', value: 'Fuel Station' },
+                                        { label: 'Service Station', value: 'Service Station' }
+                                    ]}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {!(settings?.fuel_station_enabled || settings?.job_layout_enabled || settings?.warranty_layout_enabled || settings?.vehicles_enabled) && (
+                        <div className="space-y-3 pt-3">
+                            <p className="text-xs text-gray-500 italic">Advanced feature toggles are hidden when Business Type is set.</p>
+                        </div>
+                    )}
+
+                    <div className={`space-y-3 pt-3 ${(settings?.job_layout_enabled || settings?.warranty_layout_enabled || settings?.vehicles_enabled) ? '' : 'hidden'}`}>
+                        <div className="flex justify-between items-center">
+                            <div>
                                 <h3 className="text-xs font-bold text-gray-800">POS Layout</h3>
                                 <p className="text-gray-400 text-[10px]">If enabled, only POS Billing will be shown in the sidebar and navbar.</p>
                             </div>
@@ -629,7 +680,7 @@ const submitFeatureToggle = (feature, enabled, dropData = false) => {
                         </div>
                     </div>
 
-                    <div className="space-y-3 pt-3">
+                    <div className={`space-y-3 pt-3 ${(settings?.job_layout_enabled || settings?.warranty_layout_enabled || settings?.vehicles_enabled) ? '' : 'hidden'}`}>
                         <div className="flex justify-between items-center">
                             <div>
                                 <h3 className="text-xs font-bold text-gray-800">Warranty</h3>
@@ -647,7 +698,7 @@ const submitFeatureToggle = (feature, enabled, dropData = false) => {
                         </div>
                     </div>
 
-                    <div className="space-y-3 pt-3">
+                    <div className={`space-y-3 pt-3 ${(settings?.job_layout_enabled || settings?.warranty_layout_enabled || settings?.vehicles_enabled) ? '' : 'hidden'}`}>
                         <div className="flex justify-between items-center">
                             <div>
                                 <h3 className="text-xs font-bold text-gray-800">Job Registration</h3>
@@ -771,7 +822,13 @@ const submitFeatureToggle = (feature, enabled, dropData = false) => {
                     </div>
                     <div className="mt-6 flex justify-end">
                         <SecondaryButton onClick={() => setConfirmingDisable(null)}>Cancel</SecondaryButton>
-                        <DangerButton className="ml-3" onClick={() => submitFeatureToggle(confirmingDisable, false, dropTables)}>
+                        <DangerButton className="ml-3" onClick={() => {
+                            if (typeof confirmingDisable === 'string' && confirmingDisable.startsWith('business_type_')) {
+                                businessTypeConfirmationModalSubmit();
+                            } else {
+                                submitFeatureToggle(confirmingDisable, false, dropTables);
+                            }
+                        }}>
                             Disable Feature
                         </DangerButton>
                     </div>

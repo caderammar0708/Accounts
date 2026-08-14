@@ -23,6 +23,8 @@ class ChequeRequest extends FormRequest
             'items' => 'nullable|array',
             'paymentAccount' => 'required_without:account',
             'paymentDate' => 'required_without:date|date',
+            'currency_id' => 'nullable|exists:currencies,id',
+            'exchange_rate' => 'nullable|numeric|min:0.000001',
         ];
     }
 }

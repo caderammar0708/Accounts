@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Warranty;
+use App\Models\ServiceStation\Warranty;
 use App\Models\Accounting\SalesInvoice;
 use Inertia\Inertia;
 
@@ -34,7 +34,7 @@ class WarrantyController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return Inertia::render('Warranties/Index', [
+        return Inertia::render('ServiceStation/Warranties/Index', [
             'warranties' => $warranties,
             'filters' => [
                 'search' => $search,
@@ -56,7 +56,7 @@ class WarrantyController extends Controller
 
         $resolvedInvoices = SalesInvoice::orderBy('receipt_no')->limit(50)->get();
 
-        return Inertia::render('Warranties/Show', [
+        return Inertia::render('ServiceStation/Warranties/Show', [
             'warranty' => $warranty,
             'resolvedInvoices' => $resolvedInvoices,
         ]);

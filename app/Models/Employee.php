@@ -17,6 +17,9 @@ class Employee extends Model
         'employee_id',
         'designation',
         'salary',
+        'salary_type',
+        'hours_per_day',
+        'sales_commission_rate',
         'join_date',
         'location_id',
     ];

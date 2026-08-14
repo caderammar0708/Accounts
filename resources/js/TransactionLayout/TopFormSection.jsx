@@ -35,7 +35,7 @@ export default function TopFormSection({ form, setForm }) {
             </div>
 
             <div>
-                <label className="text-xs text-gray-500 block mb-1">ReceivePayment date</label>
+                <label className="text-xs text-gray-500 block mb-1">Payment date</label>
                 <input
                     type="date"
                     className="w-full border-b border-gray-300 text-sm py-1 bg-transparent outline-none"

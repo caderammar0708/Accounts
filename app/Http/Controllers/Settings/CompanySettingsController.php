@@ -222,12 +222,11 @@ public function updateAccounting(Request $request)
     {
         $validated = $request->validate([
             'warranty_layout_enabled' => 'required|boolean',
-            'drop_tables' => 'nullable|boolean',
         ]);
 
         $this->getSettings()->update(['warranty_layout_enabled' => $validated['warranty_layout_enabled']]);
         
-        $this->handleModuleMigrations('warranty', $validated['warranty_layout_enabled'], $request->boolean('drop_tables'));
+        $this->handleModuleMigrations('service_station', $validated['warranty_layout_enabled']);
 
         return back()->with('message', 'Warranty layout settings updated successfully.');
     }
@@ -236,12 +235,11 @@ public function updateAccounting(Request $request)
     {
         $validated = $request->validate([
             'job_layout_enabled' => 'required|boolean',
-            'drop_tables' => 'nullable|boolean',
         ]);
 
         $this->getSettings()->update(['job_layout_enabled' => $validated['job_layout_enabled']]);
         
-        $this->handleModuleMigrations('jobs', $validated['job_layout_enabled'], $request->boolean('drop_tables'));
+        $this->handleModuleMigrations('service_station', $validated['job_layout_enabled']);
 
         return back()->with('message', 'Job layout settings updated successfully.');
     }
@@ -270,12 +268,11 @@ public function updateAccounting(Request $request)
     {
         $validated = $request->validate([
             'vehicles_enabled' => 'required|boolean',
-            'drop_tables' => 'nullable|boolean',
         ]);
 
         $this->getSettings()->update(['vehicles_enabled' => $validated['vehicles_enabled']]);
         
-        $this->handleModuleMigrations('vehicles', $validated['vehicles_enabled'], $request->boolean('drop_tables'));
+        $this->handleModuleMigrations('service_station', $validated['vehicles_enabled']);
 
         return back()->with('message', 'Vehicles setting updated successfully.');
     }
@@ -289,6 +286,42 @@ public function updateAccounting(Request $request)
         $this->getSettings()->update(['branches_enabled' => $validated['branches_enabled']]);
 
         return back()->with('message', 'Branches setting updated successfully.');
+    }
+
+    public function updateBusinessType(Request $request)
+    {
+        $validated = $request->validate([
+            'business_type' => 'required|string|in:Normal,Fuel Station,Service Station',
+            'drop_tables' => 'nullable|boolean',
+        ]);
+
+        $settings = $this->getSettings();
+        $dropTables = $request->boolean('drop_tables');
+        $type = $validated['business_type'];
+
+        // Assign business type
+        $settings->update([
+            'business_type' => $type
+        ]);
+
+        if ($type === 'Fuel Station') {
+            $this->handleModuleMigrations('fuel_station', true);
+            if ($dropTables) {
+                $this->handleModuleMigrations('service_station', false, true);
+            }
+        } elseif ($type === 'Service Station') {
+            $this->handleModuleMigrations('service_station', true);
+            if ($dropTables) {
+                $this->handleModuleMigrations('fuel_station', false, true);
+            }
+        } else { // Normal
+            if ($dropTables) {
+                $this->handleModuleMigrations('fuel_station', false, true);
+                $this->handleModuleMigrations('service_station', false, true);
+            }
+        }
+
+        return back()->with('message', 'Business Type updated successfully.');
     }
 
     /**

@@ -7,8 +7,8 @@ use Inertia\Inertia;
 use App\Models\Item;
 use App\Models\Customer;
 use App\Models\PaymentMethod;
-use App\Models\Warranty;
-use App\Models\WarrantyPolicy;
+use App\Models\ServiceStation\Warranty;
+use App\Models\ServiceStation\WarrantyPolicy;
 use App\Models\Accounting\ChartOfAcc;
 use App\Models\Accounting\JournalEntry;
 use App\Models\Accounting\JournalEntryLine;
@@ -80,7 +80,7 @@ class POSController extends Controller
 
                 $customerId = $request->customer;
                 if ($request->vehicle_id) {
-                    $vehicle = \App\Models\Vehicle::find($request->vehicle_id);
+                    $vehicle = \App\Models\ServiceStation\Vehicle::find($request->vehicle_id);
                     if ($vehicle && $vehicle->customer_id) {
                         $customerId = $vehicle->customer_id;
                     }
@@ -379,7 +379,7 @@ class POSController extends Controller
 
                 $customerId = $request->customer;
                 if ($request->vehicle_id) {
-                    $vehicle = \App\Models\Vehicle::find($request->vehicle_id);
+                    $vehicle = \App\Models\ServiceStation\Vehicle::find($request->vehicle_id);
                     if ($vehicle && $vehicle->customer_id) {
                         $customerId = $vehicle->customer_id;
                     }

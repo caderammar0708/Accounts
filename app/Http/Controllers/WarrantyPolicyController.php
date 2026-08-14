@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WarrantyPolicyRequest;
 use App\Models\Item;
-use App\Models\WarrantyPolicy;
+use App\Models\ServiceStation\WarrantyPolicy;
 use Inertia\Inertia;
 
 class WarrantyPolicyController extends Controller
@@ -14,7 +14,7 @@ class WarrantyPolicyController extends Controller
     {
         $policies = WarrantyPolicy::orderBy('name')->get();
 
-        return Inertia::render('WarrantyPolicies/Index', [
+        return Inertia::render('ServiceStation/WarrantyPolicies/Index', [
             'policies' => $policies,
         ]);
     }
@@ -23,7 +23,7 @@ class WarrantyPolicyController extends Controller
     {
         $items = Item::select('id', 'name', 'type')->orderBy('name')->get();
 
-        return Inertia::render('WarrantyPolicies/Form', [
+        return Inertia::render('ServiceStation/WarrantyPolicies/Form', [
             'policy' => null,
             'items' => $items,
         ]);
@@ -44,7 +44,7 @@ class WarrantyPolicyController extends Controller
     {
         $items = Item::select('id', 'name', 'type')->orderBy('name')->get();
 
-        return Inertia::render('WarrantyPolicies/Form', [
+        return Inertia::render('ServiceStation/WarrantyPolicies/Form', [
             'policy' => $warrantyPolicy->load('items'),
             'items' => $items,
         ]);

@@ -1,12 +1,6 @@
-import { forwardRef, useEffect, useRef, useState, useImperativeHandle } from 'react';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import SearchableSelect from './SearchableSelect';
+import { forwardRef, useEffect, useRef, useState } from 'react';
+import { usePage } from '@inertiajs/react';
 
-/**
- * A highly reusable, premium input component for JBooks.
- * Supports different input types, selects, and textareas with a consistent design.
- */
 export default forwardRef(function CommonInput(
     {
         type = 'text',
@@ -23,22 +17,14 @@ export default forwardRef(function CommonInput(
         inputClass = '',
         children,
         dateFormat,
+        value,
         ...props
     },
     ref
 ) {
     const inputRef = useRef(null);
-    const datePickerRef = useRef(null);
     const [showPassword, setShowPassword] = useState(false);
-    const resolvedDateFormat = dateFormat || 'DD/MM/YYYY';
-
-    // Expose focus/select on the forwarded ref so parent components
-    // (e.g. LineItemsTable) can programmatically focus this input.
-    useImperativeHandle(ref, () => ({
-        focus: () => inputRef.current?.focus(),
-        select: () => inputRef.current?.select(),
-        get value() { return inputRef.current?.value; },
-    }));
+    const resolvedDateFormat = dateFormat || 'mm/dd/yyyy';
 
     useEffect(() => {
         if (isFocused) {
@@ -63,10 +49,6 @@ export default forwardRef(function CommonInput(
 
 
     const showPicker = () => {
-        if (type === 'date' && datePickerRef.current) {
-            datePickerRef.current.setOpen(true);
-            return;
-        }
         if (inputRef.current) {
             try {
                 inputRef.current.showPicker();
@@ -126,7 +108,7 @@ export default forwardRef(function CommonInput(
     };
 
     const getDatePlaceholder = () => {
-        const format = String(resolvedDateFormat || 'DD/MM/YYYY').toLowerCase();
+        const format = String(resolvedDateFormat || 'mm/dd/yyyy').toLowerCase();
         if (format.includes('dd/mm')) return 'DD/MM/YYYY';
         if (format.includes('dd-mm')) return 'DD-MM-YYYY';
         if (format.includes('yyyy')) return 'YYYY-MM-DD';
@@ -158,39 +140,6 @@ export default forwardRef(function CommonInput(
         }
     };
 
-    const normalizedValue = props.value ?? '';
-
-    let selectedDate = null;
-    if (normalizedValue && typeof normalizedValue === 'string') {
-        const parts = normalizedValue.split('-');
-        if (parts.length === 3) {
-            selectedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        } else {
-            const d = new Date(normalizedValue);
-            if (!isNaN(d.getTime())) selectedDate = d;
-        }
-    } else if (normalizedValue instanceof Date) {
-        selectedDate = normalizedValue;
-    }
-
-    const handleDateChange = (date) => {
-        if (props.onChange) {
-            let value = '';
-            if (date) {
-                const yyyy = date.getFullYear();
-                const mm = String(date.getMonth() + 1).padStart(2, '0');
-                const dd = String(date.getDate()).padStart(2, '0');
-                value = `${yyyy}-${mm}-${dd}`;
-            }
-            props.onChange({
-                target: {
-                    name: props.name,
-                    value: value
-                }
-            });
-        }
-    };
-
     return (
         <div
             className={`flex flex-col gap-0.5 ${containerClass} ${variant === 'table' ? 'h-full' : ''}`}
@@ -205,14 +154,14 @@ export default forwardRef(function CommonInput(
                 {type === 'textarea' ? (
                     <textarea
                         {...props}
-                        value={normalizedValue}
+                        value={value ?? ''}
                         ref={inputRef}
-                        className={`${baseInputClasses} ${errorClasses} py-1.5 resize-y leading-snug ${className} ${inputClass}`}
+                        className={`${baseInputClasses} ${errorClasses} py-1.5 resize-y ${className} ${inputClass}`}
                     />
                 ) : type === 'select' ? (
                     <select
                         {...props}
-                        value={normalizedValue}
+                        value={value ?? ''}
                         ref={inputRef}
                         className={`${baseInputClasses} ${errorClasses} py-0 pl-2 pr-8 ${className} ${inputClass}`}
                     >
@@ -220,130 +169,15 @@ export default forwardRef(function CommonInput(
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                     </select>
-                ) : type === 'date' ? (
-                    <div className="relative w-full h-full group">
-                        <style>{`
-                            .react-datepicker__day--outside-month {
-                                visibility: hidden;
-                            }
-                        `}</style>
-                        <DatePicker
-                            ref={datePickerRef}
-                            selected={selectedDate}
-                            onChange={handleDateChange}
-                            dateFormat={resolvedDateFormat.toLowerCase().replace(/m/g, 'M')}
-                            placeholderText={getDatePlaceholder()}
-                            className={`${baseInputClasses} ${errorClasses} ${className} ${inputClass} pr-8 focus:ring-2 focus:ring-green-500/20 focus:border-green-500`}
-                            autoComplete="off"
-                            name={props.name}
-                            id={props.id}
-                            disabled={props.disabled}
-                            readOnly={props.readOnly}
-                            required={props.required}
-                            onPaste={props.onPaste || handlePaste}
-                            showOutsideDays={false}
-                            renderCustomHeader={({
-                                date,
-                                changeYear,
-                                changeMonth,
-                                decreaseMonth,
-                                increaseMonth,
-                                prevMonthButtonDisabled,
-                                nextMonthButtonDisabled,
-                            }) => (
-                                <div className="flex items-center justify-between px-1 py-1 gap-1 w-full">
-                                    <button
-                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); decreaseMonth(); }}
-                                        disabled={prevMonthButtonDisabled}
-                                        type="button"
-                                        className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-25 disabled:pointer-events-none"
-                                        title="Previous Month"
-                                        aria-label="Previous Month"
-                                    >
-                                        <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                                        </svg>
-                                    </button>
-
-                                    <div className="flex items-center justify-center gap-1.5 min-w-0 flex-1">
-                                        <div className="w-[115px] flex-shrink-0">
-                                            <SearchableSelect
-                                                value={date.getMonth()}
-                                                onChange={(val) => changeMonth(Number(val))}
-                                                options={[
-                                                    { value: 0, label: "January" },
-                                                    { value: 1, label: "February" },
-                                                    { value: 2, label: "March" },
-                                                    { value: 3, label: "April" },
-                                                    { value: 4, label: "May" },
-                                                    { value: 5, label: "June" },
-                                                    { value: 6, label: "July" },
-                                                    { value: 7, label: "August" },
-                                                    { value: 8, label: "September" },
-                                                    { value: 9, label: "October" },
-                                                    { value: 10, label: "November" },
-                                                    { value: 11, label: "December" }
-                                                ]}
-                                                size="sm"
-                                                placeholder="Month"
-                                            />
-                                        </div>
-
-                                        <div className="w-[76px] flex-shrink-0">
-                                            <SearchableSelect
-                                                value={date.getFullYear()}
-                                                onChange={(val) => changeYear(Number(val))}
-                                                onSearch={(query) => {
-                                                    if (!query) {
-                                                        return Array.from({ length: 13 }, (_, i) => {
-                                                            const yr = new Date().getFullYear() + 2 - i;
-                                                            return { value: yr, label: String(yr) };
-                                                        });
-                                                    }
-                                                    return Array.from({ length: 151 }, (_, i) => {
-                                                        const yr = new Date().getFullYear() + 50 - i;
-                                                        return { value: yr, label: String(yr) };
-                                                    });
-                                                }}
-                                                options={Array.from({ length: 13 }, (_, i) => {
-                                                    const yr = new Date().getFullYear() + 2 - i;
-                                                    return { value: yr, label: String(yr) };
-                                                })}
-                                                allowCustom={true}
-                                                size="sm"
-                                                placeholder="Year"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); increaseMonth(); }}
-                                        disabled={nextMonthButtonDisabled}
-                                        type="button"
-                                        className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-25 disabled:pointer-events-none"
-                                        title="Next Month"
-                                        aria-label="Next Month"
-                                    >
-                                        <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            )}
-                            customInput={
-                                <input ref={inputRef} />
-                            }
-                        />
-                    </div>
                 ) : (
                     <input
                         {...props}
-                        value={normalizedValue}
+                        value={value ?? ''}
                         type={type === 'password' ? (showPassword ? 'text' : 'password') : type}
                         ref={inputRef}
                         onPaste={props.onPaste || handlePaste}
-                        placeholder={props.placeholder}
-                        className={`${baseInputClasses} ${errorClasses} ${className} ${inputClass} ${(type === 'password' || icon) ? 'pr-8' : ''}`}
+                        placeholder={type === 'date' ? getDatePlaceholder() : props.placeholder}
+                        className={`${baseInputClasses} ${errorClasses} ${className} ${inputClass} ${(type === 'date' || type === 'password' || icon) ? 'pr-8' : ''}`}
                     />
                 )}
                 {renderIcon()}

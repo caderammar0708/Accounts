@@ -347,7 +347,7 @@ export default function PaymentForm({
                         modalName: 'payment',
                         url: window.location.pathname + window.location.search
                     });
-                } catch (e) {}
+                } catch (e) { }
 
                 if (action === 'close') {
                     router.reload({ preserveScroll: true });
@@ -356,7 +356,7 @@ export default function PaymentForm({
                 if (action === 'close') {
                     if (typeof onClose === 'function') {
                         onClose();
-                    } 
+                    }
                 }
 
                 if (action === 'new') {
@@ -505,7 +505,7 @@ export default function PaymentForm({
                         <CommonInput
                             type="date"
                             placeholder={formatDate(new Date(), dateFormat)}
-                            label="ReceivePayment Date"
+                            label="Payment Date"
                             value={data.date}
                             onChange={(e) => handlePaymentDateChange(e.target.value)}
                             size="sm"

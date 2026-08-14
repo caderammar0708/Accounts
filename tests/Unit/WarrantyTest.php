@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use App\Models\Warranty;
-use App\Models\WarrantyPolicy;
+use App\Models\ServiceStation\Warranty;
+use App\Models\ServiceStation\WarrantyPolicy;
 use App\Models\Accounting\SalesInvoiceItem;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Tests\TestCase;

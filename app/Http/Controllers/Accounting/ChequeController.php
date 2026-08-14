@@ -111,7 +111,11 @@ class ChequeController extends Controller
                     'total_amount' => $totalAmount,
                     'memo' => $request->memo,
                     'status' => 'posted',
+                    'currency_id' => $request->currency_id,
+                    'exchange_rate' => $request->exchange_rate ?? 1.0,
                 ]);
+
+                $exchangeRate = (float) ($request->exchange_rate ?? 1.0);
 
                 // Categories
                 $lineOrder = 1;
@@ -157,7 +161,7 @@ class ChequeController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $bankAccount,
                     'debit' => 0,
-                    'credit' => $totalAmount,
+                    'credit' => $totalAmount * $exchangeRate,
                     'memo' => $request->memo,
                 ]);
 
@@ -190,6 +194,8 @@ class ChequeController extends Controller
             'payeeType' => $cheque?->payee_type ?? ($journalEntry->payee_type == Customer::class ? 'customer' : 'supplier'),
             'account' => $cheque?->bank_account_id ?? $journalEntry->lines->where('credit', '>', 0)->first()?->chart_of_acc_id,
             'date' => $journalEntry->date,
+            'exchange_rate' => $cheque?->exchange_rate ?? 1.0,
+            'currency_id' => $cheque?->currency_id ?? "",
             'cheque_no' => $cheque?->cheque_no ?? $journalEntry->reference,
             'mailing_address' => $cheque?->mailing_address ?? '',
             'memo' => $journalEntry->description,
@@ -235,6 +241,8 @@ class ChequeController extends Controller
 
                 // 1. Update Business Document
                 $cheque = Cheque::find($journalEntry->transactionable_id);
+                $exchangeRate = (float) ($request->exchange_rate ?? 1.0);
+
                 if ($cheque) {
                     $cheque->update([
                         'payee_id' => $request->payee,
@@ -245,6 +253,8 @@ class ChequeController extends Controller
                         'mailing_address' => $request->mailing_address,
                         'total_amount' => $totalAmount,
                         'memo' => $request->memo,
+                        'currency_id' => $request->currency_id,
+                        'exchange_rate' => $exchangeRate,
                     ]);
 
                     $cheque->lines()->delete();
@@ -280,7 +290,7 @@ class ChequeController extends Controller
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $lineItem['category'],
-                        'debit' => (float) str_replace(',', '', $lineItem['amount']),
+                        'debit' => ((float) str_replace(',', '', $lineItem['amount'])) * $exchangeRate,
                         'credit' => 0,
                         'memo' => $lineItem['description'] ?? $request->memo,
                     ]);
@@ -291,7 +301,7 @@ class ChequeController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $bankAccount,
                     'debit' => 0,
-                    'credit' => $totalAmount,
+                    'credit' => $totalAmount * $exchangeRate,
                     'memo' => $request->memo,
                 ]);
             });

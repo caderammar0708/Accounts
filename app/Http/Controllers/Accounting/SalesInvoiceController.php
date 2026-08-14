@@ -12,8 +12,8 @@ use App\Models\Customer;
 use App\Models\Accounting\ChartOfAcc;
 use App\Models\PaymentMethod;
 use App\Models\Item;
-use App\Models\Warranty;
-use App\Models\Vehicle;
+use App\Models\ServiceStation\Warranty;
+use App\Models\ServiceStation\Vehicle;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -115,7 +115,7 @@ class SalesInvoiceController extends Controller
 
                 $customerId = $request->customer;
                 if ($request->vehicle_id) {
-                    $vehicle = \App\Models\Vehicle::find($request->vehicle_id);
+                    $vehicle = \App\Models\ServiceStation\Vehicle::find($request->vehicle_id);
                     if ($vehicle) {
                         $customerId = $vehicle->customer_id;
                     }

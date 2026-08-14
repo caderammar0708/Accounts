@@ -466,7 +466,7 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                         <CommonInput
                             type="date"
                             placeholder={formatDate(new Date(), dateFormat)}
-                            label="ReceivePayment Date"
+                            label="Payment Date"
                             value={data.paymentDate}
                             onChange={(e) => {
                                 const newDate = e.target.value;

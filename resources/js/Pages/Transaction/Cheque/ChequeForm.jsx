@@ -6,6 +6,7 @@ import SearchableSelect from "@/Components/SearchableSelect";
 import CommonInput from "@/Components/CommonInput";
 import QuickAddAccount from "@/Components/QuickAddAccount";
 import QuickAddPayee from "@/Components/QuickAddPayee";
+import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
 import { showToast } from "@/Components/ToastNotification";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import PinPromptModal from "@/Components/PinPromptModal";
@@ -78,6 +79,8 @@ export default function ChequeForm({
         payee: cheque?.payee || "",
         account: cheque?.account || "",
         date: cheque?.date || initialPaymentDate,
+        exchange_rate: cheque?.exchange_rate || 1,
+        currency_id: cheque?.currency_id || "",
         cheque_no: cheque?.cheque_no || nextChequeNo || "",
         mailing_address: cheque?.mailing_address || "",
         memo: cheque?.memo || "",
@@ -98,6 +101,7 @@ export default function ChequeForm({
     ).toFixed(2);
 
     const selectedAccountBalance = accountOptions.find(a => String(a.value) === String(data.account))?.balance || "0.00";
+    const selectedAccountObj = accountOptions.find(a => String(a.value) === String(data.account));
 
     useEffect(() => {
         if (cheque) {
@@ -105,6 +109,8 @@ export default function ChequeForm({
                 payee: cheque.payee || "",
                 account: cheque.account || "",
                 date: cheque.date || "",
+                exchange_rate: cheque.exchange_rate || 1,
+                currency_id: cheque.currency_id || "",
                 cheque_no: cheque.cheque_no || "",
                 mailing_address: cheque.mailing_address || "",
                 memo: cheque.memo || "",
@@ -119,6 +125,8 @@ export default function ChequeForm({
                 payee: "",
                 account: "",
                 date: cachedDate,
+                exchange_rate: 1,
+                currency_id: "",
                 cheque_no: nextChequeNo || "",
                 mailing_address: "",
                 memo: "",
@@ -158,7 +166,13 @@ export default function ChequeForm({
     };
 
     const handleAccountChange = (val) => {
-        setData("account", val);
+        const selectedAcc = accountOptions.find(a => String(a.value) === String(val));
+        const newCurrencyId = selectedAcc ? selectedAcc.currency_id : "";
+        setData(data => ({
+            ...data,
+            account: val,
+            currency_id: newCurrencyId
+        }));
         setIsDirty(true);
     };
 
@@ -211,7 +225,7 @@ export default function ChequeForm({
                 if (action === 'close') {
                     if (typeof onClose === 'function') {
                         onClose();
-                    } 
+                    }
                 }
 
                 if (action === 'new') {
@@ -321,6 +335,16 @@ export default function ChequeForm({
                                         setIsAccountModalOpen(true);
                                     }}
                                 />
+                                <CurrencyExchangeInput
+                                    auth={auth}
+                                    selectedAccount={selectedAccountObj}
+                                    exchangeRate={data.exchange_rate}
+                                    onExchangeRateChange={(val) => {
+                                        setData('exchange_rate', val);
+                                        setIsDirty(true);
+                                    }}
+                                    error={errors.exchange_rate}
+                                />
                             </div>
                         </div>
                     </div>
@@ -341,7 +365,7 @@ export default function ChequeForm({
                     <div className="w-[200px]">
                         <CommonInput
                             type="date"
-                            label="ReceivePayment Date"
+                            label="Payment Date"
                             value={data.date}
                             onChange={(e) => handlePaymentDateChange(e.target.value)}
                             size="sm"

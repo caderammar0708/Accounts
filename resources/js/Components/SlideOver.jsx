@@ -35,7 +35,7 @@ export default function SlideOver({ isOpen, onClose, title, children }) {
                             >
                                 <Dialog.Panel className="pointer-events-auto w-screen max-w-md">
                                     <div className="flex h-full flex-col overflow-y-auto bg-white shadow-2xl">
-                                        <div className="px-5 py-2 border-b border-slate-100 bg-slate-50/50">
+                                        <div className="px-4 py-1.5 border-b border-slate-100 bg-slate-50/50">
                                             <div className="flex items-start justify-between">
                                                 <Dialog.Title className="text-sm font-bold text-slate-800 uppercase tracking-widest">
                                                     {title}
@@ -55,7 +55,7 @@ export default function SlideOver({ isOpen, onClose, title, children }) {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="relative flex-1 px-6 py-8">
+                                        <div className="relative flex-1 px-5 py-4">
                                             {children}
                                         </div>
                                     </div>

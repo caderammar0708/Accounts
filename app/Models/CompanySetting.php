@@ -39,24 +39,12 @@ class CompanySetting extends Model
         'warn_dup_bill',
         'warn_dup_journal',
         'sign_out_inactive',
-        'pos_layout_enabled',
-        'warranty_layout_enabled',
-        'job_layout_enabled',
-        'customer_layout_modal',
-        'reports_display_as_buttons',
-        'vehicles_enabled',
-        'branches_enabled',
         'multi_currency_enabled',
         'home_currency_id',
+        'business_type',
     ];
 
     protected $casts = [
-        'pos_layout_enabled' => 'boolean',
-        'warranty_layout_enabled' => 'boolean',
-        'job_layout_enabled' => 'boolean',
-        'customer_layout_modal' => 'boolean',
-        'reports_display_as_buttons' => 'boolean',
-        'vehicles_enabled' => 'boolean',
-        'branches_enabled' => 'boolean',
+        'multi_currency_enabled' => 'boolean',
     ];
 }

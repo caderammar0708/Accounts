@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WarrantyClaimRequest;
-use App\Models\Warranty;
-use App\Models\WarrantyClaim;
+use App\Models\ServiceStation\Warranty;
+use App\Models\ServiceStation\WarrantyClaim;
 
 class WarrantyClaimController extends Controller
 {

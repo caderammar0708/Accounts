@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Garage;
 
 use App\Http\Controllers\Controller;
-use App\Models\JobCard;
+use App\Models\ServiceStation\JobCard;
 use App\Models\Customer;
 use App\Models\Device;
 use Illuminate\Http\Request;
@@ -22,7 +22,7 @@ class JobCardController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(15);
             
-        return Inertia::render('JobCards/Index', [
+        return Inertia::render('ServiceStation/JobCards/Index', [
             'jobCards' => $jobCards,
             'filters' => $request->only('status')
         ]);
@@ -31,7 +31,7 @@ class JobCardController extends Controller
     public function create()
     {
         $customers = Customer::with('devices')->get();
-        return Inertia::render('JobCards/Form', [
+        return Inertia::render('ServiceStation/JobCards/Form', [
             'customers' => $customers
         ]);
     }
@@ -71,7 +71,7 @@ class JobCardController extends Controller
     public function show(JobCard $jobCard)
     {
         $jobCard->load(['customer', 'device']);
-        return Inertia::render('JobCards/Show', [
+        return Inertia::render('ServiceStation/JobCards/Show', [
             'jobCard' => $jobCard
         ]);
     }
@@ -80,7 +80,7 @@ class JobCardController extends Controller
     {
         $jobCard->load(['customer', 'device']);
         $customers = Customer::with('devices')->get();
-        return Inertia::render('JobCards/Form', [
+        return Inertia::render('ServiceStation/JobCards/Form', [
             'jobCard' => $jobCard,
             'customers' => $customers
         ]);

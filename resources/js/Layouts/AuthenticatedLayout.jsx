@@ -39,6 +39,17 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
     const [isSidebarVisible, setIsSidebarVisible] = useState(true);
     const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
     const [quickAddType, setQuickAddType] = useState(null);
+    const [locations, setLocations] = useState([]);
+
+    useEffect(() => {
+        axios.get(route('api.locations'))
+            .then(res => setLocations(res.data))
+            .catch(err => console.error("Error fetching locations", err));
+    }, []);
+
+    const isFuelStation = page.props.auth.business_type === 'Fuel Station';
+    const isServiceStation = page.props.auth.business_type === 'Service Station';
+    const isNormal = page.props.auth.business_type === 'Normal';
 
     const navigation = [
         { name: 'Dashboard', href: route('dashboard'), icon: 'dashboard' },
@@ -49,14 +60,17 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
             icon: 'users',
             activeRoutes: ['customers.*', 'suppliers.*', 'employees.*']
         },
-        ...(page.props.auth.vehicles_enabled ? [{ name: 'Vehicles', href: route('vehicles.index'), icon: 'vehicle' }] : []),
-        ...(page.props.auth.job_enabled ? [{ name: 'Jobs', href: route('job-cards.index'), icon: 'job', isJob: true }] : []),
-        ...(page.props.auth.warranties_enabled ? [{ name: 'Warranties', href: route('warranties.index'), icon: 'warranty', isWarranty: true }] : []),
+        ...(isServiceStation ? [{ name: 'Vehicles', href: route('vehicles.index'), icon: 'vehicle' }] : []),
+        ...(isServiceStation ? [{ name: 'Jobs', href: route('job-cards.index'), icon: 'job', isJob: true }] : []),
+        ...(isServiceStation ? [{ name: 'Warranties', href: route('warranties.index'), icon: 'warranty', isWarranty: true }] : []),
+        ...(isFuelStation ? [
+            { name: 'Station Setup', href: route('tanks.index'), icon: 'inventory', activeRoutes: ['tanks.*', 'pumps.*'] },
+            { name: 'Shifts', href: route('shifts.index'), icon: 'team' }
+        ] : []),
         { name: 'Products & Services', href: route('items.index'), icon: 'inventory' },
         { name: 'Chart of Accounts', href: route('chart-of-account.index'), icon: 'accounting' },
         { name: 'Reports', href: route('reports.index'), adminOnly: true, icon: 'finance' },
         ...(page.props.auth.branches_enabled ? [{ name: 'Branches', href: route('locations.index'), adminOnly: true, icon: 'accounting' }] : []),
-        { name: 'User Management', href: route('users.index'), adminOnly: true, icon: 'users' },
     ];
 
     return (
@@ -142,14 +156,14 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                         )}
 
                         {/* warranties Billing Shortcut */}
-                        {page.props.auth.warranties_enabled && (
+                        {isServiceStation && (
                             <Link href={route('warranties.index')} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors relative" title="warranties Billing">
                                 <span className="material-symbols-outlined text-[20px] leading-none block">shield</span>
                             </Link>
                         )}
 
                         {/* job Shortcut */}
-                        {page.props.auth.job_enabled && (
+                        {isServiceStation && (
                             <Link href={route('job-cards.index')} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors relative" title="Job Registrations">
                                 <span className="material-symbols-outlined text-[20px] leading-none block">work</span>
                             </Link>
@@ -172,12 +186,13 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                                 <Dropdown.Content align="right" width="48" contentClasses="py-1 bg-white ring-1 ring-black ring-opacity-5 rounded-xl shadow-xl overflow-hidden mt-2">
                                     <Dropdown.Link href={route('settings.company')}>Company Settings</Dropdown.Link>
                                     <Dropdown.Link href={route('settings.print')}>Print Settings</Dropdown.Link>
+                                    <Dropdown.Link href={route('users.index')}>User Management</Dropdown.Link>
                                 </Dropdown.Content>
                             </Dropdown>
                         )}
 
                         {/* Branch Switcher / Location Indicator */}
-                        {page.props.auth.locations && page.props.auth.locations.length > 0 && (
+                        {locations && locations.length > 0 && (
                             <div className="flex items-center">
                                 {page.props.auth.is_location_locked ? (
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
@@ -206,7 +221,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                                             <div className="px-3 py-1.5 text-2xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                                                 Switch Branch
                                             </div>
-                                            {page.props.auth.locations.map((loc) => (
+                                            {locations.map((loc) => (
                                                 <button
                                                     key={loc.id}
                                                     onClick={() => router.post(route('locations.switch'), { location_id: loc.id })}

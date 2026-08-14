@@ -164,6 +164,28 @@ class LookupController extends Controller
     }
 
     /**
+     * Endpoint to fetch active currencies
+     */
+    public function currencies(Request $request)
+    {
+        $currencies = \App\Models\Currency::where('is_active', true)
+            ->get(['id', 'code', 'symbol', 'exchange_rate']);
+            
+        return response()->json($currencies);
+    }
+
+    /**
+     * Endpoint to fetch active locations
+     */
+    public function locations(Request $request)
+    {
+        $locations = \App\Models\Location::where('is_active', true)
+            ->get(['id', 'name', 'code']);
+            
+        return response()->json($locations);
+    }
+
+    /**
      * Endpoint to fetch items (Products/Services)
      */
     public function items(Request $request)
@@ -440,7 +462,7 @@ class LookupController extends Controller
 
         $search = $request->query('search');
         
-        $vehicles = \App\Models\Vehicle::with('customer')
+        $vehicles = \App\Models\ServiceStation\Vehicle::with('customer')
             ->when($search, function($query, $search) {
                 $query->where('vehicle_no', 'like', "%{$search}%")
                       ->orWhere('brand', 'like', "%{$search}%")

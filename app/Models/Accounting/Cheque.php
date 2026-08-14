@@ -24,6 +24,8 @@ class Cheque extends Model implements Auditable
         'memo',
         'status',
         'location_id',
+        'currency_id',
+        'exchange_rate',
     ];
 
     protected $casts = [

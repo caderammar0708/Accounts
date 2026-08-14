@@ -33,6 +33,7 @@
         "@dnd-kit/sortable": "^10.0.0",
         "@dnd-kit/utilities": "^3.2.2",
         "date-fns": "^4.4.0",
+        "dayjs": "^1.11.21",
         "react-barcode": "^1.6.1",
         "react-datepicker": "^9.1.0",
         "react-router-dom": "^7.14.0",
