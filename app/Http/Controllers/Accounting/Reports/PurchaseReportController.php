@@ -30,23 +30,15 @@ class PurchaseReportController extends Controller
             })
             ->where('bills.status', 'posted');
 
-<<<<<<< HEAD
         $expensesQuery = DB::table('payment_items')
             ->join('payments', 'payment_items.payment_id', '=', 'payments.id')
             ->leftJoin('suppliers', 'payments.payee_id', '=', 'suppliers.id')
             ->join('items', 'payment_items.item_id', '=', 'items.id')
             ->where('payments.status', 'posted');
 
-        if ($startDate) {
-            $billsQuery->whereBetween('bills.bill_date', [$startDate, $endDate]);
-            $expensesQuery->whereBetween('payments.payment_date', [$startDate, $endDate]);
-        } else {
-            $billsQuery->where('bills.bill_date', '<=', $endDate);
-            $expensesQuery->where('payments.payment_date', '<=', $endDate);
-=======
         if (session()->has('current_location_id')) {
             $locId = session('current_location_id');
-            $query->where(function($q) use ($locId) {
+            $billsQuery->where(function($q) use ($locId) {
                 $q->where('bills.location_id', $locId)
                   ->orWhereNull('bills.location_id');
             });
@@ -54,11 +46,12 @@ class PurchaseReportController extends Controller
 
         if ($type !== 'all_dates') {
             if ($startDate) {
-                $query->whereBetween('bills.bill_date', [$startDate, $endDate]);
+                $billsQuery->whereBetween('bills.bill_date', [$startDate, $endDate]);
+                $expensesQuery->whereBetween('payments.payment_date', [$startDate, $endDate]);
             } else {
-                $query->where('bills.bill_date', '<=', $endDate);
+                $billsQuery->where('bills.bill_date', '<=', $endDate);
+                $expensesQuery->where('payments.payment_date', '<=', $endDate);
             }
->>>>>>> 659c84d658530b45ceea25547ad2be2187d188f2
         }
 
         $months = [];
@@ -86,8 +79,7 @@ class PurchaseReportController extends Controller
                 'bill_items.amount',
                 'bills.bill_no as reference',
                 'bills.bill_date as date',
-<<<<<<< HEAD
-                'bills.id as journal_entry_id',
+                DB::raw('COALESCE(journal_entries.id, bills.id) as journal_entry_id'),
                 'suppliers.display_name as supplier_name',
                 DB::raw("'bill' as transaction_type")
             )->get();
@@ -108,13 +100,6 @@ class PurchaseReportController extends Controller
             )->get();
 
         $allLines = $billsData->concat($expensesData)->sortBy('date')->values();
-=======
-                DB::raw('COALESCE(journal_entries.id, bills.id) as bill_id'),
-                'suppliers.display_name as supplier_name'
-            )
-            ->orderBy('bills.bill_date', 'asc')
-            ->get();
->>>>>>> 659c84d658530b45ceea25547ad2be2187d188f2
 
         $reportData = $allLines->groupBy('item_id')->map(function ($lines, $itemId) use ($displayBy, $months) {
             $firstLine = $lines->first();
@@ -191,17 +176,9 @@ class PurchaseReportController extends Controller
             ->where('payments.payee_type', \App\Models\Supplier::class)
             ->where('payments.status', 'posted');
 
-<<<<<<< HEAD
-        if ($startDate) {
-            $billsQuery->whereBetween('bills.bill_date', [$startDate, $endDate]);
-            $expensesQuery->whereBetween('payments.payment_date', [$startDate, $endDate]);
-        } else {
-            $billsQuery->where('bills.bill_date', '<=', $endDate);
-            $expensesQuery->where('payments.payment_date', '<=', $endDate);
-=======
         if (session()->has('current_location_id')) {
             $locId = session('current_location_id');
-            $query->where(function($q) use ($locId) {
+            $billsQuery->where(function($q) use ($locId) {
                 $q->where('bills.location_id', $locId)
                   ->orWhereNull('bills.location_id');
             });
@@ -209,11 +186,12 @@ class PurchaseReportController extends Controller
 
         if ($type !== 'all_dates') {
             if ($startDate) {
-                $query->whereBetween('bills.bill_date', [$startDate, $endDate]);
+                $billsQuery->whereBetween('bills.bill_date', [$startDate, $endDate]);
+                $expensesQuery->whereBetween('payments.payment_date', [$startDate, $endDate]);
             } else {
-                $query->where('bills.bill_date', '<=', $endDate);
+                $billsQuery->where('bills.bill_date', '<=', $endDate);
+                $expensesQuery->where('payments.payment_date', '<=', $endDate);
             }
->>>>>>> 659c84d658530b45ceea25547ad2be2187d188f2
         }
 
         $months = [];
