@@ -237,7 +237,7 @@ export default function SalesByItem({ reportData, filters, auth }) {
                                         </tr>
 
                                         {!isCollapsed && group.lines.map((tx) => (
-                                            <tr key={tx.id} className="hover:bg-slate-50 transition-colors bg-white">
+                                            <tr key={`${tx.transaction_type}-${tx.id}`} className="hover:bg-slate-50 transition-colors bg-white">
                                                 <td className="py-2 px-3 text-gray-600 pl-10">
                                                     {tx.date}
                                                 </td>
