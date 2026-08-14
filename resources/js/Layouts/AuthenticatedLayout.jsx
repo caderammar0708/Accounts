@@ -42,10 +42,12 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
     const [locations, setLocations] = useState([]);
 
     useEffect(() => {
-        axios.get(route('api.locations'))
-            .then(res => setLocations(res.data))
-            .catch(err => console.error("Error fetching locations", err));
-    }, []);
+        if (page.props.auth.location) {
+            axios.get(route('api.locations'))
+                .then(res => setLocations(res.data))
+                .catch(err => console.error("Error fetching locations", err));
+        }
+    }, [page.props.auth.location]);
 
     const isFuelStation = page.props.auth.business_type === 'Fuel Station';
     const isServiceStation = page.props.auth.business_type === 'Service Station';
