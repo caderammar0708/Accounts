@@ -16,7 +16,11 @@ class LocationScope implements Scope
         $currentLocationId = session('current_location_id');
 
         if ($currentLocationId) {
-            $builder->where($model->getTable() . '.location_id', $currentLocationId);
+            $table = $model->getTable();
+            $builder->where(function ($query) use ($table, $currentLocationId) {
+                $query->where($table . '.location_id', $currentLocationId)
+                      ->orWhereNull($table . '.location_id');
+            });
         }
     }
 }
