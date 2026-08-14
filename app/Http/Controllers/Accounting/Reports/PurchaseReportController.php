@@ -92,7 +92,7 @@ class PurchaseReportController extends Controller
                 'payment_items.quantity',
                 'payment_items.rate',
                 'payment_items.amount',
-                'payments.expense_number as reference',
+                'payments.reference_no as reference',
                 'payments.payment_date as date',
                 'payments.id as journal_entry_id',
                 'suppliers.display_name as supplier_name',
