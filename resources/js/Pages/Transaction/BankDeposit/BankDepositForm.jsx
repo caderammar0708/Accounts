@@ -8,6 +8,7 @@ import SearchableSelect from "@/Components/SearchableSelect";
 import CommonInput from "@/Components/CommonInput";
 import QuickAddPayee from "@/Components/QuickAddPayee";
 import QuickAddAccount from "@/Components/QuickAddAccount";
+import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
 import { showToast } from "@/Components/ToastNotification";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import PinPromptModal from "@/Components/PinPromptModal";
@@ -102,6 +103,8 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
         cashBackMemo: deposit?.cashBackMemo || "",
         cashBackAmount: deposit?.cashBackAmount ? parseFloat(deposit.cashBackAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00",
         memo: deposit?.memo || "",
+        exchange_rate: deposit?.exchange_rate || 1,
+        currency_id: deposit?.currency_id || "",
         action: 'save',
         books_pin: ''
     });
@@ -135,6 +138,8 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                 cashBackMemo: deposit.cashBackMemo || "",
                 cashBackAmount: deposit.cashBackAmount ? parseFloat(deposit.cashBackAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00",
                 memo: deposit.memo || "",
+                exchange_rate: deposit.exchange_rate || 1,
+                currency_id: deposit.currency_id || "",
                 action: 'save'
             });
         }
@@ -256,7 +261,11 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                                 label="Account"
                                 options={depositAccountOptions}
                                 value={data.depositTo}
-                                onChange={(val) => { setData('depositTo', val); setIsDirty(true); }}
+                                onChange={(val) => { 
+                                    const acct = depositAccountOptions.find(a => String(a.value) === String(val));
+                                    setData(prev => ({...prev, depositTo: val, currency_id: acct?.currency_id || prev.currency_id}));
+                                    setIsDirty(true); 
+                                }}
                                 onSearch={fetchDepositAccounts}
                                 onAddNew={() => openAccountModal('depositTo')}
                                 size="sm"
@@ -310,6 +319,14 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                         </div>
                     </div>
                 </div>
+
+                <CurrencyExchangeInput
+                    auth={auth}
+                    selectedAccount={depositAccountOptions.find(a => String(a.value) === String(data.depositTo))}
+                    exchangeRate={data.exchange_rate}
+                    onExchangeRateChange={(rate) => setData('exchange_rate', rate)}
+                    transactionDate={data.depositDate}
+                />
 
                 <LineItemsTable
                     columns={COLUMNS}

@@ -344,6 +344,7 @@ export default function ChequeForm({
                                         setIsDirty(true);
                                     }}
                                     error={errors.exchange_rate}
+                                    transactionDate={data.date}
                                 />
                             </div>
                         </div>

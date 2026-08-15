@@ -45,6 +45,8 @@ class BillController extends Controller
                 'dueDate' => $bill?->due_date ?? $journalEntry->due_date,
                 'billNo' => $nextBillNoLabel,
                 'memo' => $journalEntry->description,
+                'exchange_rate' => $bill?->exchange_rate ?? 1,
+                'currency_id' => $bill?->currency_id ?? "",
                 'items' => $bill ? $bill->items->whereNull('item_id')->map(function ($item) {
                     return [
                         'category' => $item->chart_of_acc_id,
@@ -100,7 +102,11 @@ class BillController extends Controller
                     return (float) str_replace(',', '', $item['amount']);
                 });
 
-                if ($totalAmount > 9999999999999.99) {
+                $exchangeRate = $request->input('exchange_rate', 1);
+                $currencyId = $request->input('currency_id');
+                $homeTotalAmount = $totalAmount * $exchangeRate;
+
+                if ($totalAmount > 9999999999999.99 || $homeTotalAmount > 9999999999999.99) {
                     throw new \Exception('Total amount is too large. Please enter a smaller value.');
                 }
 
@@ -113,6 +119,8 @@ class BillController extends Controller
                     'total_amount' => $totalAmount,
                     'memo' => $request->memo,
                     'status' => 'posted',
+                    'currency_id' => $currencyId,
+                    'exchange_rate' => $exchangeRate,
                 ]);
 
                 // 2. Create Bill Items (Categories)
@@ -163,7 +171,7 @@ class BillController extends Controller
                     'transaction_type' => 'bill',
                     'payee_id' => $request->supplier,
                     'payee_type' => Supplier::class,
-                    'total_amount' => $totalAmount,
+                    'total_amount' => $homeTotalAmount,
                     'status' => 'posted',
                     'created_by' => Auth::id(),
                     'transactionable_id' => $bill->id,
@@ -172,11 +180,15 @@ class BillController extends Controller
 
                 // Debits (Expenses/Assets) - Categories
                 foreach ($categoryItems as $lineItem) {
+                    $itemAmount = (float)str_replace(',', '', $lineItem['amount']);
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $lineItem['category'],
-                        'debit' => (float)str_replace(',', '', $lineItem['amount']),
+                        'debit' => $itemAmount * $exchangeRate,
                         'credit' => 0,
+                        'fc_currency_id' => $currencyId,
+                        'fc_debit' => $currencyId ? $itemAmount : null,
+                        'exchange_rate' => $exchangeRate,
                         'memo' => $lineItem['description'] ?? $request->memo,
                     ]);
                 }
@@ -192,11 +204,15 @@ class BillController extends Controller
                         $chartOfAccId = ChartOfAcc::query()->where('account_type', 'expense')->first()?->id;
                     }
 
+                    $itemAmount = (float)str_replace(',', '', $productItem['amount']);
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $chartOfAccId,
-                        'debit' => (float)str_replace(',', '', $productItem['amount']),
+                        'debit' => $itemAmount * $exchangeRate,
                         'credit' => 0,
+                        'fc_currency_id' => $currencyId,
+                        'fc_debit' => $currencyId ? $itemAmount : null,
+                        'exchange_rate' => $exchangeRate,
                         'memo' => $productItem['description'] ?? $request->memo,
                     ]);
                 }
@@ -208,7 +224,10 @@ class BillController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $apAccount->id,
                     'debit' => 0,
-                    'credit' => $totalAmount,
+                    'credit' => $homeTotalAmount,
+                    'fc_currency_id' => $currencyId,
+                    'fc_credit' => $currencyId ? $totalAmount : null,
+                    'exchange_rate' => $exchangeRate,
                     'memo' => $request->memo,
                 ]);
 
@@ -242,6 +261,8 @@ class BillController extends Controller
             'dueDate' => $bill?->due_date ?? $journalEntry->due_date,
             'billNo' => $journalEntry->reference,
             'memo' => $journalEntry->description,
+            'exchange_rate' => $bill?->exchange_rate ?? 1,
+            'currency_id' => $bill?->currency_id ?? "",
             'items' => $bill ? $bill->items->whereNull('item_id')->map(function ($item) {
                 return [
                     'category' => $item->chart_of_acc_id,
@@ -292,7 +313,11 @@ class BillController extends Controller
                     return (float) str_replace(',', '', $item['amount']);
                 });
 
-                if ($totalAmount > 9999999999999.99) {
+                $exchangeRate = $request->input('exchange_rate', 1);
+                $currencyId = $request->input('currency_id');
+                $homeTotalAmount = $totalAmount * $exchangeRate;
+
+                if ($totalAmount > 9999999999999.99 || $homeTotalAmount > 9999999999999.99) {
                     throw new \Exception('Total amount is too large. Please enter a smaller value.');
                 }
 
@@ -306,6 +331,8 @@ class BillController extends Controller
                         'bill_no' => $request->billNo,
                         'total_amount' => $totalAmount,
                         'memo' => $request->memo,
+                        'currency_id' => $currencyId,
+                        'exchange_rate' => $exchangeRate,
                     ]);
 
                     foreach ($bill->items->whereNotNull('item_id') as $oldItem) {
@@ -363,18 +390,22 @@ class BillController extends Controller
                     'reference' => $request->billNo,
                     'description' => $request->memo,
                     'payee_id' => $request->supplier,
-                    'total_amount' => $totalAmount,
+                    'total_amount' => $homeTotalAmount,
                 ]);
 
                 $journalEntry->lines->each->delete();
 
                 // Debits (Expenses/Assets) - Categories
                 foreach ($categoryItems as $lineItem) {
+                    $itemAmount = (float)str_replace(',', '', $lineItem['amount']);
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $lineItem['category'],
-                        'debit' => (float)str_replace(',', '', $lineItem['amount']),
+                        'debit' => $itemAmount * $exchangeRate,
                         'credit' => 0,
+                        'fc_currency_id' => $currencyId,
+                        'fc_debit' => $currencyId ? $itemAmount : null,
+                        'exchange_rate' => $exchangeRate,
                         'memo' => $lineItem['description'] ?? $request->memo,
                     ]);
                 }
@@ -390,11 +421,15 @@ class BillController extends Controller
                         $chartOfAccId = ChartOfAcc::query()->where('account_type', 'expense')->first()?->id;
                     }
 
+                    $itemAmount = (float)str_replace(',', '', $productItem['amount']);
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $chartOfAccId,
-                        'debit' => (float)str_replace(',', '', $productItem['amount']),
+                        'debit' => $itemAmount * $exchangeRate,
                         'credit' => 0,
+                        'fc_currency_id' => $currencyId,
+                        'fc_debit' => $currencyId ? $itemAmount : null,
+                        'exchange_rate' => $exchangeRate,
                         'memo' => $productItem['description'] ?? $request->memo,
                     ]);
                 }
@@ -406,7 +441,10 @@ class BillController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $apAccount->id,
                     'debit' => 0,
-                    'credit' => $totalAmount,
+                    'credit' => $homeTotalAmount,
+                    'fc_currency_id' => $currencyId,
+                    'fc_credit' => $currencyId ? $totalAmount : null,
+                    'exchange_rate' => $exchangeRate,
                     'memo' => $request->memo,
                 ]);
             });

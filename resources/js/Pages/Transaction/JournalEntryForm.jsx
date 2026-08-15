@@ -10,6 +10,8 @@ import { Head, usePage, router } from "@inertiajs/react";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import { isBooksLocked, useBooksLock } from "@/Hooks/useBooksLock";
+import SearchableSelect from "@/Components/SearchableSelect";
+import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
 
 export default function JournalEntryForm({ journalEntry = null, nextJournalNo = "" }) {
     const isEditing = Boolean(journalEntry?.id);
@@ -37,12 +39,40 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
         axios.get(route('api.accounts', { search })).then(res => setAccountOptions(res.data));
     };
 
+    const [currencies, setCurrencies] = useState([]);
+
     useEffect(() => {
         fetchPayees();
         fetchAccounts();
+        if (auth?.currency?.multi_enabled) {
+            axios.get(route('api.currencies')).then(res => setCurrencies(res.data));
+        }
     }, []);
 
-    const isMultiCurrency = auth?.multi_currency_enabled;
+    const isMultiCurrency = auth?.currency?.multi_enabled;
+    const homeCurrencyId = auth?.currency?.home_id;
+
+    const getInitialDate = () => {
+        if (journalEntry?.date) return journalEntry.date;
+        const cached = localStorage.getItem('last_transaction_date');
+        if (cached) return cached;
+        return new Date().toISOString().split('T')[0];
+    };
+
+    const [form, setForm] = useState({
+        date: getInitialDate(),
+        journalNo: journalEntry?.reference || (nextJournalNo ? String(parseInt(nextJournalNo)).padStart(4, '0') : "0001"),
+        memo: journalEntry?.description || "",
+        currency_id: journalEntry?.currency_id || auth?.currency?.home_id || "",
+        exchange_rate: journalEntry?.exchange_rate || 1,
+    });
+
+    const selectedCurrency = currencies.find(c => String(c.id) === String(form.currency_id));
+    const isForeignCurrency = selectedCurrency && String(selectedCurrency.id) !== String(homeCurrencyId);
+    const foreignCode = selectedCurrency?.code || '';
+
+    const debitLabel = isForeignCurrency ? `Debits (${foreignCode})` : "Debits";
+    const creditLabel = isForeignCurrency ? `Credits (${foreignCode})` : "Credits";
 
     const JOURNAL_COLUMNS = [
         {
@@ -52,15 +82,10 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
             options: accountOptions,
             onAddNew: () => setIsAccountModalOpen(true),
             placeholder: "Select account",
-            className: "w-[25%]"
+            className: "w-[30%]"
         },
-        ...(isMultiCurrency ? [
-            { key: "exchange_rate", label: "Ex. Rate", type: "number", className: "text-right w-[8%]", inputClass: "text-right" },
-            { key: "fc_debit", label: "FC Debit", type: "currency", className: "text-right w-[10%]", inputClass: "text-right" },
-            { key: "fc_credit", label: "FC Credit", type: "currency", className: "text-right w-[10%]", inputClass: "text-right" },
-        ] : []),
-        { key: "debit", label: "Debits", type: "currency", className: "text-right w-[10%]", inputClass: "text-right" },
-        { key: "credit", label: "Credits", type: "currency", className: "text-right w-[10%]", inputClass: "text-right" },
+        { key: "debit", label: debitLabel, type: "currency", className: "text-right w-[15%]", inputClass: "text-right" },
+        { key: "credit", label: creditLabel, type: "currency", className: "text-right w-[15%]", inputClass: "text-right" },
         { key: "description", label: "Description", placeholder: "Enter description", className: "w-[20%]" },
         {
             key: "payee_id",
@@ -75,25 +100,9 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
         },
     ];
 
-    const getInitialDate = () => {
-        if (journalEntry?.date) return journalEntry.date;
-        const cached = localStorage.getItem('last_transaction_date');
-        if (cached) return cached;
-        return new Date().toISOString().split('T')[0];
-    };
-
-    const [form, setForm] = useState({
-        date: getInitialDate(),
-        journalNo: journalEntry?.reference || (nextJournalNo ? String(parseInt(nextJournalNo)).padStart(4, '0') : "0001"),
-        memo: journalEntry?.description || "",
-    });
-
     const createBlankLine = (description = "", rowId = null) => ({
         id: rowId ?? `journal-row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         account_id: "",
-        fc_debit: "",
-        fc_credit: "",
-        exchange_rate: "1.00",
         debit: "",
         credit: "",
         description,
@@ -107,18 +116,26 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
 
     useEffect(() => {
         if (journalEntry && journalEntry.lines) {
-            setItems(journalEntry.lines.map(line => ({
-                account_id: line.chart_of_acc_id,
-                fc_debit: line.fc_debit ? parseFloat(line.fc_debit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "",
-                fc_credit: line.fc_credit ? parseFloat(line.fc_credit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "",
-                exchange_rate: line.exchange_rate ? parseFloat(line.exchange_rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : "1.00",
-                debit: line.debit ? parseFloat(line.debit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "",
-                credit: line.credit ? parseFloat(line.credit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "",
-                description: line.memo || "",
-                payee_id: line.payee_id || ""
-            })));
+            setItems(journalEntry.lines.map(line => {
+                // Determine if we need to display foreign or home amounts based on top-level currency
+                let dispDebit = line.debit;
+                let dispCredit = line.credit;
+
+                if (journalEntry.currency_id && journalEntry.currency_id !== auth?.currency?.home_id) {
+                    dispDebit = line.fc_debit;
+                    dispCredit = line.fc_credit;
+                }
+
+                return {
+                    account_id: line.chart_of_acc_id,
+                    debit: dispDebit ? parseFloat(dispDebit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "",
+                    credit: dispCredit ? parseFloat(dispCredit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "",
+                    description: line.memo || "",
+                    payee_id: line.payee_id || ""
+                };
+            }));
         }
-    }, [journalEntry]);
+    }, [journalEntry, auth?.currency?.home_id]);
 
     const [isDirty, setIsDirty] = useState(false);
 
@@ -199,8 +216,6 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
             // Clear opposite fields
             if (field === "debit" && numVal > 0) updated[index].credit = "";
             if (field === "credit" && numVal > 0) updated[index].debit = "";
-            if (field === "fc_debit" && numVal > 0) updated[index].fc_credit = "";
-            if (field === "fc_credit" && numVal > 0) updated[index].fc_debit = "";
 
             return updated;
         });
@@ -216,25 +231,8 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
 
             const numVal = parseCurrency(value);
 
-            // Auto-calculate base amounts if FC amounts or exchange rate change
-            if (["fc_debit", "fc_credit", "exchange_rate"].includes(field)) {
-                const exRate = parseCurrency(updated[index].exchange_rate) || 1;
-
-                if (field === "fc_debit" || (field === "exchange_rate" && parseCurrency(updated[index].fc_debit) > 0)) {
-                    const fcDeb = parseCurrency(updated[index].fc_debit);
-                    updated[index].debit = formatCurrencyValue(fcDeb * exRate);
-                    updated[index].credit = "";
-                    if (field === "fc_debit" && numVal > 0) updated[index].fc_credit = "";
-                } else if (field === "fc_credit" || (field === "exchange_rate" && parseCurrency(updated[index].fc_credit) > 0)) {
-                    const fcCred = parseCurrency(updated[index].fc_credit);
-                    updated[index].credit = formatCurrencyValue(fcCred * exRate);
-                    updated[index].debit = "";
-                    if (field === "fc_credit" && numVal > 0) updated[index].fc_debit = "";
-                }
-            } else {
-                if (field === "debit" && numVal > 0) updated[index].credit = "";
-                if (field === "credit" && numVal > 0) updated[index].debit = "";
-            }
+            if (field === "debit" && numVal > 0) updated[index].credit = "";
+            if (field === "credit" && numVal > 0) updated[index].debit = "";
 
             const suggestion = getSuggestedBalance(updated);
 
@@ -279,18 +277,33 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
             date: form.date,
             reference_no: form.journalNo,
             description: form.memo,
+            currency_id: form.currency_id,
+            exchange_rate: form.exchange_rate,
             lines: items
                 .filter(i => i.account_id && (parseCurrency(i.debit) > 0 || parseCurrency(i.credit) > 0))
                 .map(i => {
-                    const accOpt = accountOptions.find(opt => opt.value === i.account_id);
+                    const dispDebit = parseCurrency(i.debit);
+                    const dispCredit = parseCurrency(i.credit);
+
+                    let homeDebit = dispDebit;
+                    let homeCredit = dispCredit;
+
+                    let fcDebit = null;
+                    let fcCredit = null;
+
+                    if (isForeignCurrency) {
+                        fcDebit = dispDebit;
+                        fcCredit = dispCredit;
+                        homeDebit = dispDebit * form.exchange_rate;
+                        homeCredit = dispCredit * form.exchange_rate;
+                    }
+
                     return {
                         ...i,
-                        fc_currency_id: accOpt?.currency_id || null,
-                        fc_debit: parseCurrency(i.fc_debit) || null,
-                        fc_credit: parseCurrency(i.fc_credit) || null,
-                        exchange_rate: parseCurrency(i.exchange_rate) || 1,
-                        debit: parseCurrency(i.debit),
-                        credit: parseCurrency(i.credit)
+                        debit: homeDebit,
+                        credit: homeCredit,
+                        fc_debit: fcDebit,
+                        fc_credit: fcCredit,
                     };
                 }),
             books_pin: pinOverride !== null ? pinOverride : booksPin
@@ -330,14 +343,16 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 }
 
                 if (type === 'new') {
-                    setSavedEntryId(null); // reset for new entry
+                    setSavedEntryId(null);
                     setItems([createBlankLine(), createBlankLine()]);
                     const num = parseInt(String(currentRefNo).replace(/[^0-9]/g, '')) || 0;
                     const nextNo = String(num + 1).padStart(4, '0');
                     setForm({
                         date: getInitialDate(),
                         journalNo: nextNo,
-                        memo: ""
+                        memo: "",
+                        currency_id: auth?.currency?.home_id || "",
+                        exchange_rate: 1,
                     });
                 }
             },
@@ -376,7 +391,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
         >
             <Head title={"Journal Entry"} />
 
-            <div className="flex items-end gap-6 py-6 border-b border-slate-100">
+            <div className="flex items-end gap-6 py-3 border-b border-slate-100">
                 <div className="w-[180px]">
                     <CommonInput
                         type="date"
@@ -408,7 +423,35 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                         inputClass="font-mono"
                     />
                 </div>
+
+                {isMultiCurrency && (
+                    <div className="w-[180px]">
+                        <SearchableSelect
+                            label="Currency"
+                            value={form.currency_id}
+                            onChange={(val) => {
+                                setForm({ ...form, currency_id: val });
+                                setIsDirty(true);
+                            }}
+                            options={currencies.map(c => ({ value: c.id, label: `${c.code} - ${c.name}` }))}
+                            size="sm"
+                        />
+                    </div>
+                )}
             </div>
+
+            {isForeignCurrency && (
+                <CurrencyExchangeInput
+                    auth={auth}
+                    selectedAccount={{ currency_id: form.currency_id, currency_code: foreignCode }}
+                    exchangeRate={form.exchange_rate}
+                    onExchangeRateChange={(rate) => {
+                        setForm({ ...form, exchange_rate: rate });
+                        setIsDirty(true);
+                    }}
+                    transactionDate={form.date}
+                />
+            )}
 
             <LineItemsTable
                 columns={JOURNAL_COLUMNS}
@@ -420,8 +463,12 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                     setItems((prev) => prev.filter((_, i) => i !== index))
                 }
                 totals={{
-                    Debits: totals.debit.toLocaleString('en-US', { minimumFractionDigits: 2 }),
-                    Credits: totals.credit.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+                    [`Total Debits (${isForeignCurrency ? foreignCode : auth?.company?.home_currency || 'Base'})`]: { prefix: isForeignCurrency ? '$' : currencyPrefix, amount: totals.debit },
+                    [`Total Credits (${isForeignCurrency ? foreignCode : auth?.company?.home_currency || 'Base'})`]: { prefix: isForeignCurrency ? '$' : currencyPrefix, amount: totals.credit },
+                    ...(isForeignCurrency ? {
+                        [`Total Debits (${auth?.company?.home_currency || 'Base'})`]: { prefix: currencyPrefix, amount: totals.debit * (form.exchange_rate || 1) },
+                        [`Total Credits (${auth?.company?.home_currency || 'Base'})`]: { prefix: currencyPrefix, amount: totals.credit * (form.exchange_rate || 1) }
+                    } : {})
                 }}
                 currencyPrefix={currencyPrefix}
                 clearRows={() => setItems([
@@ -431,7 +478,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 hideActions={true}
             />
 
-            <div className="mt-8 w-[500px]">
+            <div className="mt-3 w-[500px]">
                 <CommonInput
                     type="textarea"
                     label="Memo"

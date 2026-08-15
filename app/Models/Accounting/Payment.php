@@ -14,6 +14,8 @@ class Payment extends Model implements Auditable
     use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
 
     protected $fillable = [
+        'currency_id',
+        'exchange_rate',
         'payee_id', 'payee_type', 'payment_account_id',
         'payment_date', 'payment_method_id', 'reference_no',
         'total_amount', 'memo', 'status', 'check_date', 'check_number', 'location_id',

@@ -17,14 +17,6 @@ export default function Edit({ mustVerifyEmail, status }) {
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                        <UpdateProfileInformationForm
-                            mustVerifyEmail={mustVerifyEmail}
-                            status={status}
-                            className="max-w-xl"
-                        />
-                    </div>
-
                     {/* Switch Company Section */}
                     {page.props.sso_companies && page.props.sso_companies.length > 0 && (
                         <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
@@ -43,11 +35,11 @@ export default function Edit({ mustVerifyEmail, status }) {
                                             <div className="font-medium text-gray-900 flex items-center gap-2">
                                                 🏢 {company.name}
                                             </div>
-                                            <Link 
-                                                as="button" 
-                                                method="post" 
-                                                href={route('sso.switch')} 
-                                                data={{target_domain: company.domain}}
+                                            <Link
+                                                as="button"
+                                                method="post"
+                                                href={route('sso.switch')}
+                                                data={{ target_domain: company.domain }}
                                                 className="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
                                             >
                                                 Switch
@@ -58,6 +50,14 @@ export default function Edit({ mustVerifyEmail, status }) {
                             </section>
                         </div>
                     )}
+
+                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+                        <UpdateProfileInformationForm
+                            mustVerifyEmail={mustVerifyEmail}
+                            status={status}
+                            className="max-w-xl"
+                        />
+                    </div>
 
                     <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
                         <UpdatePasswordForm className="max-w-xl" />

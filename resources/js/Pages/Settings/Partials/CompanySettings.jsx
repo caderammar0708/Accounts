@@ -1,7 +1,7 @@
 
 
 import React, { useState, useRef } from 'react';
-import { useForm, router } from '@inertiajs/react';
+import { useForm, router, usePage } from '@inertiajs/react';
 import CommonInput from '@/Components/CommonInput';
 import CommonButton from '@/Components/CommonButton';
 import Modal from '@/Components/Modal';
@@ -10,6 +10,8 @@ import DangerButton from '@/Components/DangerButton';
 import Checkbox from '@/Components/Checkbox';
 
 export default function CompanySettings({ settings, currencies = [] }) {
+    const { errors } = usePage().props;
+
     // 1. Logic for Company Info Text (Edit Mode)
     const [isEditing, setIsEditing] = useState(false);
     const infoForm = useForm({
@@ -19,7 +21,6 @@ export default function CompanySettings({ settings, currencies = [] }) {
         industry: settings?.industry || '',
         address: settings?.address || '',
         website: settings?.website || '',
-        home_currency_prefix: settings?.home_currency_prefix || '',
     });
 
     const handleInfoSubmit = (e) => {
@@ -165,13 +166,16 @@ const submitFeatureToggle = (feature, enabled, dropData = false) => {
 const handleBusinessTypeChange = (e) => {
     const newType = e.target.value;
     // If switching away from Fuel Station or Service Station, prompt confirmation
-    const currentType = settings?.fuel_station_enabled ? 'Fuel Station' : ((settings?.job_layout_enabled || settings?.warranty_layout_enabled || settings?.vehicles_enabled) ? 'Service Station' : 'Normal');
+    const currentType = settings?.business_type || 'Normal';
     
-    if (currentType !== 'Normal' && currentType !== newType) {
+    if (currentType === newType) return;
+
+    if (currentType !== 'Normal') {
         setConfirmingDisable('business_type_' + newType); // Pass the new type so we know what to switch to after confirm
         setDropTables(false);
     } else {
-        submitFeatureToggle('business_type', newType, false);
+        // Switching from Normal to another type, just ask for confirmation without drop tables option
+        setConfirmingEnable('business_type_' + newType);
     }
 };
 
@@ -183,7 +187,7 @@ const businessTypeConfirmationModalSubmit = () => {
     return (
         <div className="space-y-4">
             {/* Logo Section */}
-            <div className="flex justify-center mb-6">
+            <div className="flex flex-col items-center mb-6">
                 <input
                     type="file"
                     ref={fileInput}
@@ -223,6 +227,9 @@ const businessTypeConfirmationModalSubmit = () => {
                     </div>
                 </div>
 
+                {errors.logo && (
+                    <div className="text-red-500 text-xs mt-2">{errors.logo}</div>
+                )}
             </div>
 
             {/* Company Info Card */}
@@ -257,13 +264,9 @@ const businessTypeConfirmationModalSubmit = () => {
                                 <div className="col-span-4 text-gray-500 text-xs font-bold">Address</div>
                                 <div className="col-span-8 text-xs text-gray-800">{infoForm.data.address || <span className="text-gray-300 italic">None listed</span>}</div>
                             </div>
-                            <div className="grid grid-cols-12 border-b border-gray-100 pb-2">
+                            <div className="grid grid-cols-12 pb-2">
                                 <div className="col-span-4 text-gray-500 text-xs font-bold">Website</div>
                                 <div className="col-span-8 text-xs text-gray-800">{infoForm.data.website || <span className="text-gray-300 italic">None listed</span>}</div>
-                            </div>
-                            <div className="grid grid-cols-12 pb-2">
-                                <div className="col-span-4 text-gray-500 text-xs font-bold">Currency Prefix</div>
-                                <div className="col-span-8 text-xs text-gray-800">{infoForm.data.home_currency_prefix}</div>
                             </div>
                         </div>
                     </div>
@@ -300,12 +303,6 @@ const businessTypeConfirmationModalSubmit = () => {
                                 label="Website" 
                                 value={infoForm.data.website} 
                                 onChange={e => infoForm.setData('website', e.target.value)} 
-                            />
-                            <CommonInput 
-                                label="Currency Prefix" 
-                                value={infoForm.data.home_currency_prefix} 
-                                onChange={e => infoForm.setData('home_currency_prefix', e.target.value)} 
-                                placeholder="e.g. $" 
                             />
                         </div>
                         <div className="mt-6 flex justify-end gap-2 border-t border-gray-100 pt-4">
@@ -472,6 +469,7 @@ const businessTypeConfirmationModalSubmit = () => {
                                     { label: 'Select currency', value: '' },
                                     ...currencies.map(c => ({ label: `${c.code} - ${c.name}`, value: c.id }))
                                 ]}
+                                error={currencyForm.errors.home_currency_id}
                             />
                             <div className="pt-2">
                                 <label className="font-bold text-slate-600 ml-0.5 text-xs mb-1 block">Enable Multi-Currency</label>
@@ -756,12 +754,14 @@ const businessTypeConfirmationModalSubmit = () => {
             <Modal show={confirmingDisable !== null || confirmingEnable !== null} onClose={() => { setConfirmingDisable(null); setConfirmingEnable(null); }}>
                 <div className="p-6">
                     <h2 className="text-lg font-medium text-gray-900">
-                        {confirmingDisable && confirmingDisable.startsWith('business_type_') ? 'Change Business Type' : 
+                        {(confirmingDisable && confirmingDisable.startsWith('business_type_')) || (confirmingEnable && confirmingEnable.startsWith('business_type_')) ? 'Change Business Type' : 
                          confirmingEnable ? 'Enable Feature' : 'Disable Feature'}
                     </h2>
                     <p className="mt-1 text-sm text-gray-600">
                         {confirmingDisable && confirmingDisable.startsWith('business_type_') 
                             ? 'Are you sure you want to change the business type? You can optionally remove all database tables and data associated with the previous business type. This action cannot be undone.'
+                            : confirmingEnable && confirmingEnable.startsWith('business_type_')
+                                ? 'Are you sure you want to change the business type? This will apply the new layout to your workspace.'
                             : confirmingEnable 
                                 ? 'Are you sure you want to enable this feature?' 
                                 : 'Are you sure you want to disable this feature? You can optionally remove all database tables and data associated with it. This action cannot be undone.'}
@@ -782,10 +782,15 @@ const businessTypeConfirmationModalSubmit = () => {
                         <SecondaryButton onClick={() => { setConfirmingDisable(null); setConfirmingEnable(null); }}>Cancel</SecondaryButton>
                         {confirmingEnable ? (
                             <CommonButton variant="primary" className="ml-3" onClick={() => {
-                                submitFeatureToggle(confirmingEnable, true, false);
+                                if (typeof confirmingEnable === 'string' && confirmingEnable.startsWith('business_type_')) {
+                                    const newType = confirmingEnable.replace('business_type_', '');
+                                    submitFeatureToggle('business_type', newType, false);
+                                } else {
+                                    submitFeatureToggle(confirmingEnable, true, false);
+                                }
                                 setConfirmingEnable(null);
                             }}>
-                                Enable Feature
+                                {confirmingEnable && confirmingEnable.startsWith('business_type_') ? 'Change Business Type' : 'Enable Feature'}
                             </CommonButton>
                         ) : (
                             <DangerButton className="ml-3" onClick={() => {

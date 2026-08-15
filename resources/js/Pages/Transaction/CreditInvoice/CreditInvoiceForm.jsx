@@ -628,7 +628,7 @@ export default function CreditInvoiceForm({
                                     onClick={() => { setData(prev => ({ ...prev, discount_type: 'fixed' })); setIsDirty(true); }}
                                     className={`px-2 text-xs font-bold transition-colors ${data.discount_type === 'fixed' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
                                 >
-                                    $
+                                    {currencyPrefix}
                                 </button>
                             </div>
                         </div>

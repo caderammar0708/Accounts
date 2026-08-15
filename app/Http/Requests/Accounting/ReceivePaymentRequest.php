@@ -20,6 +20,8 @@ class ReceivePaymentRequest extends FormRequest
             ->value('id');
 
         return [
+            'exchange_rate' => 'nullable|numeric',
+            'currency_id' => 'nullable|string',
             'customer' => 'required',
             'amountReceived' => 'required',
             'paymentDate' => 'required|date',
@@ -41,6 +43,8 @@ class ReceivePaymentRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'exchange_rate' => 'nullable|numeric',
+            'currency_id' => 'nullable|string',
             'checkDate.required' => 'Cheque Date is required when Cheque is selected as the payment method.',
             'checkDate.date' => 'Cheque Date must be a valid date.',
             'checkNumber.required' => 'Cheque Number is required when Cheque is selected as the payment method.',

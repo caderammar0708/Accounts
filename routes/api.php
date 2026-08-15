@@ -11,6 +11,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/exchange-rate', [\App\Http\Controllers\Api\ExchangeRateController::class, 'getRate'])->name('api.exchange-rate');
     Route::get('/payees', [LookupController::class, 'payees'])->name('api.payees');
     Route::get('/currencies', [LookupController::class, 'currencies'])->name('api.currencies');
     Route::get('/locations', [LookupController::class, 'locations'])->name('api.locations');

@@ -8,6 +8,7 @@ import QuickAddPayee from "@/Components/QuickAddPayee";
 import QuickAddPaymentMethod from "@/Components/QuickAddPaymentMethod";
 import { showToast } from "@/Components/ToastNotification";
 import QuickAddAccount from "@/Components/QuickAddAccount";
+import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
 import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import CommonButton from "@/Components/CommonButton";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
@@ -47,6 +48,8 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
         memo: payment?.memo || "",
         checkDate: payment?.checkDate || "",
         checkNumber: payment?.checkNumber || "",
+        exchange_rate: payment?.exchange_rate || 1,
+        currency_id: payment?.currency_id || "",
         action: 'save',
         books_pin: ''
     });
@@ -60,7 +63,12 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
     }, [paymentMethods, payment?.id, data.paymentMethod]);
 
     const handleSupplierChange = (val) => {
-        setData(prev => ({ ...prev, supplier: val }));
+        const payee = supplierOptions.find(p => p.value === val);
+        setData(prev => ({ 
+            ...prev, 
+            supplier: val,
+            currency_id: payee?.currency_id || prev.currency_id
+        }));
         setIsDirty(true);
         if (val) {
             // Fetch outstanding bills
@@ -252,6 +260,8 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
                 memo: payment.memo || "",
                 checkDate: payment.checkDate || "",
                 checkNumber: payment.checkNumber || "",
+                exchange_rate: payment.exchange_rate || 1,
+                currency_id: payment.currency_id || "",
                 action: 'save'
             });
             if (payment.supplier) {
@@ -277,6 +287,8 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
                 memo: "",
                 checkDate: "",
                 checkNumber: "",
+                exchange_rate: 1,
+                currency_id: "",
                 action: 'save'
             });
             setBills([]);
@@ -539,6 +551,14 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
                         />
                     </div>
                 </div>
+
+                <CurrencyExchangeInput
+                    auth={auth}
+                    selectedAccount={supplierOptions.find(a => String(a.value) === String(data.supplier))}
+                    exchangeRate={data.exchange_rate}
+                    onExchangeRateChange={(rate) => setData('exchange_rate', rate)}
+                    transactionDate={data.paymentDate}
+                />
 
                 {/* ROW 3: Memo */}
                 <div className="w-[500px] mt-8 pt-4 border-t border-slate-100">

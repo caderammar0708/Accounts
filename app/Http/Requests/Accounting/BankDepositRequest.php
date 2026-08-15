@@ -14,6 +14,8 @@ class BankDepositRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'exchange_rate' => 'nullable|numeric',
+            'currency_id' => 'nullable|string',
             'depositDate' => 'required|date',
             'depositNo' => 'required',
             'depositTo' => 'required',

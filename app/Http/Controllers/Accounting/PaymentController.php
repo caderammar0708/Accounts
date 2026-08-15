@@ -38,6 +38,8 @@ class PaymentController extends Controller
                 'memo' => $journalEntry->description,
                 'checkDate' => $payment?->check_date,
                 'checkNumber' => $payment?->check_number,
+                'exchange_rate' => $payment?->exchange_rate ?? 1,
+                'currency_id' => $payment?->currency_id ?? "",
                 'items' => $payment ? $payment->items->whereNull('item_id')->map(function ($item) {
                     return [
                         'category' => $item->chart_of_acc_id,
@@ -113,6 +115,10 @@ class PaymentController extends Controller
                     return (float) str_replace(',', '', $item['amount']);
                 });
 
+                $exchangeRate = $request->input('exchange_rate', 1);
+                $currencyId = $request->input('currency_id');
+                $homeTotalAmount = $totalAmount * $exchangeRate;
+
                 // 1. Create Business Document (Expense)
 
                 $payment = \App\Models\Accounting\Payment::create([
@@ -127,6 +133,8 @@ class PaymentController extends Controller
                     'check_date' => $request->checkDate,
                     'check_number' => $request->checkNumber,
                     'status' => 'posted',
+                    'currency_id' => $currencyId,
+                    'exchange_rate' => $exchangeRate,
                 ]);
 
                 // Categories
@@ -176,7 +184,7 @@ class PaymentController extends Controller
                     'transaction_type' => 'payment',
                     'payee_id' => $request->payee,
                     'payee_type' => $request->payeeType == 'customer' ? Customer::class : (\App\Models\Supplier::class),
-                    'total_amount' => $totalAmount,
+                    'total_amount' => $homeTotalAmount,
                     'status' => 'posted',
                     'created_by' => Auth::id(),
                     'transactionable_id' => $payment->id,
@@ -185,11 +193,15 @@ class PaymentController extends Controller
 
                 // Debits (Expenses/Assets) - Categories
                 foreach ($categoryItems as $lineItem) {
+                    $itemAmount = (float) str_replace(',', '', $lineItem['amount']);
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $lineItem['category'],
-                        'debit' => (float) str_replace(',', '', $lineItem['amount']),
+                        'debit' => $itemAmount * $exchangeRate,
                         'credit' => 0,
+                        'fc_currency_id' => $currencyId,
+                        'fc_debit' => $currencyId ? $itemAmount : null,
+                        'exchange_rate' => $exchangeRate,
                         'memo' => $lineItem['description'] ?? $request->memo,
                     ]);
                 }
@@ -205,11 +217,15 @@ class PaymentController extends Controller
                         $chartOfAccId = ChartOfAcc::query()->where('account_type', 'expense')->first()?->id;
                     }
 
+                    $itemAmount = (float)str_replace(',', '', $productItem['amount']);
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $chartOfAccId,
-                        'debit' => (float)str_replace(',', '', $productItem['amount']),
+                        'debit' => $itemAmount * $exchangeRate,
                         'credit' => 0,
+                        'fc_currency_id' => $currencyId,
+                        'fc_debit' => $currencyId ? $itemAmount : null,
+                        'exchange_rate' => $exchangeRate,
                         'memo' => $productItem['description'] ?? $request->memo,
                     ]);
                 }
@@ -218,7 +234,10 @@ class PaymentController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $paymentAccount,
                     'debit' => 0,
-                    'credit' => $totalAmount,
+                    'credit' => $homeTotalAmount,
+                    'fc_currency_id' => $currencyId,
+                    'fc_credit' => $currencyId ? $totalAmount : null,
+                    'exchange_rate' => $exchangeRate,
                     'memo' => $request->memo,
                 ]);
 
@@ -258,6 +277,8 @@ class PaymentController extends Controller
             'memo' => $journalEntry->description,
             'checkDate' => $payment?->check_date,
             'checkNumber' => $payment?->check_number,
+            'exchange_rate' => $payment?->exchange_rate ?? 1,
+            'currency_id' => $payment?->currency_id ?? "",
             'items' => $payment ? $payment->items->whereNull('item_id')->map(function ($item) {
                 return [
                     'category' => $item->chart_of_acc_id,
@@ -322,6 +343,10 @@ class PaymentController extends Controller
                     return (float) str_replace(',', '', $item['amount']);
                 });
 
+                $exchangeRate = $request->input('exchange_rate', 1);
+                $currencyId = $request->input('currency_id');
+                $homeTotalAmount = $totalAmount * $exchangeRate;
+
                 // 1. Update Business Document
                 $payment = \App\Models\Accounting\Payment::find($journalEntry->transactionable_id);
                 if ($payment) {
@@ -337,6 +362,8 @@ class PaymentController extends Controller
                         'memo' => $request->memo,
                         'check_date' => $request->checkDate,
                         'check_number' => $request->checkNumber,
+                        'currency_id' => $currencyId,
+                        'exchange_rate' => $exchangeRate,
                     ]);
 
                     foreach ($payment->items->whereNotNull('item_id') as $oldItem) {
@@ -394,18 +421,22 @@ class PaymentController extends Controller
                     'description' => $request->memo,
                     'payee_id' => $request->payee,
                     'payee_type' => $request->payeeType == 'customer' ? Customer::class : (\App\Models\Supplier::class),
-                    'total_amount' => $totalAmount,
+                    'total_amount' => $homeTotalAmount,
                 ]);
 
                 $journalEntry->lines->each->delete();
 
                 // Debits (Expenses/Assets) - Categories
                 foreach ($categoryItems as $lineItem) {
+                    $itemAmount = (float) str_replace(',', '', $lineItem['amount']);
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $lineItem['category'],
-                        'debit' => (float) str_replace(',', '', $lineItem['amount']),
+                        'debit' => $itemAmount * $exchangeRate,
                         'credit' => 0,
+                        'fc_currency_id' => $currencyId,
+                        'fc_debit' => $currencyId ? $itemAmount : null,
+                        'exchange_rate' => $exchangeRate,
                         'memo' => $lineItem['description'] ?? $request->memo,
                     ]);
                 }
@@ -421,11 +452,15 @@ class PaymentController extends Controller
                         $chartOfAccId = ChartOfAcc::query()->where('account_type', 'expense')->first()?->id;
                     }
 
+                    $itemAmount = (float)str_replace(',', '', $productItem['amount']);
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $chartOfAccId,
-                        'debit' => (float)str_replace(',', '', $productItem['amount']),
+                        'debit' => $itemAmount * $exchangeRate,
                         'credit' => 0,
+                        'fc_currency_id' => $currencyId,
+                        'fc_debit' => $currencyId ? $itemAmount : null,
+                        'exchange_rate' => $exchangeRate,
                         'memo' => $productItem['description'] ?? $request->memo,
                     ]);
                 }
@@ -435,7 +470,10 @@ class PaymentController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $paymentAccount,
                     'debit' => 0,
-                    'credit' => $totalAmount,
+                    'credit' => $homeTotalAmount,
+                    'fc_currency_id' => $currencyId,
+                    'fc_credit' => $currencyId ? $totalAmount : null,
+                    'exchange_rate' => $exchangeRate,
                     'memo' => $request->memo,
                 ]);
             });

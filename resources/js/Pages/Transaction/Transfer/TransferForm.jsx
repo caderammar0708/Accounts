@@ -4,6 +4,7 @@ import TransactionLayout from "@/TransactionLayout/TransactionLayout";
 import SearchableSelect from "@/Components/SearchableSelect";
 import CommonInput from "@/Components/CommonInput";
 import QuickAddAccount from "@/Components/QuickAddAccount";
+import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
 import { showToast } from "@/Components/ToastNotification";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import PinPromptModal from "@/Components/PinPromptModal";
@@ -29,6 +30,8 @@ export default function TransferForm({ transfer = null }) {
         date: transfer?.date || localStorage.getItem('last_transaction_date') || new Date().toISOString().split('T')[0],
         memo: transfer?.memo || "",
         referenceNo: transfer?.referenceNo || "",
+        exchange_rate: transfer?.exchange_rate || 1,
+        currency_id: transfer?.currency_id || "",
         books_pin: ''
     });
 
@@ -159,7 +162,11 @@ export default function TransferForm({ transfer = null }) {
                                 options={accountOptions}
                                 onSearch={fetchAccounts}
                                 value={data.transfer_from}
-                                onChange={(val) => { setData('transfer_from', val); setIsDirty(true); }}
+                                onChange={(val) => { 
+                                    const acct = accountOptions.find(a => String(a.value) === String(val));
+                                    setData(prev => ({...prev, transfer_from: val, currency_id: acct?.currency_id || prev.currency_id}));
+                                    setIsDirty(true); 
+                                }}
                                 placeholder="Select Source Account"
                                 size="sm"
                                 error={errors.transfer_from}
@@ -209,6 +216,14 @@ export default function TransferForm({ transfer = null }) {
                         </p>
                     </div>
                 </div>
+
+                <CurrencyExchangeInput
+                    auth={auth}
+                    selectedAccount={accountOptions.find(a => String(a.value) === String(data.transfer_from))}
+                    exchangeRate={data.exchange_rate}
+                    onExchangeRateChange={(rate) => setData('exchange_rate', rate)}
+                    transactionDate={data.date}
+                />
 
                 <div className="flex items-end gap-6">
                     <div className="w-[180px]">

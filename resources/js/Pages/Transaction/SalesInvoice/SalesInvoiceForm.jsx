@@ -7,6 +7,7 @@ import SearchableSelect from "@/Components/SearchableSelect";
 import CommonInput from "@/Components/CommonInput";
 import QuickAddPayee from "@/Components/QuickAddPayee";
 import QuickAddAccount from "@/Components/QuickAddAccount";
+import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
 import InventoryItemSidePanel from "@/Components/InventoryItemSidePanel";
 import QuickAddPaymentMethod from "@/Components/QuickAddPaymentMethod";
 import { showToast } from "@/Components/ToastNotification";
@@ -16,8 +17,20 @@ import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceiptNo = "", receipt = null }) {
     const company = auth.company;
-    const currencyPrefix = company?.home_currency_prefix || company?.home_currency || '';
-    const defaultCurrencyCode = company?.home_currency || company?.home_currency_prefix || '';
+    const homeCurrencyObj = typeof company?.home_currency === 'object' ? company.home_currency : null;
+    const homeCurrencyStr = typeof company?.home_currency === 'string' ? company.home_currency : '';
+    const homeCurrencyPrefix = company?.home_currency_prefix || homeCurrencyObj?.symbol || homeCurrencyStr || '';
+    const defaultCurrencyCode = homeCurrencyObj?.code || homeCurrencyStr || company?.home_currency_prefix || '';
+
+    const [currencies, setCurrencies] = useState([]);
+    
+    useEffect(() => {
+        if (auth?.currency?.multi_enabled) {
+            axios.get(route('api.currencies'))
+                .then(res => setCurrencies(res.data))
+                .catch(err => console.error("Error fetching currencies:", err));
+        }
+    }, [auth?.currency?.multi_enabled]);
 
     const [customerOptions, setCustomerOptions] = useState([]);
     const [productOptions, setProductOptions] = useState([]);
@@ -63,6 +76,8 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
         discount_value: receipt?.discountValue !== undefined ? String(receipt.discountValue) : '0',
         prefix: receipt?.prefix || '',
         memo_on_statement: receipt?.memo_on_statement || '',
+        exchange_rate: receipt?.exchange_rate || 1,
+        currency_id: receipt?.currency_id || "",
         action: 'save',
         books_pin: ''
     });
@@ -120,6 +135,8 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 discount_type: receipt.discountType || 'percent',
                 discount_value: receipt.discountValue !== undefined ? String(receipt.discountValue) : '0',
                 prefix: receipt.prefix || '',
+                exchange_rate: receipt.exchange_rate || 1,
+                currency_id: receipt.currency_id || "",
                 action: 'save',
                 books_pin: ''
             }));
@@ -145,6 +162,8 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 discount_type: 'percent',
                 discount_value: '0',
                 prefix: '',
+                exchange_rate: 1,
+                currency_id: "",
                 action: 'save',
                 books_pin: ''
             }));
@@ -153,6 +172,12 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
     }, [receipt?.id]);
 
     const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
+
+    const isForeignCurrency = data.currency_id && String(data.currency_id) !== String(auth?.currency?.home_id);
+    const foreignCurrency = isForeignCurrency ? currencies.find(c => String(c.id) === String(data.currency_id)) : null;
+    const displayCurrencyPrefix = isForeignCurrency && foreignCurrency ? foreignCurrency.symbol : homeCurrencyPrefix;
+    const displayCurrencyCode = isForeignCurrency && foreignCurrency ? foreignCurrency.code : defaultCurrencyCode;
+    const homeCurrencyCode = currencies.find(c => String(c.id) === String(auth?.currency?.home_id))?.code || defaultCurrencyCode;
 
     const COLUMNS = [
         {
@@ -170,8 +195,8 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
         },
         { key: "description", label: "Description", placeholder: "Enter description" },
         { key: "qty", label: "Qty", type: "number", min: "0", width: "80px", className: "text-right" },
-        { key: "rate", label: "Rate", type: "currency", width: "120px", className: "text-right", inputClass: "text-right" },
-        { key: "amount", label: "Amount", type: "currency", width: "140px", className: "text-right", inputClass: "text-right" },
+        { key: "rate", label: `Rate${isForeignCurrency ? ` (${displayCurrencyPrefix})` : ''}`, type: "currency", width: "120px", className: "text-right", inputClass: "text-right" },
+        { key: "amount", label: `Amount${isForeignCurrency ? ` (${displayCurrencyPrefix})` : ''}`, type: "currency", width: "140px", className: "text-right", inputClass: "text-right" },
     ];
 
 
@@ -220,7 +245,10 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
         if (field === "product") {
             const product = productOptions.find(p => p.value === value);
             if (product) {
-                const rateValue = parseFloat(product.rate || 0);
+                let rateValue = parseFloat(product.rate || 0);
+                if (isForeignCurrency && data.exchange_rate > 0) {
+                    rateValue = rateValue / parseFloat(data.exchange_rate);
+                }
                 updated[index].rate = formatCurrencyValue(rateValue);
                 const q = parseFloat(updated[index].qty) || 0;
                 updated[index].amount = formatCurrencyValue(q * rateValue);
@@ -320,6 +348,8 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                         discount_value: '0',
                         prefix: '',
                         memo_on_statement: '',
+                        exchange_rate: 1,
+                        currency_id: "",
                         action: 'save',
                         books_pin: ''
                     });
@@ -365,7 +395,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 </div>
             )}
 
-            <div className="py-6 px-1 space-y-8">
+            <div className="py-3 px-1 space-y-4">
                 <div className="flex items-start justify-between gap-8">
                     <div className="flex items-start gap-6 flex-1">
                         <div className="w-[120px]">
@@ -434,7 +464,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                     <div className="text-right flex flex-col items-end">
                         <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Total Amount</p>
                         <p className="text-4xl font-black tracking-tighter text-slate-900 leading-none">
-                            <span className="text-slate-400 text-[10px] font-medium mr-1">{currencyPrefix}</span>
+                            <span className="text-slate-400 text-[10px] font-medium mr-1">{displayCurrencyPrefix}</span>
                             {parseFloat(totalAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </p>
                     </div>
@@ -497,10 +527,30 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                             value={data.depositTo}
                             onSearch={fetchAccounts}
                             onAddNew={() => setIsAccountModalOpen(true)}
-                            onChange={(val) => { setData('depositTo', val); setIsDirty(true); }}
+                            onChange={(val) => {
+                                const selectedAcc = accountOptions.find(a => String(a.value) === String(val));
+                                setData(d => ({
+                                    ...d,
+                                    depositTo: val,
+                                    currency_id: selectedAcc?.currency_id || "",
+                                }));
+                                setIsDirty(true);
+                            }}
                             options={accountOptions}
                             size="sm"
                             error={errors.depositTo}
+                        />
+
+                    </div>
+                    <div>
+                        <CurrencyExchangeInput
+                            auth={auth}
+                            selectedAccount={accountOptions.find(a => String(a.value) === String(data.depositTo))}
+                            exchangeRate={data.exchange_rate}
+                            onExchangeRateChange={(val) => { setData('exchange_rate', val); setIsDirty(true); }}
+                            error={errors.exchange_rate}
+                            transactionDate={data.receiptDate}
+                            isEdit={!!receipt?.id || !!savedEntryId}
                         />
                     </div>
                     <div className="w-[160px]">
@@ -534,7 +584,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                 removeRow={(index) => setData("items", data.items.filter((_, i) => i !== index))}
                 clearRows={() => setData("items", [{ product: "", serviceDate: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }])}
                 totals={{ "Total": totalAmount }}
-                currencyPrefix={currencyPrefix}
+                currencyPrefix={displayCurrencyPrefix}
                 hideActions={true}
                 errors={errors}
                 subtotal={subtotal}
@@ -548,7 +598,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
             />
 
 
-            <div className="flex justify-between mt-8 items-start">
+            <div className="flex justify-between mt-3 items-start">
                 <div className="w-[400px] flex flex-col gap-4">
                     <CommonInput
                         type="textarea"
@@ -577,7 +627,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                     <div className="flex justify-between items-center w-full">
                         <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Subtotal</span>
                         <span className="text-sm font-black text-slate-900 flex items-center gap-1">
-                            <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
+                            <span className="text-xs font-bold text-slate-400">{displayCurrencyPrefix}</span>
                             {parseFloat(String(subtotal || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </span>
                     </div>
@@ -616,18 +666,30 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                                     onClick={() => { setData(prev => ({ ...prev, discount_type: 'fixed' })); setIsDirty(true); }}
                                     className={`px-2 text-xs font-bold transition-colors ${data.discount_type === 'fixed' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
                                 >
-                                    $
+                                    {displayCurrencyPrefix}
                                 </button>
                             </div>
                         </div>
                     </div>
 
                     {/* Total */}
-                    <div className="flex justify-between items-center w-full mt-2 pt-3 border-t border-slate-200">
-                        <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Total</span>
+                    {isForeignCurrency && (
+                        <div className="flex justify-between items-center w-full mt-2 pt-3 border-t border-slate-200">
+                            <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Total ({displayCurrencyCode})</span>
+                            <span className="text-lg font-black text-slate-900 flex items-center gap-1">
+                                <span className="text-xs font-bold text-slate-400">{displayCurrencyPrefix}</span>
+                                {parseFloat(String(totalAmount || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </span>
+                        </div>
+                    )}
+                    <div className={`flex justify-between items-center w-full ${isForeignCurrency ? 'mt-1' : 'mt-2 pt-3 border-t border-slate-200'}`}>
+                        <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Total {isForeignCurrency ? `(${homeCurrencyCode})` : ''}</span>
                         <span className="text-lg font-black text-slate-900 flex items-center gap-1">
-                            <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
-                            {parseFloat(String(totalAmount || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            <span className="text-xs font-bold text-slate-400">{homeCurrencyPrefix}</span>
+                            {isForeignCurrency 
+                                ? parseFloat(String(totalAmount * (data.exchange_rate || 1)).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })
+                                : parseFloat(String(totalAmount || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })
+                            }
                         </span>
                     </div>
                 </div>

@@ -14,6 +14,8 @@ class Transfer extends Model implements Auditable
     use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
 
     protected $fillable = [
+        'currency_id',
+        'exchange_rate',
         'from_account_id', 'to_account_id',
         'amount', 'date', 'memo', 'reference_no', 'location_id',
     ];
