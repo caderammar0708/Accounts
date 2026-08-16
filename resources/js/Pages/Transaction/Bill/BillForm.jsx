@@ -24,7 +24,10 @@ export default function BillForm({
 }) {
     const { props } = usePage();
     const company = auth.company;
-    const currencyPrefix = company?.home_currency_prefix || company?.home_currency || '';
+    const homeCurrencyObj = typeof company?.home_currency === 'object' ? company.home_currency : null;
+    const homeCurrencyStr = typeof company?.home_currency === 'string' ? company.home_currency : '';
+    const currencyPrefix = company?.home_currency_prefix || homeCurrencyObj?.symbol || homeCurrencyStr || '';
+    const defaultCurrencyCode = homeCurrencyObj?.code || homeCurrencyStr || company?.home_currency_prefix || '';
     const dateFormat = useDateFormat();
 
     // Accordion States (Expanded by default)
@@ -554,8 +557,10 @@ export default function BillForm({
                     auth={auth}
                     selectedAccount={payeeOptions.find(a => String(a.value) === String(data.supplier))}
                     exchangeRate={data.exchange_rate}
-                    onExchangeRateChange={(rate) => setData('exchange_rate', rate)}
+                    onExchangeRateChange={(val) => { setData('exchange_rate', val); setIsDirty(true); }}
+                    error={errors.exchange_rate}
                     transactionDate={data.billDate}
+                    isEdit={!!bill?.id || !!savedEntryId}
                 />
             </div>
 

@@ -158,7 +158,14 @@ export default function ChartOfAccIndex({ auth, chartOfAccounts = [], currencies
                                         </td>
                                         <td className="px-4 py-2.5 text-[11px] font-bold text-slate-800 text-right">
                                             {['asset', 'equity', 'liability'].includes(account.account_type) ? (
-                                                `${account.currency_code ? account.currency_code : (company?.home_currency_prefix || company?.home_currency || '')} ${parseFloat(account.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                                                multi_currency_enabled && account.currency_id && account.currency_id !== home_currency_id ? (
+                                                    <div className="flex flex-col items-end">
+                                                        <span>{account.currency_code} {parseFloat(account.fc_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                                        <span className="text-[9px] text-slate-400 font-normal mt-0.5" title="Base Currency Equivalent">{company?.home_currency_prefix || ''} {parseFloat(account.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                                    </div>
+                                                ) : (
+                                                    `${company?.home_currency_prefix || ''} ${parseFloat(account.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                                                )
                                             ) : (
                                                 ''
                                             )}

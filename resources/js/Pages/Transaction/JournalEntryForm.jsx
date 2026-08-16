@@ -16,7 +16,9 @@ import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
 export default function JournalEntryForm({ journalEntry = null, nextJournalNo = "" }) {
     const isEditing = Boolean(journalEntry?.id);
     const { auth } = usePage().props;
-    const currencyPrefix = auth.company?.home_currency_prefix || '';
+    const homeCurrencyObj = typeof auth?.company?.home_currency === 'object' ? auth.company.home_currency : null;
+    const homeCurrencyStr = typeof auth?.company?.home_currency === 'string' ? auth.company.home_currency : '';
+    const currencyPrefix = auth.company?.home_currency_prefix || homeCurrencyObj?.symbol || homeCurrencyStr || '';
 
     const [payeeOptions, setPayeeOptions] = useState([]);
     const [accountOptions, setAccountOptions] = useState([]);
@@ -450,6 +452,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                         setIsDirty(true);
                     }}
                     transactionDate={form.date}
+                    isEdit={!!entry?.id || !!savedEntryId}
                 />
             )}
 

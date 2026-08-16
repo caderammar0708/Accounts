@@ -13,7 +13,9 @@ import axios from "axios";
 
 export default function TransferForm({ transfer = null }) {
     const { auth } = usePage().props;
-    const defaultCurrencyCode = auth?.company?.home_currency || auth?.company?.home_currency_prefix || '';
+    const homeCurrencyObj = typeof auth?.company?.home_currency === 'object' ? auth.company.home_currency : null;
+    const homeCurrencyStr = typeof auth?.company?.home_currency === 'string' ? auth.company.home_currency : '';
+    const defaultCurrencyCode = String(homeCurrencyObj?.code || homeCurrencyStr || auth?.company?.home_currency_prefix || '');
 
     const [accountOptions, setAccountOptions] = useState([]);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);

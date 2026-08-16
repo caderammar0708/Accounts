@@ -17,9 +17,11 @@ import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function PayBill({ paymentMethods = [], payment = null }) {
     const { auth } = usePage().props;
-    const currencyPrefix = auth?.company?.home_currency_prefix || auth?.company?.home_currency || '';
+    const homeCurrencyObj = typeof auth?.company?.home_currency === 'object' ? auth.company.home_currency : null;
+    const homeCurrencyStr = typeof auth?.company?.home_currency === 'string' ? auth.company.home_currency : '';
+    const currencyPrefix = auth?.company?.home_currency_prefix || homeCurrencyObj?.symbol || homeCurrencyStr || '';
+    const defaultCurrencyCode = homeCurrencyObj?.code || homeCurrencyStr || auth?.company?.home_currency_prefix || '';
     const dateFormat = useDateFormat();
-    const defaultCurrencyCode = auth?.company?.home_currency || auth?.company?.home_currency_prefix || '';
 
     const [supplierOptions, setSupplierOptions] = useState([]);
     const [accountOptions, setAccountOptions] = useState([]);
@@ -554,10 +556,12 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
 
                 <CurrencyExchangeInput
                     auth={auth}
-                    selectedAccount={supplierOptions.find(a => String(a.value) === String(data.supplier))}
+                    selectedAccount={accountOptions.find(a => String(a.value) === String(data.paymentAccount))}
                     exchangeRate={data.exchange_rate}
-                    onExchangeRateChange={(rate) => setData('exchange_rate', rate)}
+                    onExchangeRateChange={(val) => { setData('exchange_rate', val); setIsDirty(true); }}
+                    error={errors.exchange_rate}
                     transactionDate={data.paymentDate}
+                    isEdit={!!payment?.id || !!savedEntryId}
                 />
 
                 {/* ROW 3: Memo */}

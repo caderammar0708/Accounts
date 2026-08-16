@@ -17,6 +17,8 @@ class ChartOfAccController extends Controller
     {
         $accounts = ChartOfAcc::withSum('journalLines', 'debit')
             ->withSum('journalLines', 'credit')
+            ->withSum('journalLines', 'fc_debit')
+            ->withSum('journalLines', 'fc_credit')
             ->orderByRaw('FIELD(LOWER(account_type), "asset", "liability", "equity", "income", "expense")')
             ->orderBy('sub_type')
             ->orderBy('name')

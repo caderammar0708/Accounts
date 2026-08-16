@@ -13,7 +13,10 @@ import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = null, outstandingCheques = [], selectedChequeIds = [], onModeChange = null, onClose = null }) {
     const company = auth.company;
-    const currencyPrefix = company?.home_currency_prefix || company?.home_currency || '';
+    const homeCurrencyObj = typeof company?.home_currency === 'object' ? company.home_currency : null;
+    const homeCurrencyStr = typeof company?.home_currency === 'string' ? company.home_currency : '';
+    const currencyPrefix = company?.home_currency_prefix || homeCurrencyObj?.symbol || homeCurrencyStr || '';
+    const defaultCurrencyCode = homeCurrencyObj?.code || homeCurrencyStr || company?.home_currency_prefix || '';
     const dateFormat = useDateFormat();
 
     const [depositAccountOptions, setDepositAccountOptions] = useState([]);

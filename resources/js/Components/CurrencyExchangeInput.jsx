@@ -33,8 +33,9 @@ export default function CurrencyExchangeInput({
     const homeCurrency = currencies.find(c => String(c.id) === String(home_id));
     const foreignCurrency = currencies.find(c => String(c.id) === String(selectedAccount?.currency_id));
 
-    const homeCode = homeCurrency?.code || auth?.company?.home_currency || 'Base';
-    const foreignCode = foreignCurrency?.code || selectedAccount?.currency_code || 'Foreign';
+    const homeCodeFallback = typeof auth?.company?.home_currency === 'object' ? (auth?.company?.home_currency?.code || '') : (auth?.company?.home_currency || '');
+    const homeCode = String(homeCurrency?.code || homeCodeFallback || 'Base');
+    const foreignCode = String(foreignCurrency?.code || selectedAccount?.currency_code || 'Foreign');
 
     const isInitialMount = React.useRef(true);
 

@@ -26,7 +26,7 @@ class ChartOfAcc extends Model implements Auditable
         'location_id',
     ];
 
-    protected $appends = ['is_system'];
+    protected $appends = ['is_system', 'fc_balance', 'balance'];
 
     public function currency()
     {
@@ -68,6 +68,23 @@ class ChartOfAcc extends Model implements Auditable
             return $debit - $credit;
         } else {
             return $credit - $debit;
+        }
+    }
+
+    public function getFcBalanceAttribute()
+    {
+        if (array_key_exists('journal_lines_sum_fc_debit', $this->attributes)) {
+            $fcDebit = $this->journal_lines_sum_fc_debit ?? 0;
+            $fcCredit = $this->journal_lines_sum_fc_credit ?? 0;
+        } else {
+            return $this->attributes['fc_balance'] ?? 0;
+        }
+
+        $type = strtolower($this->account_type);
+        if (in_array($type, ['asset', 'expense'])) {
+            return $fcDebit - $fcCredit;
+        } else {
+            return $fcCredit - $fcDebit;
         }
     }
 

@@ -19,8 +19,10 @@ export default function ChequeForm({
     nextChequeNo = ""
 }) {
     const company = auth.company;
-    const currencyPrefix = company?.home_currency_prefix || company?.home_currency || '';
-    const defaultCurrencyCode = company?.home_currency || company?.home_currency_prefix || '';
+    const homeCurrencyObj = typeof company?.home_currency === 'object' ? company.home_currency : null;
+    const homeCurrencyStr = typeof company?.home_currency === 'string' ? company.home_currency : '';
+    const currencyPrefix = company?.home_currency_prefix || homeCurrencyObj?.symbol || homeCurrencyStr || '';
+    const defaultCurrencyCode = homeCurrencyObj?.code || homeCurrencyStr || company?.home_currency_prefix || '';
 
     const [isCategoryExpanded, setIsCategoryExpanded] = useState(true);
 
@@ -345,6 +347,7 @@ export default function ChequeForm({
                                     }}
                                     error={errors.exchange_rate}
                                     transactionDate={data.date}
+                                    isEdit={!!cheque?.id || !!savedEntryId}
                                 />
                             </div>
                         </div>

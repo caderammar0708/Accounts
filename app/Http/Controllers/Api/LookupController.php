@@ -95,6 +95,8 @@ class LookupController extends Controller
             ->when($includeSelectedId, function($q) use ($includeSelectedId) {
                 $q->orWhere('id', $includeSelectedId);
             })
+            ->withSum('journalLines', 'debit')
+            ->withSum('journalLines', 'credit')
             ->orderBy('account_code')
             ->get()
             ->map(function($acc) use ($homeCurrencyId, $isMultiCurrency, $homeCurrencyCode, $homeCurrencySymbol) {

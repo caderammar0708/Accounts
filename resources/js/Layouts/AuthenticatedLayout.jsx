@@ -51,7 +51,6 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
 
     const isFuelStation = page.props.auth.business_type === 'Fuel Station';
     const isServiceStation = page.props.auth.business_type === 'Service Station';
-    const isNormal = page.props.auth.business_type === 'Normal';
 
     const navigation = [
         { name: 'Dashboard', href: route('dashboard'), icon: 'dashboard' },
@@ -66,12 +65,14 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
         ...(isServiceStation ? [{ name: 'Vehicles', href: route('vehicles.index'), icon: 'vehicle' }] : []),
         ...(isServiceStation ? [{ name: 'Jobs', href: route('job-cards.index'), icon: 'job', isJob: true }] : []),
         ...(isServiceStation ? [{ name: 'Warranties', href: route('warranties.index'), icon: 'warranty', isWarranty: true }] : []),
-        ...(isFuelStation ? [
-            { name: 'Station Setup', href: route('tanks.index'), icon: 'inventory', activeRoutes: ['tanks.*', 'pumps.*'] },
-            { name: 'Shifts', href: route('shifts.index'), icon: 'team' }
-        ] : []),
+        ...(isFuelStation ? [{ name: 'Shifts', href: route('shifts.index'), icon: 'team' }] : []),
         { name: 'Products & Services', href: route('items.index'), icon: 'inventory' },
+        ...(isFuelStation ? [
+            { name: 'Pump Setup', href: route('tanks.index'), icon: 'inventory', activeRoutes: ['tanks.*', 'pumps.*'] },
+        ] : []),
         { name: 'Chart of Accounts', href: route('chart-of-account.index'), icon: 'accounting' },
+        { name: 'Bank', href: route('bank.index'), icon: 'accounting' },
+        { name: 'Bank Reconciliation', href: route('bank-reconciliation.index'), icon: 'finance' },
         { name: 'Reports', href: route('reports.index'), adminOnly: true, icon: 'finance' },
         ...(page.props.auth.location ? [{ name: 'Locations', href: route('locations.index'), adminOnly: true, icon: 'accounting' }] : []),
     ];

@@ -16,7 +16,10 @@ import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function BankDepositForm({ auth, nextRef = "", deposit = null, onModeChange = null, onClose = null }) {
     const company = auth.company;
-    const currencyPrefix = company?.home_currency_prefix || company?.home_currency || '';
+    const homeCurrencyObj = typeof company?.home_currency === 'object' ? company.home_currency : null;
+    const homeCurrencyStr = typeof company?.home_currency === 'string' ? company.home_currency : '';
+    const currencyPrefix = company?.home_currency_prefix || homeCurrencyObj?.symbol || homeCurrencyStr || '';
+    const defaultCurrencyCode = homeCurrencyObj?.code || homeCurrencyStr || company?.home_currency_prefix || '';
 
     const [payeeOptions, setPayeeOptions] = useState([]);
     const [accountOptions, setAccountOptions] = useState([]);
@@ -34,7 +37,6 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
     const [accountModalRowIndex, setAccountModalRowIndex] = useState(null);
     const [isDirty, setIsDirty] = useState(false);
     const [savedEntryId, setSavedEntryId] = useState(deposit?.id || null);
-    const defaultCurrencyCode = company?.home_currency || company?.home_currency_prefix || '';
 
     const fetchPayees = (search = "") => {
         axios.get(route('api.payees', { search })).then(res => setPayeeOptions(res.data));
@@ -324,8 +326,10 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                     auth={auth}
                     selectedAccount={depositAccountOptions.find(a => String(a.value) === String(data.depositTo))}
                     exchangeRate={data.exchange_rate}
-                    onExchangeRateChange={(rate) => setData('exchange_rate', rate)}
+                    onExchangeRateChange={(val) => { setData('exchange_rate', val); setIsDirty(true); }}
+                    error={errors.exchange_rate}
                     transactionDate={data.depositDate}
+                    isEdit={!!deposit?.id || !!savedEntryId}
                 />
 
                 <LineItemsTable

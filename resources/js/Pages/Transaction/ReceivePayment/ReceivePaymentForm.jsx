@@ -17,7 +17,10 @@ import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function ReceivePaymentForm({ paymentMethods = [], payment = null, nextPaymentNo = "" }) {
     const { auth } = usePage().props;
-    const currencyPrefix = auth?.company?.home_currency_prefix || auth?.company?.home_currency || '';
+    const homeCurrencyObj = typeof auth?.company?.home_currency === 'object' ? auth.company.home_currency : null;
+    const homeCurrencyStr = typeof auth?.company?.home_currency === 'string' ? auth.company.home_currency : '';
+    const currencyPrefix = auth?.company?.home_currency_prefix || homeCurrencyObj?.symbol || homeCurrencyStr || '';
+    const defaultCurrencyCode = homeCurrencyObj?.code || homeCurrencyStr || auth?.company?.home_currency_prefix || '';
     const dateFormat = useDateFormat();
 
     const [customerOptions, setCustomerOptions] = useState([]);
@@ -32,7 +35,6 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
 
     const [isDirty, setIsDirty] = useState(false);
     const [savedEntryId, setSavedEntryId] = useState(payment?.id || null);
-    const defaultCurrencyCode = auth?.company?.home_currency || auth?.company?.home_currency_prefix || '';
 
     const { data, setData, post, patch, processing, errors, reset, clearErrors, transform } = useForm({
         customer: payment?.customer || "",
@@ -594,8 +596,10 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                     auth={auth}
                     selectedAccount={accountOptions.find(a => String(a.value) === String(data.depositTo))}
                     exchangeRate={data.exchange_rate}
-                    onExchangeRateChange={(rate) => setData('exchange_rate', rate)}
+                    onExchangeRateChange={(val) => { setData('exchange_rate', val); setIsDirty(true); }}
+                    error={errors.exchange_rate}
                     transactionDate={data.paymentDate}
+                    isEdit={!!payment?.id || !!savedEntryId}
                 />
 
                 {/* ROW 3: Memo */}
