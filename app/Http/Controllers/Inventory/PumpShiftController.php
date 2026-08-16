@@ -12,6 +12,7 @@ use App\Models\Employee;
 use App\Models\FuelStation\Pump;
 use App\Models\FuelStation\Nozzle;
 use App\Models\Accounting\ChartOfAcc;
+use App\Models\Accounting\JournalEntry;
 use App\Models\Customer;
 use App\Models\FuelStation\PumpShiftCollection;
 use App\Models\FuelStation\PumpShiftCreditSale;
@@ -379,7 +380,7 @@ class PumpShiftController extends Controller
             // Clean up old settlement data if re-settling
             $oldInvoices = \App\Models\Accounting\SalesInvoice::where('pump_shift_id', $shift->id)->get();
             foreach ($oldInvoices as $inv) {
-                $jes = \App\Models\JournalEntry::where('transactionable_type', \App\Models\Accounting\SalesInvoice::class)
+                $jes = \App\Models\Accounting\JournalEntry::where('transactionable_type', \App\Models\Accounting\SalesInvoice::class)
                     ->where('transactionable_id', $inv->id)
                     ->get();
                 foreach ($jes as $je) {
@@ -390,7 +391,7 @@ class PumpShiftController extends Controller
                 $inv->delete();
             }
 
-            $jes = \App\Models\JournalEntry::where('transactionable_type', \App\Models\FuelStation\PumpShift::class)
+            $jes = \App\Models\Accounting\JournalEntry::where('transactionable_type', \App\Models\FuelStation\PumpShift::class)
                 ->where('transactionable_id', $shift->id)
                 ->get();
             foreach ($jes as $je) {
@@ -510,7 +511,7 @@ class PumpShiftController extends Controller
                             'amount' => $amt,
                         ]);
 
-                        $journalEntry = \App\Models\JournalEntry::create([
+                        $journalEntry = \App\Models\Accounting\JournalEntry::create([
                             'date' => \Carbon\Carbon::parse($shift->start_time)->format('Y-m-d'),
                             'due_date' => \Carbon\Carbon::parse($shift->start_time)->addDays(30)->format('Y-m-d'),
                             'reference' => $invoice->receipt_no,
@@ -525,7 +526,7 @@ class PumpShiftController extends Controller
                             'transactionable_type' => \App\Models\Accounting\SalesInvoice::class,
                         ]);
 
-                        \App\Models\JournalEntryLine::create([
+                        \App\Models\Accounting\JournalEntryLine::create([
                             'journal_entry_id' => $journalEntry->id,
                             'chart_of_acc_id' => ChartOfAcc::getOrCreateDefault('accounts-receivable')->id,
                             'payee_id' => $cs['customer_id'],
@@ -535,7 +536,7 @@ class PumpShiftController extends Controller
                             'memo' => $invoice->memo,
                         ]);
 
-                        \App\Models\JournalEntryLine::create([
+                        \App\Models\Accounting\JournalEntryLine::create([
                             'journal_entry_id' => $journalEntry->id,
                             'chart_of_acc_id' => $mainItem->income_account_id ?? ChartOfAcc::getOrCreateDefault('uncategorized-income')->id,
                             'payee_id' => $cs['customer_id'],
@@ -550,7 +551,7 @@ class PumpShiftController extends Controller
 
             // Create Journal Entry for Cash Collections and Discrepancy
             if ($totalCollections > 0 || abs($discrepancy) > 0.01) {
-                $settleJournal = \App\Models\JournalEntry::create([
+                $settleJournal = \App\Models\Accounting\JournalEntry::create([
                     'date' => \Carbon\Carbon::parse($shift->start_time)->format('Y-m-d'),
                     'reference' => 'SHIFT-SETTLE-' . strtoupper(substr(str_replace('-', '', $shift->id), -8)),
                     'description' => 'Cash/Bank Settlement for Shift ' . $shift->id,
@@ -567,7 +568,7 @@ class PumpShiftController extends Controller
                     foreach ($request->collections as $collection) {
                         $amt = floatval($collection['amount'] ?? 0);
                         if ($amt > 0) {
-                            \App\Models\JournalEntryLine::create([
+                            \App\Models\Accounting\JournalEntryLine::create([
                                 'journal_entry_id' => $settleJournal->id,
                                 'chart_of_acc_id' => $collection['chart_of_acc_id'],
                                 'debit' => $amt,
@@ -593,19 +594,19 @@ class PumpShiftController extends Controller
                             $sale['tank']->decrement('current_stock', $volume);
                         }
                         
-                        $cogsAmount = \App\Models\InventoryBatch::deplete($item, $volume);
+                        $cogsAmount = $volume * (float) $item->purchase_price;
                         if ($cogsAmount > 0) {
                             $cogsAccount = $item->expense_account_id ?? ChartOfAcc::getOrCreateDefault('cost-of-goods-sold')->id;
                             $inventoryAccount = $item->inventory_account_id ?? ChartOfAcc::getOrCreateDefault('inventory')->id;
                             
-                            \App\Models\JournalEntryLine::create([
+                            \App\Models\Accounting\JournalEntryLine::create([
                                 'journal_entry_id' => $settleJournal->id,
                                 'chart_of_acc_id' => $cogsAccount,
                                 'debit' => $cogsAmount,
                                 'credit' => 0,
                                 'memo' => 'COGS for Shift ' . $shift->id,
                             ]);
-                            \App\Models\JournalEntryLine::create([
+                            \App\Models\Accounting\JournalEntryLine::create([
                                 'journal_entry_id' => $settleJournal->id,
                                 'chart_of_acc_id' => $inventoryAccount,
                                 'debit' => 0,
@@ -624,7 +625,7 @@ class PumpShiftController extends Controller
 
                     if ($cashSalePortion > 0) {
                         $incomeAccount = $item->income_account_id ?? ChartOfAcc::getOrCreateDefault('uncategorized-income')->id;
-                        \App\Models\JournalEntryLine::create([
+                        \App\Models\Accounting\JournalEntryLine::create([
                             'journal_entry_id' => $settleJournal->id,
                             'chart_of_acc_id' => $incomeAccount,
                             'debit' => 0,
@@ -633,7 +634,7 @@ class PumpShiftController extends Controller
                         ]);
                     } else if ($cashSalePortion < 0) {
                         $incomeAccount = $item->income_account_id ?? ChartOfAcc::getOrCreateDefault('uncategorized-income')->id;
-                        \App\Models\JournalEntryLine::create([
+                        \App\Models\Accounting\JournalEntryLine::create([
                             'journal_entry_id' => $settleJournal->id,
                             'chart_of_acc_id' => $incomeAccount,
                             'debit' => abs($cashSalePortion),
@@ -644,7 +645,7 @@ class PumpShiftController extends Controller
                 }
                 
                 if (empty($itemSales) && $cashSales > 0) {
-                    \App\Models\JournalEntryLine::create([
+                    \App\Models\Accounting\JournalEntryLine::create([
                         'journal_entry_id' => $settleJournal->id,
                         'chart_of_acc_id' => $mainItem->income_account_id ?? ChartOfAcc::getOrCreateDefault('uncategorized-income')->id,
                         'debit' => 0,
@@ -652,7 +653,7 @@ class PumpShiftController extends Controller
                         'memo' => 'Cash Sales for Shift ' . $shift->id,
                     ]);
                 } else if (empty($itemSales) && $cashSales < 0) {
-                    \App\Models\JournalEntryLine::create([
+                    \App\Models\Accounting\JournalEntryLine::create([
                         'journal_entry_id' => $settleJournal->id,
                         'chart_of_acc_id' => $mainItem->income_account_id ?? ChartOfAcc::getOrCreateDefault('uncategorized-income')->id,
                         'debit' => abs($cashSales),
@@ -665,7 +666,7 @@ class PumpShiftController extends Controller
                 if (abs($discrepancy) > 0.01) {
                     $overShortAccount = ChartOfAcc::getOrCreateDefault('uncategorized-expense');
                     if ($discrepancy > 0) { // Over (Collected > Sales) -> Income/Credit
-                        \App\Models\JournalEntryLine::create([
+                        \App\Models\Accounting\JournalEntryLine::create([
                             'journal_entry_id' => $settleJournal->id,
                             'chart_of_acc_id' => $overShortAccount->id,
                             'debit' => 0,
@@ -673,7 +674,7 @@ class PumpShiftController extends Controller
                             'memo' => 'Cash Over for Shift ' . $shift->id,
                         ]);
                     } else { // Short (Collected < Sales) -> Expense/Debit
-                        \App\Models\JournalEntryLine::create([
+                        \App\Models\Accounting\JournalEntryLine::create([
                             'journal_entry_id' => $settleJournal->id,
                             'chart_of_acc_id' => $overShortAccount->id,
                             'debit' => abs($discrepancy),
