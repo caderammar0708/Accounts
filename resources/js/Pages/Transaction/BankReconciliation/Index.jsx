@@ -6,21 +6,21 @@ export default function Index({ reconciliations }) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex justify-between items-center">
-                    <h2 className="font-semibold text-xl text-gray-800 leading-tight">Bank Reconciliations</h2>
-                    <Link
-                        href={route('bank-reconciliation.create')}
-                        className="bg-[#00713D] hover:bg-[#005a30] text-white font-bold py-2 px-4 rounded transition-colors"
-                    >
-                        New Reconciliation
-                    </Link>
-                </div>
+                <h2 className="font-semibold text-xl text-gray-800 leading-tight">Bank Reconciliations</h2>
             }
         >
             <Head title="Bank Reconciliations" />
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    <div className="flex justify-end mb-4">
+                        <Link
+                            href={route('bank-reconciliation.create')}
+                            className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150"
+                        >
+                            New Reconciliation
+                        </Link>
+                    </div>
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">

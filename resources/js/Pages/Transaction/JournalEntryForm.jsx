@@ -466,11 +466,11 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                     setItems((prev) => prev.filter((_, i) => i !== index))
                 }
                 totals={{
-                    [`Total Debits (${isForeignCurrency ? foreignCode : auth?.company?.home_currency || 'Base'})`]: { prefix: isForeignCurrency ? '$' : currencyPrefix, amount: totals.debit },
-                    [`Total Credits (${isForeignCurrency ? foreignCode : auth?.company?.home_currency || 'Base'})`]: { prefix: isForeignCurrency ? '$' : currencyPrefix, amount: totals.credit },
+                    [`Total Debits (${isForeignCurrency ? foreignCode : homeCurrencyObj?.code || homeCurrencyStr || 'Base'})`]: { prefix: isForeignCurrency ? '$' : currencyPrefix, amount: totals.debit },
+                    [`Total Credits (${isForeignCurrency ? foreignCode : homeCurrencyObj?.code || homeCurrencyStr || 'Base'})`]: { prefix: isForeignCurrency ? '$' : currencyPrefix, amount: totals.credit },
                     ...(isForeignCurrency ? {
-                        [`Total Debits (${auth?.company?.home_currency || 'Base'})`]: { prefix: currencyPrefix, amount: totals.debit * (form.exchange_rate || 1) },
-                        [`Total Credits (${auth?.company?.home_currency || 'Base'})`]: { prefix: currencyPrefix, amount: totals.credit * (form.exchange_rate || 1) }
+                        [`Total Debits (${homeCurrencyObj?.code || homeCurrencyStr || 'Base'})`]: { prefix: currencyPrefix, amount: totals.debit * (form.exchange_rate || 1) },
+                        [`Total Credits (${homeCurrencyObj?.code || homeCurrencyStr || 'Base'})`]: { prefix: currencyPrefix, amount: totals.credit * (form.exchange_rate || 1) }
                     } : {})
                 }}
                 currencyPrefix={currencyPrefix}

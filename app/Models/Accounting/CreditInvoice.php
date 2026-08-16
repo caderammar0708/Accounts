@@ -18,8 +18,13 @@ class CreditInvoice extends Model implements Auditable
         'customer_id', 'email', 'billing_address', 'shipping_address',
         'terms', 'invoice_date', 'due_date', 'invoice_no', 'total_amount',
         'memo', 'statement_message', 'status', 'discount_type', 'discount_value', 'prefix', 'memo_on_statement',
-        'location_id',
+        'location_id', 'source_id', 'source_type',
     ];
+
+    public function source()
+    {
+        return $this->morphTo();
+    }
 
     public function items()
     {

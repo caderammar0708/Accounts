@@ -42,6 +42,13 @@ class ProfileController extends Controller
 
                 if ($response->successful()) {
                     $ssoCompanies = $response->json('companies') ?? [];
+                    $currentHost = request()->getHost();
+                    $ssoCompanies = array_filter($ssoCompanies, function($company) use ($currentHost) {
+                        $domain = $company['domain'] ?? '';
+                        $parsedHost = parse_url((str_starts_with($domain, 'http') ? '' : 'https://') . $domain, PHP_URL_HOST);
+                        return $parsedHost !== $currentHost && $domain !== $currentHost;
+                    });
+                    $ssoCompanies = array_values($ssoCompanies);
                 } else {
                     \Illuminate\Support\Facades\Log::error('SSO fetch failed with status ' . $response->status() . ': ' . $response->body());
                 }

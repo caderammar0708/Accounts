@@ -210,7 +210,7 @@ class ChartOfAccController extends Controller
 
     public function history(Request $request, ChartOfAcc $chartOfAccount)
     {
-        $query = \App\Models\Accounting\JournalEntryLine::with(['journalEntry.creator', 'journalEntry.lines.account'])
+        $query = \App\Models\Accounting\JournalEntryLine::with(['journalEntry.creator', 'journalEntry.lines.account', 'journalEntry.transactionable'])
              ->where('chart_of_acc_id', $chartOfAccount->id)
              ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id');
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, router } from '@inertiajs/react';
 import SearchableSelect from '@/Components/SearchableSelect';
+import CommonButton from '@/Components/CommonButton';
 
 export default function Index({ uncategorized, moved, closed, accounts, bankAccounts }) {
     const [activeTab, setActiveTab] = useState('uncategorized');
@@ -114,22 +115,23 @@ export default function Index({ uncategorized, moved, closed, accounts, bankAcco
                                     className="border border-gray-300 rounded p-1.5 w-full sm:w-auto text-sm"
                                     accept=".csv"
                                 />
-                                <button 
+                                <CommonButton 
                                     type="submit" 
                                     disabled={uploading || !uploadData.file || !uploadData.bank_account_id}
-                                    className="bg-[#00713D] hover:bg-[#005a30] text-white font-bold py-2 px-4 rounded disabled:opacity-50 whitespace-nowrap transition-colors"
+                                    variant="primary"
+                                    className="whitespace-nowrap"
                                 >
                                     {uploading ? 'Uploading...' : 'Import CSV'}
-                                </button>
+                                </CommonButton>
                             </form>
                         </div>
                         <div className="flex-shrink-0">
-                            <a 
+                            <CommonButton 
                                 href={route('bank.template')} 
-                                className="inline-block border border-[#00713D] text-[#00713D] hover:bg-[#00713D] hover:text-white font-bold py-2 px-4 rounded transition-colors text-sm"
+                                variant="outlined"
                             >
                                 Download Template
-                            </a>
+                            </CommonButton>
                         </div>
                     </div>
 

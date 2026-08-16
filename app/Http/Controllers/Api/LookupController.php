@@ -172,7 +172,7 @@ class LookupController extends Controller
     public function currencies(Request $request)
     {
         $currencies = \App\Models\Currency::where('is_active', true)
-            ->get(['id', 'code', 'symbol']);
+            ->get(['id', 'code', 'symbol', 'name']);
             
         return response()->json($currencies);
     }

@@ -107,12 +107,23 @@ export default function AccountHistory({ account, lines = [], accounts = [], fil
     const getEditRoute = (tx) => {
         const type = tx.journal_entry?.transaction_type;
         const id = tx.journal_entry_id;
+        const transactionable_id = tx.journal_entry?.transactionable_id;
 
         switch (type) {
             case 'pos':
                 return route('pos.edit', id);
+            case 'shift_settlement':
+                return route('shifts.collections.edit', transactionable_id || id);
             case 'credit_invoice':
+                if (tx.journal_entry?.transactionable?.source_type === 'App\\Models\\FuelStation\\PumpShift') {
+                    return route('shifts.collections.edit', tx.journal_entry.transactionable.source_id);
+                }
                 return route('credit-invoice.edit', id);
+            case 'sales_invoice':
+                if (tx.journal_entry?.transactionable?.pump_shift_id) {
+                    return route('shifts.collections.edit', tx.journal_entry.transactionable.pump_shift_id);
+                }
+                return route('sales-invoice.edit', id);
             case 'bill':
                 return route('bill.edit', id);
             case 'payment':

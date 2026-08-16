@@ -30,6 +30,11 @@ class TransactionHistoryController extends Controller
 
         return JournalEntry::query()
             ->where('transaction_type', $normalizedType)
+            ->when($normalizedType === 'credit_invoice', function ($query) {
+                $query->whereHasMorph('transactionable', [\App\Models\Accounting\CreditInvoice::class], function ($q) {
+                    $q->whereNull('source_type');
+                });
+            })
             ->with(['payee', 'transactionable'])
             ->orderByDesc('date')
             ->orderByDesc('created_at')

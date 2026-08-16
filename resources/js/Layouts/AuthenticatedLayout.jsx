@@ -68,13 +68,13 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
         ...(isFuelStation ? [{ name: 'Shifts', href: route('shifts.index'), icon: 'team' }] : []),
         { name: 'Products & Services', href: route('items.index'), icon: 'inventory' },
         ...(isFuelStation ? [
-            { name: 'Pump Setup', href: route('tanks.index'), icon: 'inventory', activeRoutes: ['tanks.*', 'pumps.*'] },
+            { name: 'Pump Setup', href: route('tanks.index'), icon: 'pump', activeRoutes: ['tanks.*', 'pumps.*'] },
         ] : []),
         { name: 'Chart of Accounts', href: route('chart-of-account.index'), icon: 'accounting' },
-        { name: 'Bank', href: route('bank.index'), icon: 'accounting' },
-        { name: 'Bank Reconciliation', href: route('bank-reconciliation.index'), icon: 'finance' },
-        { name: 'Reports', href: route('reports.index'), adminOnly: true, icon: 'finance' },
-        ...(page.props.auth.location ? [{ name: 'Locations', href: route('locations.index'), adminOnly: true, icon: 'accounting' }] : []),
+        { name: 'Bank', href: route('bank.index'), icon: 'bank' },
+        { name: 'Bank Reconciliation', href: route('bank-reconciliation.index'), icon: 'reconciliation' },
+        { name: 'Reports', href: route('reports.index'), adminOnly: true, icon: 'reports' },
+        ...(page.props.auth.location ? [{ name: 'Locations', href: route('locations.index'), adminOnly: true, icon: 'locations' }] : []),
     ];
 
     return (

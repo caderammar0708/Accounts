@@ -346,9 +346,9 @@ class PumpShiftController extends Controller
                 $je->delete();
             }
             
-            $invoices = \App\Models\Accounting\SalesInvoice::where('pump_shift_id', $shift->id)->get();
+            $invoices = \App\Models\Accounting\CreditInvoice::where('source_id', $shift->id)->where('source_type', \App\Models\FuelStation\PumpShift::class)->get();
             foreach ($invoices as $invoice) {
-                $invJes = JournalEntry::where('transactionable_type', \App\Models\Accounting\SalesInvoice::class)
+                $invJes = JournalEntry::where('transactionable_type', \App\Models\Accounting\CreditInvoice::class)
                     ->where('transactionable_id', $invoice->id)->get();
                 foreach ($invJes as $je) {
                     $je->lines()->delete();
@@ -378,16 +378,16 @@ class PumpShiftController extends Controller
 
         DB::transaction(function() use ($request, $shift) {
             // Clean up old settlement data if re-settling
-            $oldInvoices = \App\Models\Accounting\SalesInvoice::where('pump_shift_id', $shift->id)->get();
+            $oldInvoices = \App\Models\Accounting\CreditInvoice::where('source_id', $shift->id)->where('source_type', \App\Models\FuelStation\PumpShift::class)->get();
             foreach ($oldInvoices as $inv) {
-                $jes = \App\Models\Accounting\JournalEntry::where('transactionable_type', \App\Models\Accounting\SalesInvoice::class)
+                $jes = \App\Models\Accounting\JournalEntry::where('transactionable_type', \App\Models\Accounting\CreditInvoice::class)
                     ->where('transactionable_id', $inv->id)
                     ->get();
                 foreach ($jes as $je) {
                     $je->lines()->delete();
                     $je->delete();
                 }
-                \App\Models\Accounting\SalesInvoiceItem::where('sales_invoice_id', $inv->id)->delete();
+                \App\Models\Accounting\CreditInvoiceItem::where('credit_invoice_id', $inv->id)->delete();
                 $inv->delete();
             }
 
@@ -477,12 +477,12 @@ class PumpShiftController extends Controller
 
             // Create Invoices for Credit Sales
             if ($request->credit_sales) {
-                $lastInvoice = \App\Models\Accounting\SalesInvoice::where('receipt_no', 'like', 'SFT-%')
+                $lastInvoice = \App\Models\Accounting\CreditInvoice::where('invoice_no', 'like', 'SFT-%')
                     ->orderByRaw('CAST(SUBSTRING(receipt_no, 5) AS UNSIGNED) DESC')
                     ->first();
                 $nextInvoiceNo = 1;
                 if ($lastInvoice) {
-                    $parts = explode('-', $lastInvoice->receipt_no);
+                    $parts = explode('-', $lastInvoice->invoice_no);
                     if (count($parts) == 2 && is_numeric($parts[1])) {
                         $nextInvoiceNo = intval($parts[1]) + 1;
                     }
@@ -491,19 +491,20 @@ class PumpShiftController extends Controller
                 foreach ($request->credit_sales as $cs) {
                     $amt = floatval($cs['amount'] ?? 0);
                     if ($amt > 0) {
-                        $invoice = \App\Models\Accounting\SalesInvoice::create([
-                            'pump_shift_id' => $shift->id,
+                        $invoice = \App\Models\Accounting\CreditInvoice::create([
+                            'source_id' => $shift->id,
+                            'source_type' => \App\Models\FuelStation\PumpShift::class,
                             'customer_id' => $cs['customer_id'],
-                            'receipt_date' => \Carbon\Carbon::parse($shift->start_time)->format('Y-m-d'),
+                            'invoice_date' => \Carbon\Carbon::parse($shift->start_time)->format('Y-m-d'),
                             'due_date' => \Carbon\Carbon::parse($shift->start_time)->addDays(30)->format('Y-m-d'),
-                            'receipt_no' => 'SFT-' . str_pad($nextInvoiceNo++, 5, '0', STR_PAD_LEFT),
+                            'invoice_no' => 'SFT-' . str_pad($nextInvoiceNo++, 5, '0', STR_PAD_LEFT),
                             'total_amount' => $amt,
                             'memo' => 'Credit sale from Shift. ' . ($cs['description'] ?? ''),
                             'status' => 'posted',
                         ]);
 
-                        \App\Models\Accounting\SalesInvoiceItem::create([
-                            'sales_invoice_id' => $invoice->id,
+                        \App\Models\Accounting\CreditInvoiceItem::create([
+                            'credit_invoice_id' => $invoice->id,
                             'item_id' => $mainItem->id,
                             'description' => 'Fuel Sale',
                             'quantity' => 1,
@@ -514,16 +515,16 @@ class PumpShiftController extends Controller
                         $journalEntry = \App\Models\Accounting\JournalEntry::create([
                             'date' => \Carbon\Carbon::parse($shift->start_time)->format('Y-m-d'),
                             'due_date' => \Carbon\Carbon::parse($shift->start_time)->addDays(30)->format('Y-m-d'),
-                            'reference' => $invoice->receipt_no,
+                            'reference' => $invoice->invoice_no,
                             'description' => $invoice->memo,
-                            'transaction_type' => 'invoice',
+                            'transaction_type' => 'credit_invoice',
                             'payee_id' => $cs['customer_id'],
                             'payee_type' => \App\Models\Customer::class,
                             'total_amount' => $amt,
                             'status' => 'posted',
                             'created_by' => auth()->id(),
                             'transactionable_id' => $invoice->id,
-                            'transactionable_type' => \App\Models\Accounting\SalesInvoice::class,
+                            'transactionable_type' => \App\Models\Accounting\CreditInvoice::class,
                         ]);
 
                         \App\Models\Accounting\JournalEntryLine::create([
@@ -555,7 +556,7 @@ class PumpShiftController extends Controller
                     'date' => \Carbon\Carbon::parse($shift->start_time)->format('Y-m-d'),
                     'reference' => 'SHIFT-SETTLE-' . strtoupper(substr(str_replace('-', '', $shift->id), -8)),
                     'description' => 'Cash/Bank Settlement for Shift ' . $shift->id,
-                    'transaction_type' => 'journal',
+                    'transaction_type' => 'shift_settlement',
                     'total_amount' => $totalCollections,
                     'status' => 'posted',
                     'created_by' => auth()->id(),
