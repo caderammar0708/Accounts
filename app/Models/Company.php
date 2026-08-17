@@ -60,7 +60,7 @@ class Company extends Model
 
     public function getHomeCurrencyPrefixAttribute()
     {
-        return $this->homeCurrency?->symbol ?? '';
+        return $this->homeCurrency?->symbol ?? null;
     }
 
     public function homeCurrency()

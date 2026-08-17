@@ -5,6 +5,7 @@ import CommonButton from '@/Components/CommonButton';
 import ReportDateFilter from '@/Components/ReportDateFilter';
 import { useDateFormat, formatDate } from '@/Utils/dateFormat';
 import { getEditRoute } from '@/Utils/routeUtils';
+import ReportCurrency from '@/Components/ReportCurrency';
 
 export default function PurchaseByItem({ reportData, filters, auth }) {
     const dateFormat = useDateFormat();
@@ -23,7 +24,7 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
     };
 
     const handleFilterChange = (newFilters) => {
-        router.get(route('reports.purchase-by-item'), {
+        router.get(route('reports.purchases-by-item'), {
             start_date: newFilters.start_date,
             end_date: newFilters.end_date,
             type: newFilters.type,
@@ -40,7 +41,7 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
 
     const toggleDisplayBy = () => {
         const newDisplayBy = displayBy === 'month' ? 'total' : 'month';
-        router.get(route('reports.purchase-by-item'), {
+        router.get(route('reports.purchases-by-item'), {
             ...filters,
             display_by: newDisplayBy,
         }, {
@@ -55,11 +56,8 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
 
     const homeCurrency = auth.company?.home_currency_prefix || auth.company?.home_currency || '';
 
-    const Currency = ({ value }) => (
-        <span className={value < 0 ? 'text-red-600' : 'text-slate-900'}>
-            <span className="text-[10px] font-bold text-slate-400 mr-1">{homeCurrency}</span>
-            {parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </span>
+    const Currency = ({ value, className = '' }) => (
+        <ReportCurrency value={value} currency={homeCurrency} className={className} />
     );
 
     const formatQty = (val) => {
@@ -142,31 +140,31 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
             </div>
 
             <div className="w-full overflow-x-auto pb-10">
-                <table className="w-full text-[13px] text-left border-collapse table-fixed min-w-max">
+                <table className="min-w-full text-[13px] text-left border-collapse">
                     <thead>
                         <tr className="border-y-2 border-gray-300">
                             {isMonthWise ? (
                                 <>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 w-64">Item Name</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[200px]">Item Name</th>
                                     {monthCols.map(m => {
                                         const d = new Date(m + '-01');
                                         return (
-                                            <th key={m} className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[100px]">
+                                            <th key={m} className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[120px]">
                                                 {d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                                             </th>
                                         );
                                     })}
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-32 border-l border-gray-100">Total</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px] border-l border-gray-100">Total</th>
                                 </>
                             ) : (
                                 <>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 w-[12%]">Date</th>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 w-[15%]">Transaction Type</th>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 w-[10%]">Number</th>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 w-[23%]">Supplier</th>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[10%]">Qty</th>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[15%]">Rate</th>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[15%]">Amount</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 whitespace-nowrap min-w-[100px]">Date</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 whitespace-nowrap min-w-[130px]">Transaction Type</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 whitespace-nowrap min-w-[100px]">Number</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[180px]">Supplier</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[80px]">Qty</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[110px]">Rate</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[120px]">Amount</th>
                                 </>
                             )}
                         </tr>
@@ -195,15 +193,19 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
                                             {monthCols.map(m => {
                                                 const mData = group.item.monthly_totals?.[m] || { qty: 0, amount: 0 };
                                                 return (
-                                                    <td key={m} className="py-3 px-3 text-right">
-                                                        <div className="font-medium text-gray-900 tabular-nums"><Currency value={mData.amount} /></div>
-                                                        {mData.qty !== 0 && <div className="text-[11px] text-gray-500 mt-0.5">{formatQty(mData.qty)} qty</div>}
+                                                    <td key={m} className="py-3 px-3 text-right whitespace-nowrap">
+                                                        <div className="flex flex-col items-end justify-center">
+                                                            <div className="font-medium text-gray-900"><Currency value={mData.amount} /></div>
+                                                            {mData.qty !== 0 && <div className="text-[11px] text-gray-500 leading-tight mt-0.5">{formatQty(mData.qty)} qty</div>}
+                                                        </div>
                                                     </td>
                                                 );
                                             })}
-                                            <td className="py-3 px-3 text-right border-l border-gray-100">
-                                                <div className="font-bold text-gray-900 tabular-nums"><Currency value={group.item.total_amount} /></div>
-                                                <div className="text-[11px] text-gray-500 mt-0.5">{formatQty(group.item.total_qty)} qty</div>
+                                            <td className="py-3 px-3 text-right whitespace-nowrap border-l border-gray-100">
+                                                <div className="flex flex-col items-end justify-center">
+                                                    <div className="font-bold text-gray-900"><Currency value={group.item.total_amount} /></div>
+                                                    <div className="text-[11px] text-gray-500 leading-tight mt-0.5">{formatQty(group.item.total_qty)} qty</div>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -227,36 +229,36 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
                                                     {group.item.sku && <span className="text-gray-500 font-normal text-xs ml-2">SKU: {group.item.sku}</span>}
                                                 </div>
                                             </td>
-                                            <td className="py-2 px-3 text-right font-semibold text-gray-900 tabular-nums">
+                                            <td className="py-2 px-3 text-right font-semibold text-gray-900 whitespace-nowrap">
                                                 {formatQty(group.item.total_qty)}
                                             </td>
                                             <td className="py-2 px-3"></td>
-                                            <td className="py-2 px-3 text-right font-semibold text-gray-900 tabular-nums">
+                                            <td className="py-2 px-3 text-right font-semibold text-gray-900 whitespace-nowrap">
                                                 <Currency value={group.item.total_amount} />
                                             </td>
                                         </tr>
 
                                         {!isCollapsed && group.lines.map((tx) => (
                                             <tr key={`${tx.transaction_type}-${tx.id}`} className="hover:bg-slate-50 transition-colors bg-white">
-                                                <td className="py-2 px-3 text-gray-600 pl-10">
+                                                <td className="py-2 px-3 text-gray-600 pl-10 whitespace-nowrap">
                                                     {tx.date}
                                                 </td>
                                                 <td className="py-2 px-3 text-gray-600 capitalize truncate">
                                                     {tx.transaction_type}
                                                 </td>
-                                                <td className="py-2 px-3 text-gray-600">
+                                                <td className="py-2 px-3 text-gray-600 whitespace-nowrap">
                                                     {tx.reference || '-'}
                                                 </td>
                                                 <td className="py-2 px-3 text-gray-600 truncate" title={tx.contact_name}>
                                                     {tx.contact_name || '-'}
                                                 </td>
-                                                <td className="py-2 px-3 text-right tabular-nums text-gray-900">
+                                                <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900">
                                                     {formatQty(tx.qty)}
                                                 </td>
-                                                <td className="py-2 px-3 text-right tabular-nums text-gray-600">
+                                                <td className="py-2 px-3 text-right whitespace-nowrap text-gray-600">
                                                     {tx.rate ? <Currency value={tx.rate} /> : '-'}
                                                 </td>
-                                                <td className="py-2 px-3 text-right tabular-nums font-medium text-gray-900">
+                                                <td className="py-2 px-3 text-right whitespace-nowrap font-medium text-gray-900">
                                                     <Link href={route(getEditRoute(tx.transaction_type), tx.journal_entry_id)} className="text-indigo-600 hover:text-indigo-900 hover:underline">
                                                         <Currency value={tx.amount} />
                                                     </Link>
@@ -269,11 +271,11 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
                                                 <td colSpan="4" className="py-2 px-3 font-semibold text-gray-700 pl-10 text-right">
                                                     Total for {displayName}
                                                 </td>
-                                                <td className="py-2 px-3 text-right font-semibold text-gray-900 tabular-nums">
+                                                <td className="py-2 px-3 text-right font-semibold text-gray-900 whitespace-nowrap">
                                                     {formatQty(group.item.total_qty)}
                                                 </td>
                                                 <td className="py-2 px-3"></td>
-                                                <td className="py-2 px-3 text-right font-semibold text-gray-900 tabular-nums">
+                                                <td className="py-2 px-3 text-right font-semibold text-gray-900 whitespace-nowrap">
                                                     <Currency value={group.item.total_amount} />
                                                 </td>
                                             </tr>
@@ -294,13 +296,15 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
                                     const mTotalAmt = items.reduce((sum, g) => sum + (g.item.monthly_totals?.[m]?.amount || 0), 0);
                                     const mTotalQty = items.reduce((sum, g) => sum + (g.item.monthly_totals?.[m]?.qty || 0), 0);
                                     return (
-                                        <td key={m} className="py-3 px-3 text-right tabular-nums">
-                                            <div className="font-bold text-gray-900 text-md"><Currency value={mTotalAmt} /></div>
-                                            <div className="text-[11px] text-gray-500 mt-0.5">{formatQty(mTotalQty)} qty</div>
+                                        <td key={m} className="py-3 px-3 text-right whitespace-nowrap">
+                                            <div className="flex flex-col items-end justify-center">
+                                                <div className="font-bold text-gray-900 text-md"><Currency value={mTotalAmt} /></div>
+                                                <div className="text-[11px] text-gray-500 leading-tight mt-0.5">{formatQty(mTotalQty)} qty</div>
+                                            </div>
                                         </td>
                                     );
                                 })}
-                                <td className="py-3 px-3 text-right tabular-nums border-l border-gray-200">
+                                <td className="py-3 px-3 text-right whitespace-nowrap border-l border-gray-200">
                                     <div className="font-bold text-gray-900 text-lg"><Currency value={totalAmount} /></div>
                                 </td>
                             </tr>
@@ -310,11 +314,11 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
                                 <td colSpan="4" className="py-3 px-3 font-bold text-gray-900 text-lg uppercase text-right">
                                     Grand Total
                                 </td>
-                                <td className="py-3 px-3 text-right font-bold text-gray-900 text-lg tabular-nums">
+                                <td className="py-3 px-3 text-right font-bold text-gray-900 text-lg whitespace-nowrap">
                                     {formatQty(totalQuantity)}
                                 </td>
                                 <td className="py-3 px-3"></td>
-                                <td className="py-3 px-3 text-right font-bold text-gray-900 text-lg tabular-nums">
+                                <td className="py-3 px-3 text-right font-bold text-gray-900 text-lg whitespace-nowrap">
                                     <Currency value={totalAmount} />
                                 </td>
                             </tr>

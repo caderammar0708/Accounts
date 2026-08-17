@@ -3,7 +3,9 @@ name: Deploy JBooks App
 on:
   push:
     branches:
+      - demo
       - aaass
+      - aaafs
       - jobalign
       - hallam-city-campus
       - steel-audit
@@ -63,7 +65,7 @@ jobs:
           ln -s storage/app/public public/storage || true
 
       - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@4.3.3
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         env:
           ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
         with:
@@ -72,7 +74,14 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ./
+          dangerous-clean-slate: false
           exclude: |
             **/resources/js/**
             **/node_modules/**
             **/.git/**
+            **/.github/**
+            **/database/migrations/modules/**
+            **/database/migrations/modules/jobs/**
+            **/database/migrations/modules/vehicles/**
+            **/database/migrations/modules/warranty/**
+            database/migrations/modules/**

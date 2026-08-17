@@ -3,6 +3,7 @@
 namespace App\Models\ServiceStation;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Item;
 
 class WarrantyPolicy extends Model
 {

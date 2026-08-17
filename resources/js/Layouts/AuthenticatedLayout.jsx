@@ -120,14 +120,30 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                         </button>
 
                         {!hideSidebar && (
-                            <button
-                                onClick={() => setIsSidebarVisible(!isSidebarVisible)}
-                                className="hidden lg:flex p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
-                            >
-                                <svg className={`h-4 w-4 transition-transform duration-300 ${isSidebarVisible ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                                </svg>
-                            </button>
+                            <div className="hidden lg:flex items-center gap-2">
+                                <button
+                                    onClick={() => setIsSidebarVisible(!isSidebarVisible)}
+                                    className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                    title={isSidebarVisible ? "Collapse Sidebar" : "Expand Sidebar"}
+                                >
+                                    <svg className={`h-4 w-4 transition-transform duration-300 ${isSidebarVisible ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                                    </svg>
+                                </button>
+
+                                {!isSidebarVisible && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsQuickMenuOpen(true)}
+                                        title="Create New"
+                                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#00713D] hover:bg-[#005a30] text-white shadow-sm hover:shadow transition-all duration-150 active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#00713D] focus:ring-offset-1 group"
+                                    >
+                                        <svg className="h-4 w-4 transition-transform group-hover:rotate-90 duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
                         )}
 
                         {hideSidebar && (

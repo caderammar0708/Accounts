@@ -6,6 +6,8 @@ import CommonInput from '@/Components/CommonInput';
 import { useDateFormat, formatDate } from '@/Utils/dateFormat';
 import ReportDateFilter from '@/Components/ReportDateFilter';
 
+import ReportCurrency from '@/Components/ReportCurrency';
+
 export default function ProfitAndLoss({ reportData, filters, auth }) {
     const dateFormat = useDateFormat();
     const [displayBy, setDisplayBy] = useState(filters.display_by || 'total');
@@ -61,11 +63,8 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
 
     const homeCurrency = auth.company?.home_currency_prefix || auth.company?.home_currency || '';
 
-    const Currency = ({ value }) => (
-        <span className={value < 0 ? 'text-red-600' : 'text-slate-900'}>
-            <span className="text-[10px] font-bold text-slate-400 mr-1">{homeCurrency}</span>
-            {value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </span>
+    const Currency = ({ value, className = '' }) => (
+        <ReportCurrency value={value} currency={homeCurrency} className={className} />
     );
 
     const isMonthWise = filters.display_by === 'month';
@@ -242,7 +241,7 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                     className={`hover:bg-gray-50 transition-colors ${hasChildren ? 'cursor-pointer' : ''}`}
                     onClick={() => hasChildren && toggleGroup(item.id)}
                 >
-                    <td className="py-2 px-3 text-gray-900" style={{ paddingLeft }}>
+                    <td className="py-2 px-3 text-gray-900 min-w-[200px]" style={{ paddingLeft }}>
                         {hasChildren && (
                             <span className="inline-block mr-2 text-[10px] w-3 text-center text-gray-500">
                                 {isCollapsed ? '▶' : '▼'}
@@ -259,7 +258,7 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                         const displayVal = (hasChildren && isCollapsed) ? item.total_monthly_balances?.[ym] : item.monthly_balances?.[ym];
                         
                         return (
-                            <td key={ym} className="py-2 px-3 text-right tabular-nums">
+                            <td key={ym} className="py-2 px-3 text-right whitespace-nowrap min-w-[120px]">
                                 {(hasChildren && !isCollapsed && (item.monthly_balances?.[ym] || 0) === 0) ? null : (
                                     <Link href={route('chart-of-account.history', item.id) + '?start_date=' + sDate + '&end_date=' + eDate} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4" onClick={(e) => hasChildren && e.stopPropagation()}>
                                         <Currency value={displayVal || 0} />
@@ -268,7 +267,7 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                             </td>
                         );
                     })}
-                    <td className="py-2 px-3 text-right tabular-nums">
+                    <td className="py-2 px-3 text-right whitespace-nowrap min-w-[130px]">
                         {(() => {
                             const displayVal = (hasChildren && isCollapsed) ? item.total_balance : item.balance;
                             if (hasChildren && !isCollapsed && item.balance === 0) return null;
@@ -289,11 +288,11 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                             Total {item.name}
                         </td>
                         {isMonthWise && monthCols.map(ym => (
-                            <td key={ym} className="py-2 px-3 text-right tabular-nums">
+                            <td key={ym} className="py-2 px-3 text-right whitespace-nowrap">
                                 <Currency value={item.total_monthly_balances?.[ym] || 0} />
                             </td>
                         ))}
-                        <td className="py-2 px-3 text-right tabular-nums border-t border-gray-200">
+                        <td className="py-2 px-3 text-right whitespace-nowrap border-t border-gray-200">
                             <Currency value={item.total_balance} />
                         </td>
                     </tr>
@@ -319,18 +318,18 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
             </div>
 
             <div className="w-full overflow-x-auto pb-10">
-                <table className="w-full text-[13px] text-left border-collapse">
+                <table className="min-w-full text-[13px] text-left border-collapse">
                     <thead>
                         <tr className="border-y-2 border-gray-300">
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-2/5">
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[200px]">
                                 Account
                             </th>
                             {isMonthWise && monthCols.map(ym => (
-                                <th key={ym} className="py-2.5 px-3 font-semibold text-gray-900 text-right w-32 whitespace-nowrap">
+                                <th key={ym} className="py-2.5 px-3 font-semibold text-gray-900 text-right min-w-[120px] whitespace-nowrap">
                                     {formatMonth(ym)}
                                 </th>
                             ))}
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-32 whitespace-nowrap">
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right min-w-[130px] whitespace-nowrap">
                                 Total <span className="inline-block ml-1 text-gray-400 text-[10px]">↕</span>
                             </th>
                         </tr>
@@ -347,11 +346,11 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                                 </span> Income
                             </td>
                             {isMonthWise && monthCols.map(ym => (
-                                <td key={ym} className="py-2 px-3 text-right tabular-nums text-gray-900 font-bold">
+                                <td key={ym} className="py-2 px-3 text-right whitespace-nowrap text-gray-900 font-bold">
                                     {collapsedGroups.has('Income') && <Currency value={totalIncomeMonthly[ym] || 0} />}
                                 </td>
                             ))}
-                            <td className="py-2 px-3 text-right tabular-nums text-gray-900 font-bold">
+                            <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900 font-bold">
                                 {collapsedGroups.has('Income') && <Currency value={totalIncome} />}
                             </td>
                         </tr>
@@ -362,9 +361,9 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                             <tr className="border-t border-b-2 border-gray-300 bg-white font-semibold">
                                 <td className="py-2 px-3 pl-8 text-gray-900">Total Income</td>
                                 {isMonthWise && monthCols.map(ym => (
-                                    <td key={ym} className="py-2 px-3 text-right tabular-nums text-gray-900"><Currency value={totalIncomeMonthly[ym] || 0} /></td>
+                                    <td key={ym} className="py-2 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalIncomeMonthly[ym] || 0} /></td>
                                 ))}
-                                <td className="py-2 px-3 text-right tabular-nums text-gray-900"><Currency value={totalIncome} /></td>
+                                <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalIncome} /></td>
                             </tr>
                         )}
 
@@ -379,11 +378,11 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                                 </span> Cost of Goods Sold
                             </td>
                             {isMonthWise && monthCols.map(ym => (
-                                <td key={ym} className="py-2 px-3 text-right tabular-nums text-gray-900 font-bold">
+                                <td key={ym} className="py-2 px-3 text-right whitespace-nowrap text-gray-900 font-bold">
                                     {collapsedGroups.has('COGS') && <Currency value={totalCogsMonthly[ym] || 0} />}
                                 </td>
                             ))}
-                            <td className="py-2 px-3 text-right tabular-nums text-gray-900 font-bold">
+                            <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900 font-bold">
                                 {collapsedGroups.has('COGS') && <Currency value={totalCogs} />}
                             </td>
                         </tr>
@@ -394,9 +393,9 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                             <tr className="border-t border-b border-gray-300 bg-white font-semibold">
                                 <td className="py-2 px-3 pl-8 text-gray-900">Total Cost of Goods Sold</td>
                                 {isMonthWise && monthCols.map(ym => (
-                                    <td key={ym} className="py-2 px-3 text-right tabular-nums text-gray-900"><Currency value={totalCogsMonthly[ym] || 0} /></td>
+                                    <td key={ym} className="py-2 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalCogsMonthly[ym] || 0} /></td>
                                 ))}
-                                <td className="py-2 px-3 text-right tabular-nums text-gray-900"><Currency value={totalCogs} /></td>
+                                <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalCogs} /></td>
                             </tr>
                         )}
 
@@ -404,9 +403,9 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                         <tr className="border-b-2 border-gray-300 font-bold bg-white text-[13px]">
                             <td className="py-2.5 px-3 pl-8 text-gray-900">GROSS PROFIT</td>
                             {isMonthWise && monthCols.map(ym => (
-                                <td key={ym} className="py-2.5 px-3 text-right tabular-nums text-gray-900"><Currency value={grossProfitMonthly[ym] || 0} /></td>
+                                <td key={ym} className="py-2.5 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={grossProfitMonthly[ym] || 0} /></td>
                             ))}
-                            <td className="py-2.5 px-3 text-right tabular-nums text-gray-900"><Currency value={grossProfit} /></td>
+                            <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={grossProfit} /></td>
                         </tr>
 
                         {/* Expense Section */}
@@ -420,11 +419,11 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                                 </span> Expenses
                             </td>
                             {isMonthWise && monthCols.map(ym => (
-                                <td key={ym} className="py-2 px-3 text-right tabular-nums text-gray-900 font-bold">
+                                <td key={ym} className="py-2 px-3 text-right whitespace-nowrap text-gray-900 font-bold">
                                     {collapsedGroups.has('Expense') && <Currency value={totalExpenseMonthly[ym] || 0} />}
                                 </td>
                             ))}
-                            <td className="py-2 px-3 text-right tabular-nums text-gray-900 font-bold">
+                            <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900 font-bold">
                                 {collapsedGroups.has('Expense') && <Currency value={totalExpense} />}
                             </td>
                         </tr>
@@ -435,9 +434,9 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                             <tr className="border-t border-b-2 border-gray-300 bg-white font-semibold">
                                 <td className="py-2 px-3 pl-8 text-gray-900">Total Expenses</td>
                                 {isMonthWise && monthCols.map(ym => (
-                                    <td key={ym} className="py-2 px-3 text-right tabular-nums text-gray-900"><Currency value={totalExpenseMonthly[ym] || 0} /></td>
+                                    <td key={ym} className="py-2 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalExpenseMonthly[ym] || 0} /></td>
                                 ))}
-                                <td className="py-2 px-3 text-right tabular-nums text-gray-900"><Currency value={totalExpense} /></td>
+                                <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalExpense} /></td>
                             </tr>
                         )}
 
@@ -445,9 +444,9 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                         <tr className="border-t-2 border-b-4 border-gray-400 font-bold bg-white text-[14px]">
                             <td className="py-3 px-3 text-gray-900">NET INCOME</td>
                             {isMonthWise && monthCols.map(ym => (
-                                <td key={ym} className="py-3 px-3 text-right tabular-nums text-gray-900"><Currency value={netIncomeMonthly[ym] || 0} /></td>
+                                <td key={ym} className="py-3 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={netIncomeMonthly[ym] || 0} /></td>
                             ))}
-                            <td className="py-3 px-3 text-right tabular-nums text-gray-900"><Currency value={netIncome} /></td>
+                            <td className="py-3 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={netIncome} /></td>
                         </tr>
                     </tbody>
                 </table>

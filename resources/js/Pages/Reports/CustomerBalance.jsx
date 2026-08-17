@@ -5,14 +5,15 @@ import CommonButton from '@/Components/CommonButton';
 import CommonInput from '@/Components/CommonInput';
 import { useDateFormat, formatDate } from '@/Utils/dateFormat';
 import ReportDateFilter from '@/Components/ReportDateFilter';
+import ReportCurrency from '@/Components/ReportCurrency';
 
 export default function CustomerBalance({ reportData, filters, auth }) {
     const dateFormat = useDateFormat();
 
     const handleFilterChange = (newFilters) => {
         router.get(route('reports.customer-balance'), { 
-            start_date: newFilters.start_date, 
             end_date: newFilters.end_date,
+            start_date: newFilters.start_date,
             type: newFilters.type,
             display_by: filters.display_by
         }, {
@@ -41,30 +42,21 @@ export default function CustomerBalance({ reportData, filters, auth }) {
 
     const homeCurrency = auth.company?.home_currency_prefix || auth.company?.home_currency || '';
 
-    const Currency = ({ value }) => (
-        <span className={value < 0 ? 'text-red-600' : 'text-slate-900'}>
-            <span className="text-[10px] font-bold text-slate-400 mr-1">{homeCurrency}</span>
-            {value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </span>
+    const Currency = ({ value, className = '' }) => (
+        <ReportCurrency value={value} currency={homeCurrency} className={className} />
     );
 
     const handleExportExcel = () => {
         const companyName = auth.company?.company_name || 'Company';
-        const endDate = filters.end_date;
-
-        let csvContent = "";
-
-        // Add Title Header
-        csvContent += `"${companyName}"\n`;
-        csvContent += `"Customer Report"\n`;
-        csvContent += `"As of ${formatDate(endDate, dateFormat)}"\n\n`;
-
+        let csvContent = `"${companyName}"\n"Customer Balance Summary"\n`;
+        csvContent += `"As of ${filters.end_date ? formatDate(filters.end_date, dateFormat) : formatDate(new Date(), dateFormat)}"\n\n`;
+        
         if (isMonthWise) {
-            csvContent += `"Customer Name","Email","Phone",`;
+            csvContent += `"Customer","Email","Phone",`;
             monthCols.forEach(m => {
                 csvContent += `"${m} Balance",`;
             });
-            csvContent += `"Final Balance (${homeCurrency})"\n`;
+            csvContent += `"Final Balance"\n`;
 
             customers.forEach(item => {
                 csvContent += `"${item.name}","${item.email || ''}","${item.phone || ''}",`;
@@ -74,7 +66,6 @@ export default function CustomerBalance({ reportData, filters, auth }) {
                 });
                 csvContent += `${item.balance}\n`;
             });
-
             csvContent += `\n"Total",,,`;
             monthCols.forEach(m => {
                 const mTotalAmt = customers.reduce((sum, item) => sum + (item.monthly_balances?.[m] || 0), 0);
@@ -82,24 +73,18 @@ export default function CustomerBalance({ reportData, filters, auth }) {
             });
             csvContent += `${totalBalance}\n`;
         } else {
-            // Headers
-            csvContent += `"Customer Name","Email","Phone","Balance (${homeCurrency})"\n`;
-
-            // Customers
+            csvContent += `"Customer","Email","Phone","Open Balance (${homeCurrency})"\n`;
             customers.forEach(item => {
                 csvContent += `"${item.name}","${item.email || ''}","${item.phone || ''}",${item.balance}\n`;
             });
-
-            // Total
             csvContent += `\n"Total",,,${totalBalance}\n`;
         }
 
-        // Create download blob
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `${companyName.replace(/[^a-z0-9]/gi, '_')}_Customer_Balance_As_Of_${endDate}.csv`);
+        link.setAttribute("download", `Customer_Balance_Summary.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -124,25 +109,25 @@ export default function CustomerBalance({ reportData, filters, auth }) {
 
     return (
         <ReportLayout
-            title="Customer Report"
+            title="Customer Balance Summary"
             filters={filterElements}
             onExportExcel={handleExportExcel}
         >
-            <Head title="Customer Report" />
+            <Head title="Customer Balance Summary" />
 
             <div className="text-center mb-8 font-serif">
                 <h2 className="text-xl font-bold text-gray-900">Customer Balance Summary</h2>
                 <h3 className="text-sm text-gray-700 mt-1">{auth.company?.company_name}</h3>
                 <p className="text-[13px] text-gray-500 mt-1">
-                    As of {formatDate(filters.end_date, dateFormat)}
+                    {filters.end_date ? `As of ${formatDate(filters.end_date, dateFormat)}` : `As of ${formatDate(new Date(), dateFormat)}`}
                 </p>
             </div>
 
             <div className="w-full overflow-x-auto pb-10">
-                <table className="w-full text-[13px] text-left border-collapse table-fixed min-w-max">
+                <table className="min-w-full text-[13px] text-left border-collapse">
                     <thead>
                         <tr className="border-y-2 border-gray-300">
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-64">
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[200px]">
                                 Customer <span className="inline-block ml-1 text-gray-400 text-[10px]">▲</span>
                             </th>
                             {isMonthWise ? (
@@ -150,15 +135,15 @@ export default function CustomerBalance({ reportData, filters, auth }) {
                                     {monthCols.map(m => {
                                         const d = new Date(m + '-01');
                                         return (
-                                            <th key={m} className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[100px]">
+                                            <th key={m} className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[120px]">
                                                 {d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                                             </th>
                                         );
                                     })}
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-32 border-l border-gray-100">Final Balance</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px] border-l border-gray-100">Final Balance</th>
                                 </>
                             ) : (
-                                <th className="py-2.5 px-3 font-semibold text-gray-900 text-right">
+                                <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px]">
                                     Open Balance <span className="inline-block ml-1 text-gray-400 text-[10px]">↕</span>
                                 </th>
                             )}
@@ -172,10 +157,10 @@ export default function CustomerBalance({ reportData, filters, auth }) {
                         ) : (
                             customers.map((item, index) => (
                                 <tr key={index} className="hover:bg-gray-50 transition-colors group">
-                                    <td className="py-2 px-3 text-gray-900">
+                                    <td className="py-2 px-3 text-gray-900 min-w-[200px]">
                                         {item.name}
                                         {(item.email || item.phone) && (
-                                            <span className="block text-[11px] text-gray-400 mt-0.5">
+                                            <span className="block text-[11px] text-gray-400 mt-0.5 whitespace-nowrap">
                                                 {item.email} {item.email && item.phone && '|'} {item.phone}
                                             </span>
                                         )}
@@ -185,19 +170,19 @@ export default function CustomerBalance({ reportData, filters, auth }) {
                                             {monthCols.map(m => {
                                                 const mData = item.monthly_balances?.[m] || 0;
                                                 return (
-                                                    <td key={m} className="py-2 px-3 text-right tabular-nums">
+                                                    <td key={m} className="py-2 px-3 text-right whitespace-nowrap">
                                                         <Currency value={mData} />
                                                     </td>
                                                 );
                                             })}
-                                            <td className="py-2 px-3 text-right tabular-nums font-bold border-l border-gray-100">
+                                            <td className="py-2 px-3 text-right whitespace-nowrap font-bold border-l border-gray-100">
                                                 <Link href={route('reports.customer-detail', item.id) + '?end_date=' + filters.end_date} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4">
                                                     <Currency value={item.balance} />
                                                 </Link>
                                             </td>
                                         </>
                                     ) : (
-                                        <td className="py-2 px-3 text-right tabular-nums">
+                                        <td className="py-2 px-3 text-right whitespace-nowrap">
                                             <Link href={route('reports.customer-detail', item.id) + '?end_date=' + filters.end_date} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4">
                                                 <Currency value={item.balance} />
                                             </Link>
@@ -212,19 +197,19 @@ export default function CustomerBalance({ reportData, filters, auth }) {
                                 {monthCols.map(m => {
                                     const mTotalAmt = customers.reduce((sum, item) => sum + (item.monthly_balances?.[m] || 0), 0);
                                     return (
-                                        <td key={m} className="py-3 px-3 text-right tabular-nums text-gray-900">
+                                        <td key={m} className="py-3 px-3 text-right whitespace-nowrap text-gray-900">
                                             <Currency value={mTotalAmt} />
                                         </td>
                                     );
                                 })}
-                                <td className="py-3 px-3 text-right tabular-nums text-gray-900 border-l border-gray-200">
+                                <td className="py-3 px-3 text-right whitespace-nowrap text-gray-900 border-l border-gray-200">
                                     <Currency value={totalBalance} />
                                 </td>
                             </tr>
                         ) : (
                             <tr className="border-t-2 border-b-2 border-gray-400 font-bold bg-white">
                                 <td className="py-2.5 px-3 text-gray-900">TOTAL</td>
-                                <td className="py-2.5 px-3 text-right tabular-nums text-gray-900">
+                                <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-900">
                                     <Currency value={totalBalance} />
                                 </td>
                             </tr>

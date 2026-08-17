@@ -5,7 +5,8 @@ namespace App\Models\ServiceStation;
 use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-
+use App\Models\Customer;
+use App\Models\Device;
 use App\Traits\BelongsToLocation;
 
 class JobCard extends Model

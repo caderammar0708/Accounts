@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Models\Accounting\ChartOfAcc;
-
+use App\Models\ServiceStation\WarrantyPolicy;
 use App\Traits\BelongsToLocation;
 
 class Item extends Model

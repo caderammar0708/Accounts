@@ -5,7 +5,7 @@ namespace App\Models\ServiceStation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Carbon\Carbon;
-
+use App\Models\Customer;
 use App\Traits\BelongsToLocation;
 
 class Warranty extends Model

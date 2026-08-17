@@ -4,7 +4,6 @@ namespace App\Models\FuelStation;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
 use App\Models\Company;
 
 class Pump extends Model

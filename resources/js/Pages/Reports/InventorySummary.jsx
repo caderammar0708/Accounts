@@ -4,6 +4,7 @@ import { Head, router, Link } from '@inertiajs/react';
 import CommonButton from '@/Components/CommonButton';
 import { useDateFormat, formatDate } from '@/Utils/dateFormat';
 import ReportDateFilter from '@/Components/ReportDateFilter';
+import ReportCurrency from '@/Components/ReportCurrency';
 
 export default function InventorySummary({ reportData, filters = {}, auth }) {
     const dateFormat = useDateFormat();
@@ -73,11 +74,8 @@ export default function InventorySummary({ reportData, filters = {}, auth }) {
 
     const homeCurrency = auth.company?.home_currency_prefix || auth.company?.home_currency || '';
 
-    const Currency = ({ value }) => (
-        <span className={value < 0 ? 'text-red-600' : 'text-slate-900'}>
-            <span className="text-[10px] font-bold text-slate-400 mr-1">{homeCurrency}</span>
-            {value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </span>
+    const Currency = ({ value, className = '' }) => (
+        <ReportCurrency value={value} currency={homeCurrency} className={className} />
     );
 
     const handleExportExcel = () => {
@@ -156,13 +154,13 @@ export default function InventorySummary({ reportData, filters = {}, auth }) {
             </div>
 
             <div className="w-full overflow-x-auto pb-10">
-                <table className="w-full text-[13px] text-left border-collapse table-fixed min-w-max">
+                <table className="min-w-full text-[13px] text-left border-collapse">
                     <thead>
                         <tr className="border-y-2 border-gray-300">
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-64">
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[200px]">
                                 Product / Service
                             </th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-32">
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[100px]">
                                 SKU
                             </th>
                             {isMonthWise ? (
@@ -175,25 +173,25 @@ export default function InventorySummary({ reportData, filters = {}, auth }) {
                                             </th>
                                         );
                                     })}
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-32 border-l border-gray-100">
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[100px] border-l border-gray-100">
                                         Qty on Hand
                                     </th>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-32">
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[110px]">
                                         Avg Cost
                                     </th>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-32">
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[120px]">
                                         Final Value
                                     </th>
                                 </>
                             ) : (
                                 <>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[15%]">
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[100px]">
                                         Qty on Hand
                                     </th>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[15%]">
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px]">
                                         Calculated Average
                                     </th>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[15%]">
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[120px]">
                                         Asset Value
                                     </th>
                                 </>
@@ -238,7 +236,7 @@ export default function InventorySummary({ reportData, filters = {}, auth }) {
                                                         {item.name}
                                                     </Link>
                                                 </td>
-                                                <td className="py-2 px-3 text-right text-gray-500 text-xs">
+                                                <td className="py-2 px-3 text-right text-gray-500 text-xs whitespace-nowrap">
                                                     {item.sku || '-'}
                                                 </td>
                                                 {isMonthWise ? (
@@ -246,30 +244,30 @@ export default function InventorySummary({ reportData, filters = {}, auth }) {
                                                         {monthCols.map(m => {
                                                             const mVal = item.monthly_balances?.[m] || 0;
                                                             return (
-                                                                <td key={m} className="py-2 px-6 text-right tabular-nums">
+                                                                <td key={m} className="py-2 px-6 text-right whitespace-nowrap">
                                                                     <Currency value={mVal} />
                                                                 </td>
                                                             );
                                                         })}
-                                                        <td className="py-2 px-3 text-right tabular-nums text-gray-900 font-semibold border-l border-gray-100">
+                                                        <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900 font-semibold border-l border-gray-100">
                                                             {parseFloat(item.qty_on_hand || 0).toLocaleString('en-US', { maximumFractionDigits: 4 })}
                                                         </td>
-                                                        <td className="py-2 px-3 text-right tabular-nums">
+                                                        <td className="py-2 px-3 text-right whitespace-nowrap">
                                                             <Currency value={item.avg_cost} />
                                                         </td>
-                                                        <td className="py-2 px-3 text-right tabular-nums font-semibold">
+                                                        <td className="py-2 px-3 text-right whitespace-nowrap font-semibold">
                                                             <Currency value={item.asset_value} />
                                                         </td>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <td className="py-2 px-3 text-right tabular-nums text-gray-900 font-semibold">
+                                                        <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900 font-semibold">
                                                             {parseFloat(item.qty_on_hand || 0).toLocaleString('en-US', { maximumFractionDigits: 4 })}
                                                         </td>
-                                                        <td className="py-2 px-3 text-right tabular-nums">
+                                                        <td className="py-2 px-3 text-right whitespace-nowrap">
                                                             <Currency value={item.avg_cost} />
                                                         </td>
-                                                        <td className="py-2 px-3 text-right tabular-nums font-semibold">
+                                                        <td className="py-2 px-3 text-right whitespace-nowrap font-semibold">
                                                             <Currency value={item.asset_value} />
                                                         </td>
                                                     </>
@@ -283,7 +281,7 @@ export default function InventorySummary({ reportData, filters = {}, auth }) {
                                                 <td colSpan={isMonthWise ? monthCols.length + 4 : 4} className="py-2 px-3 font-semibold text-gray-700 pl-10 text-right">
                                                     Total for {group.category}
                                                 </td>
-                                                <td className="py-2 px-3 text-right font-semibold text-gray-900 tabular-nums">
+                                                <td className="py-2 px-3 text-right font-semibold text-gray-900 whitespace-nowrap">
                                                     <Currency value={categoryTotal} />
                                                 </td>
                                             </tr>
@@ -301,20 +299,20 @@ export default function InventorySummary({ reportData, filters = {}, auth }) {
                                 {monthCols.map(m => {
                                     const mTotal = groups.reduce((sum, g) => sum + g.items.reduce((itemSum, item) => itemSum + (item.monthly_balances?.[m] || 0), 0), 0);
                                     return (
-                                        <td key={m} className="py-3 px-3 text-right tabular-nums text-gray-900">
+                                        <td key={m} className="py-3 px-3 text-right whitespace-nowrap text-gray-900">
                                             <Currency value={mTotal} />
                                         </td>
                                     );
                                 })}
-                                <td className="py-3 px-3 text-right tabular-nums text-gray-900" colSpan="2"></td>
-                                <td className="py-3 px-3 text-right tabular-nums text-gray-900 text-lg">
+                                <td className="py-3 px-3 text-right whitespace-nowrap text-gray-900" colSpan="2"></td>
+                                <td className="py-3 px-3 text-right whitespace-nowrap text-gray-900 text-lg">
                                     <Currency value={totalAssetValue} />
                                 </td>
                             </tr>
                         ) : (
                             <tr className="border-t-2 border-gray-400 font-bold bg-white">
                                 <td className="py-3 px-3 text-gray-900 uppercase tracking-wide" colSpan="4">Total Asset Value</td>
-                                <td className="py-3 px-3 text-right tabular-nums text-gray-900 text-lg">
+                                <td className="py-3 px-3 text-right whitespace-nowrap text-gray-900 text-lg">
                                     <Currency value={totalAssetValue} />
                                 </td>
                             </tr>

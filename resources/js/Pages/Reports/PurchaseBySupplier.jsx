@@ -5,11 +5,13 @@ import CommonButton from '@/Components/CommonButton';
 import ReportDateFilter from '@/Components/ReportDateFilter';
 import { useDateFormat, formatDate } from '@/Utils/dateFormat';
 
+import ReportCurrency from '@/Components/ReportCurrency';
+
 export default function PurchaseBySupplier({ reportData, filters, auth }) {
     const dateFormat = useDateFormat();
 
     const handleFilterChange = (newFilters) => {
-        router.get(route('reports.purchase-by-supplier'), { 
+        router.get(route('reports.purchases-by-supplier'), { 
             start_date: newFilters.start_date, 
             end_date: newFilters.end_date,
             type: newFilters.type,
@@ -26,7 +28,7 @@ export default function PurchaseBySupplier({ reportData, filters, auth }) {
 
     const toggleDisplayBy = () => {
         const newDisplayBy = displayBy === 'month' ? 'total' : 'month';
-        router.get(route('reports.purchase-by-supplier'), {
+        router.get(route('reports.purchases-by-supplier'), {
             ...filters,
             display_by: newDisplayBy,
         }, {
@@ -41,11 +43,8 @@ export default function PurchaseBySupplier({ reportData, filters, auth }) {
 
     const homeCurrency = auth.company?.home_currency_prefix || auth.company?.home_currency || '';
 
-    const Currency = ({ value }) => (
-        <span className={value < 0 ? 'text-red-600' : 'text-slate-900'}>
-            <span className="text-[10px] font-bold text-slate-400 mr-1">{homeCurrency}</span>
-            {parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </span>
+    const Currency = ({ value, className = '' }) => (
+        <ReportCurrency value={value} currency={homeCurrency} className={className} />
     );
 
     const handleExportExcel = () => {
@@ -126,26 +125,26 @@ export default function PurchaseBySupplier({ reportData, filters, auth }) {
             </div>
 
             <div className="w-full overflow-x-auto pb-10">
-                <table className="w-full text-[13px] text-left border-collapse table-fixed min-w-max">
+                <table className="min-w-full text-[13px] text-left border-collapse">
                     <thead>
                         <tr className="border-y-2 border-gray-300">
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-64">Supplier Name</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[200px]">Supplier Name</th>
                             {isMonthWise ? (
                                 <>
                                     {monthCols.map(m => {
                                         const d = new Date(m + '-01');
                                         return (
-                                            <th key={m} className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[100px]">
+                                            <th key={m} className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[120px]">
                                                 {d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                                             </th>
                                         );
                                     })}
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-32 border-l border-gray-100">Total</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px] border-l border-gray-100">Total</th>
                                 </>
                             ) : (
                                 <>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-48">Transaction Count</th>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-48">Amount</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[110px]">Transaction Count</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px]">Amount</th>
                                 </>
                             )}
                         </tr>
@@ -164,19 +163,19 @@ export default function PurchaseBySupplier({ reportData, filters, auth }) {
                                             {monthCols.map(m => {
                                                 const mData = item.monthly_totals?.[m] || { amount: 0, tx_count: 0 };
                                                 return (
-                                                    <td key={m} className="py-2 px-3 text-right tabular-nums">
+                                                    <td key={m} className="py-2 px-3 text-right whitespace-nowrap">
                                                         <Currency value={mData.amount} />
                                                     </td>
                                                 );
                                             })}
-                                            <td className="py-2 px-3 text-right tabular-nums font-bold border-l border-gray-100">
+                                            <td className="py-2 px-3 text-right whitespace-nowrap font-bold border-l border-gray-100">
                                                 <Currency value={item.total_amount} />
                                             </td>
                                         </>
                                     ) : (
                                         <>
-                                            <td className="py-2 px-3 text-right tabular-nums">{parseFloat(item.tx_count).toLocaleString()}</td>
-                                            <td className="py-2 px-3 text-right tabular-nums"><Currency value={item.total_amount} /></td>
+                                            <td className="py-2 px-3 text-right whitespace-nowrap">{parseFloat(item.tx_count).toLocaleString()}</td>
+                                            <td className="py-2 px-3 text-right whitespace-nowrap"><Currency value={item.total_amount} /></td>
                                         </>
                                     )}
                                 </tr>
@@ -188,20 +187,20 @@ export default function PurchaseBySupplier({ reportData, filters, auth }) {
                                 {monthCols.map(m => {
                                     const mTotalAmt = suppliers.reduce((sum, item) => sum + (item.monthly_totals?.[m]?.amount || 0), 0);
                                     return (
-                                        <td key={m} className="py-3 px-3 text-right tabular-nums text-gray-900">
+                                        <td key={m} className="py-3 px-3 text-right whitespace-nowrap text-gray-900">
                                             <Currency value={mTotalAmt} />
                                         </td>
                                     );
                                 })}
-                                <td className="py-3 px-3 text-right tabular-nums text-gray-900 border-l border-gray-200">
+                                <td className="py-3 px-3 text-right whitespace-nowrap text-gray-900 border-l border-gray-200">
                                     <Currency value={totalAmount} />
                                 </td>
                             </tr>
                         ) : (
                             <tr className="border-t-2 border-b-2 border-gray-400 font-bold bg-white">
                                 <td className="py-3 px-3 text-gray-900 uppercase">TOTAL</td>
-                                <td className="py-3 px-3 text-right tabular-nums text-gray-900">{parseFloat(totalCount).toLocaleString()}</td>
-                                <td className="py-3 px-3 text-right tabular-nums text-gray-900"><Currency value={totalAmount} /></td>
+                                <td className="py-3 px-3 text-right whitespace-nowrap text-gray-900">{parseFloat(totalCount).toLocaleString()}</td>
+                                <td className="py-3 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalAmount} /></td>
                             </tr>
                         )}
                     </tbody>
