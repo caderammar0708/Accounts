@@ -78,5 +78,37 @@
       "DB_USERNAME": "root",
       "DB_PASSWORD": ""
     }
+  },
+  "aaafs": {
+    "prod": {
+      "APP_URL": "https://aaafs.jbooks.cloud/",
+      "SSO_CLIENT_SECRET": "526454b4317fecf46a7550b42347bbec",
+      "DB_DATABASE": "u487520070_aaafs",
+      "DB_USERNAME": "u487520070_aaafs",
+      "DB_PASSWORD": "Grow2025@"
+    },
+    "local": {
+      "APP_URL": "http://127.0.0.1:8000/",
+      "SSO_CLIENT_SECRET": "526454b4317fecf46a7550b42347bbec",
+      "DB_DATABASE": "jbooks_aaafs",
+      "DB_USERNAME": "root",
+      "DB_PASSWORD": ""
+    }
+  },
+  "demo": {
+    "prod": {
+      "APP_URL": "https://demo.jbooks.cloud/",
+      "SSO_CLIENT_SECRET": "526454b4317fecf46a7550b42347bbec",
+      "DB_DATABASE": "u487520070_jb_demo",
+      "DB_USERNAME": "u487520070_jb_demo",
+      "DB_PASSWORD": "Grow2025@"
+    },
+    "local": {
+      "APP_URL": "http://127.0.0.1:8000/",
+      "SSO_CLIENT_SECRET": "526454b4317fecf46a7550b42347bbec",
+      "DB_DATABASE": "jbooks_demo",
+      "DB_USERNAME": "root",
+      "DB_PASSWORD": ""
+    }
   }
 }
