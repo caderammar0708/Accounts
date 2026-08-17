@@ -142,7 +142,6 @@ export default function Index({ auth, dipReadings, tanks, filters }) {
                         </div>
                     </div>
                 </div>
-            </div>
 
             <SlideOver 
                 title="New Dip Reading" 
