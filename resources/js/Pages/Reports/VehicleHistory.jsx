@@ -3,16 +3,14 @@ import ReportLayout from '@/Layouts/ReportLayout';
 import { Head, router } from '@inertiajs/react';
 import ReportDateFilter from '@/Components/ReportDateFilter';
 import { useDateFormat, formatDate } from '@/Utils/dateFormat';
+import ReportCurrency from '@/Components/ReportCurrency';
 
 export default function VehicleHistory({ receipts, filters, auth }) {
     const dateFormat = useDateFormat();
     const homeCurrency = auth.company?.home_currency_prefix || auth.company?.home_currency || '';
 
-    const Currency = ({ value }) => (
-        <span className={value < 0 ? 'text-red-600' : 'text-slate-900'}>
-            <span className="text-[10px] font-bold text-slate-400 mr-1">{homeCurrency}</span>
-            {parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </span>
+    const Currency = ({ value, className = '' }) => (
+        <ReportCurrency value={value} currency={homeCurrency} className={className} />
     );
 
     const handleFilterChange = (newFilters) => {
@@ -93,15 +91,15 @@ export default function VehicleHistory({ receipts, filters, auth }) {
             </div>
 
             <div className="w-full overflow-x-auto pb-10">
-                <table className="w-full text-[13px] text-left border-collapse table-fixed">
+                <table className="min-w-full text-[13px] text-left border-collapse">
                     <thead>
                         <tr className="border-y-2 border-gray-300 bg-slate-50">
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-[12%]">Service Date</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-[12%]">Receipt No</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-[26%]">Product / Service</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[15%]">Rate</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-center w-[10%]">Qty</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[15%]">Amount</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 whitespace-nowrap min-w-[110px]">Service Date</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 whitespace-nowrap min-w-[120px]">Receipt No</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[200px]">Product / Service</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[120px]">Rate</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-center whitespace-nowrap min-w-[80px]">Qty</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px]">Amount</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -115,7 +113,7 @@ export default function VehicleHistory({ receipts, filters, auth }) {
                             vehicleGroups.map((group, index) => (
                                 <React.Fragment key={index}>
                                     <tr className="bg-primary-50">
-                                        <td colSpan="6" className="py-2.5 px-3 font-bold text-primary-900">
+                                        <td colSpan="6" className="py-2.5 px-3 font-bold text-primary-900 whitespace-nowrap">
                                             {group.vehicle 
                                                 ? `Vehicle: ${group.vehicle.vehicle_no} - ${group.vehicle.brand} ${group.vehicle.model}` 
                                                 : 'Walk-in / Unassigned'}
@@ -127,10 +125,10 @@ export default function VehicleHistory({ receipts, filters, auth }) {
                                                 <tr key={item.id} className="hover:bg-slate-50 transition-colors bg-white">
                                                     {itemIdx === 0 ? (
                                                         <>
-                                                            <td className="py-2 px-3 text-gray-600 align-top" rowSpan={receipt.items.length}>
+                                                            <td className="py-2 px-3 text-gray-600 align-top whitespace-nowrap" rowSpan={receipt.items.length}>
                                                                 {receipt.receipt_date}
                                                             </td>
-                                                            <td className="py-2 px-3 text-gray-600 align-top" rowSpan={receipt.items.length}>
+                                                            <td className="py-2 px-3 text-gray-600 align-top whitespace-nowrap" rowSpan={receipt.items.length}>
                                                                 {receipt.receipt_no}
                                                             </td>
                                                         </>
@@ -138,22 +136,22 @@ export default function VehicleHistory({ receipts, filters, auth }) {
                                                     <td className="py-2 px-3 text-gray-800">
                                                         {item.item ? item.item.name : item.description}
                                                     </td>
-                                                    <td className="py-2 px-3 text-right tabular-nums text-gray-600">
+                                                    <td className="py-2 px-3 text-right whitespace-nowrap text-gray-600">
                                                         {item.rate ? <Currency value={item.rate} /> : '-'}
                                                     </td>
-                                                    <td className="py-2 px-3 text-center tabular-nums text-gray-900">
+                                                    <td className="py-2 px-3 text-center whitespace-nowrap text-gray-900">
                                                         {item.quantity}
                                                     </td>
-                                                    <td className="py-2 px-3 text-right tabular-nums font-medium text-gray-900">
+                                                    <td className="py-2 px-3 text-right whitespace-nowrap font-medium text-gray-900">
                                                         <Currency value={item.amount} />
                                                     </td>
                                                 </tr>
                                             ))}
                                             <tr className="border-b border-gray-200">
-                                                <td colSpan="5" className="py-2 px-3 font-semibold text-gray-700 text-right bg-slate-50">
+                                                <td colSpan="5" className="py-2 px-3 font-semibold text-gray-700 text-right bg-slate-50 whitespace-nowrap">
                                                     Total for {receipt.receipt_no}
                                                 </td>
-                                                <td className="py-2 px-3 text-right font-bold text-gray-900 tabular-nums bg-slate-50">
+                                                <td className="py-2 px-3 text-right font-bold text-gray-900 whitespace-nowrap bg-slate-50">
                                                     <Currency value={receipt.total_amount} />
                                                 </td>
                                             </tr>

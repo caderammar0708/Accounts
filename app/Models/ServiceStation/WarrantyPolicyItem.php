@@ -4,6 +4,7 @@ namespace App\Models\ServiceStation;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use App\Models\Item;
 
 class WarrantyPolicyItem extends Model
 {

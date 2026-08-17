@@ -5,6 +5,7 @@ import CommonButton from '@/Components/CommonButton';
 import CommonInput from '@/Components/CommonInput';
 import { useDateFormat, formatDate } from '@/Utils/dateFormat';
 import ReportDateFilter from '@/Components/ReportDateFilter';
+import ReportCurrency from '@/Components/ReportCurrency';
 
 export default function BalanceSheet({ reportData, filters, auth }) {
     const dateFormat = useDateFormat();
@@ -29,8 +30,8 @@ export default function BalanceSheet({ reportData, filters, auth }) {
 
     const handleFilterChange = (newFilters) => {
         router.get(route('reports.balance-sheet'), { 
-            start_date: newFilters.start_date, 
             end_date: newFilters.end_date,
+            start_date: newFilters.start_date,
             display_by: displayBy,
             type: newFilters.type 
         }, {
@@ -43,8 +44,8 @@ export default function BalanceSheet({ reportData, filters, auth }) {
         const val = displayBy === 'total' ? 'month' : 'total';
         setDisplayBy(val);
         router.get(route('reports.balance-sheet'), { 
-            start_date: filters.start_date, 
             end_date: filters.end_date,
+            start_date: filters.start_date,
             display_by: val,
             type: filters.type
         }, {
@@ -64,11 +65,8 @@ export default function BalanceSheet({ reportData, filters, auth }) {
 
     const homeCurrency = auth.company?.home_currency_prefix || auth.company?.home_currency || '';
 
-    const Currency = ({ value }) => (
-        <span className={value < 0 ? 'text-red-600' : 'text-slate-900'}>
-            <span className="text-[10px] font-bold text-slate-400 mr-1">{homeCurrency}</span>
-            {value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </span>
+    const Currency = ({ value, className = '' }) => (
+        <ReportCurrency value={value} currency={homeCurrency} className={className} />
     );
 
     const flattenAccounts = (accounts, prefix = "") => {
@@ -201,7 +199,7 @@ export default function BalanceSheet({ reportData, filters, auth }) {
                         const displayVal = item.monthly_balances?.[ym] || 0;
 
                         return (
-                            <td key={ym} className="py-2 px-3 text-right tabular-nums">
+                            <td key={ym} className="py-2 px-3 text-right whitespace-nowrap min-w-[120px]">
                                 {hasChildren && displayVal === 0 ? null : (
                                     <Link href={route('chart-of-account.history', item.id) + '?start_date=' + sDate + '&end_date=' + eDate} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4">
                                         <Currency value={displayVal} />
@@ -210,7 +208,7 @@ export default function BalanceSheet({ reportData, filters, auth }) {
                             </td>
                         );
                     })}
-                    <td className="py-2 px-3 text-right tabular-nums">
+                    <td className="py-2 px-3 text-right whitespace-nowrap min-w-[130px]">
                         {hasChildren && item.balance === 0 ? null : (
                             <Link href={route('chart-of-account.history', item.id) + '?start_date=' + (filters.start_date || '') + '&end_date=' + filters.end_date} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4">
                                 <Currency value={item.balance} />
@@ -227,11 +225,11 @@ export default function BalanceSheet({ reportData, filters, auth }) {
                             Total {item.name}
                         </td>
                         {isMonthWise && monthCols.map(ym => (
-                            <td key={ym} className="py-2 px-3 text-right tabular-nums">
+                            <td key={ym} className="py-2 px-3 text-right whitespace-nowrap">
                                 <Currency value={item.total_monthly_balances?.[ym] || 0} />
                             </td>
                         ))}
-                        <td className="py-2 px-3 text-right tabular-nums">
+                        <td className="py-2 px-3 text-right whitespace-nowrap">
                             <Currency value={item.total_balance} />
                         </td>
                     </tr>
@@ -257,18 +255,18 @@ export default function BalanceSheet({ reportData, filters, auth }) {
             </div>
 
             <div className="w-full overflow-x-auto pb-10">
-                <table className="w-full text-[13px] text-left border-collapse">
+                <table className="min-w-full text-[13px] text-left border-collapse">
                     <thead>
                         <tr className="border-y-2 border-gray-300">
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-3/4">
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[200px]">
                                 Account
                             </th>
                             {isMonthWise && monthCols.map(ym => (
-                                <th key={ym} className="py-2.5 px-3 font-semibold text-gray-900 text-right w-28 whitespace-nowrap">
+                                <th key={ym} className="py-2.5 px-3 font-semibold text-gray-900 text-right min-w-[120px] whitespace-nowrap">
                                     {formatMonth(ym)}
                                 </th>
                             ))}
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right">
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right min-w-[130px] whitespace-nowrap">
                                 Total <span className="inline-block ml-1 text-gray-400 text-[10px]">↕</span>
                             </th>
                         </tr>
@@ -332,11 +330,11 @@ export default function BalanceSheet({ reportData, filters, auth }) {
                                 <tr className="border-t border-gray-200 bg-white font-medium">
                                     <td className="py-2 px-3 pl-8 text-gray-900">Total Liabilities</td>
                                     {isMonthWise && monthCols.map(ym => (
-                                        <td key={ym} className="py-2 px-3 text-right tabular-nums text-gray-900">
+                                        <td key={ym} className="py-2 px-3 text-right whitespace-nowrap text-gray-900">
                                             <Currency value={totalLiabilityMonthly[ym] || 0} />
                                         </td>
                                     ))}
-                                    <td className="py-2 px-3 text-right tabular-nums text-gray-900"><Currency value={totalLiability} /></td>
+                                    <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalLiability} /></td>
                                 </tr>
 
                                 {/* Equity Sub-section */}
@@ -357,11 +355,11 @@ export default function BalanceSheet({ reportData, filters, auth }) {
                                 <tr className="border-t border-gray-200 bg-white font-medium">
                                     <td className="py-2 px-3 pl-8 text-gray-900">Total Equity</td>
                                     {isMonthWise && monthCols.map(ym => (
-                                        <td key={ym} className="py-2 px-3 text-right tabular-nums text-gray-900">
+                                        <td key={ym} className="py-2 px-3 text-right whitespace-nowrap text-gray-900">
                                             <Currency value={totalEquityMonthly[ym] || 0} />
                                         </td>
                                     ))}
-                                    <td className="py-2 px-3 text-right tabular-nums text-gray-900"><Currency value={totalEquity} /></td>
+                                    <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalEquity} /></td>
                                 </tr>
                             </>
                         )}
@@ -371,20 +369,20 @@ export default function BalanceSheet({ reportData, filters, auth }) {
                                 <tr className="border-t border-gray-200 bg-white font-medium">
                                     <td className="py-2 px-3 pl-8 text-gray-900">Total Liabilities</td>
                                     {isMonthWise && monthCols.map(ym => (
-                                        <td key={ym} className="py-2 px-3 text-right tabular-nums text-gray-900">
+                                        <td key={ym} className="py-2 px-3 text-right whitespace-nowrap text-gray-900">
                                             <Currency value={totalLiabilityMonthly[ym] || 0} />
                                         </td>
                                     ))}
-                                    <td className="py-2 px-3 text-right tabular-nums text-gray-900"><Currency value={totalLiability} /></td>
+                                    <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalLiability} /></td>
                                 </tr>
                                 <tr className="border-t border-gray-200 bg-white font-medium">
                                     <td className="py-2 px-3 pl-8 text-gray-900">Total Equity</td>
                                     {isMonthWise && monthCols.map(ym => (
-                                        <td key={ym} className="py-2 px-3 text-right tabular-nums text-gray-900">
+                                        <td key={ym} className="py-2 px-3 text-right whitespace-nowrap text-gray-900">
                                             <Currency value={totalEquityMonthly[ym] || 0} />
                                         </td>
                                     ))}
-                                    <td className="py-2 px-3 text-right tabular-nums text-gray-900"><Currency value={totalEquity} /></td>
+                                    <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalEquity} /></td>
                                 </tr>
                             </>
                         )}
@@ -401,21 +399,21 @@ export default function BalanceSheet({ reportData, filters, auth }) {
                         <tr className="border-t border-gray-200 bg-white font-medium">
                             <td className="py-2 px-3 pl-8 text-gray-900">Total Equity</td>
                             {isMonthWise && monthCols.map(ym => (
-                                <td key={ym} className="py-2 px-3 text-right tabular-nums text-gray-900">
+                                <td key={ym} className="py-2 px-3 text-right whitespace-nowrap text-gray-900">
                                     <Currency value={totalEquityMonthly[ym] || 0} />
                                 </td>
                             ))}
-                            <td className="py-2 px-3 text-right tabular-nums text-gray-900"><Currency value={totalEquity} /></td>
+                            <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalEquity} /></td>
                         </tr>
 
                         <tr className="border-t-2 border-b-4 border-gray-400 font-bold bg-white text-[14px]">
                             <td className="py-3 px-3 text-gray-900">TOTAL LIABILITIES AND EQUITY</td>
                             {isMonthWise && monthCols.map(ym => (
-                                <td key={ym} className="py-3 px-3 text-right tabular-nums text-gray-900">
+                                <td key={ym} className="py-3 px-3 text-right whitespace-nowrap text-gray-900">
                                     <Currency value={totalLiabilityEquityMonthly[ym] || 0} />
                                 </td>
                             ))}
-                            <td className="py-3 px-3 text-right tabular-nums text-gray-900"><Currency value={totalLiabilityEquity} /></td>
+                            <td className="py-3 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalLiabilityEquity} /></td>
                         </tr>
                     </tbody>
                 </table>

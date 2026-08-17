@@ -82,22 +82,26 @@ export default function CompanySettings({ settings, currencies = [] }) {
     };
 
     const [isEditingAccounting, setIsEditingAccounting] = useState(false);
-const accountingForm = useForm({
-    acct_method: settings?.acct_method || 'Accrual',
-    fin_year_start: settings?.fin_year_start || 'January',
-    tax_year_start: settings?.tax_year_start || 'Same as financial year',
-    tax_form: settings?.tax_form || 'Partnership or limited liability company',
-    books_lock_date: settings?.books_lock_date || '',
-    books_lock_pin: '',
-    current_pin: '',
-});
-
-const handleAccountingSubmit = (e) => {
-    e.preventDefault();
-    accountingForm.post(route('accounting.update'), {
-        onSuccess: () => setIsEditingAccounting(false),
+    const [isLockEnabled, setIsLockEnabled] = useState(!!settings?.books_lock_date);
+    const accountingForm = useForm({
+        acct_method: settings?.acct_method || 'Accrual',
+        fin_year_start: settings?.fin_year_start || 'January',
+        tax_year_start: settings?.tax_year_start || 'Same as financial year',
+        tax_form: settings?.tax_form || 'Partnership or limited liability company',
+        books_lock_date: settings?.books_lock_date || '',
+        books_lock_pin: '',
+        current_pin: '',
     });
-};
+
+    const handleAccountingSubmit = (e) => {
+        e.preventDefault();
+        accountingForm.post(route('accounting.update'), {
+            onSuccess: () => {
+                setIsEditingAccounting(false);
+                setIsLockEnabled(!!accountingForm.data.books_lock_date);
+            },
+        });
+    };
 
 const [confirmingDisable, setConfirmingDisable] = useState(null);
 const [confirmingEnable, setConfirmingEnable] = useState(null);
@@ -317,7 +321,7 @@ const businessTypeConfirmationModalSubmit = () => {
             </div>
 
             {/* Accounting Section */}
-           {/* Accounting Card */}
+            {/* Accounting Card */}
 <div className="bg-white rounded shadow-sm border border-gray-200">
     {!isEditingAccounting ? (
         <div className="p-6">
@@ -326,7 +330,16 @@ const businessTypeConfirmationModalSubmit = () => {
                     <h2 className="text-sm font-bold text-gray-800">Accounting</h2>
                     <p className="text-gray-400 text-[10px]">These settings affect how your books are kept.</p>
                 </div>
-                <CommonButton variant="ghost" size="xs" onClick={() => setIsEditingAccounting(true)}>Edit</CommonButton>
+                <CommonButton 
+                    variant="ghost" 
+                    size="xs" 
+                    onClick={() => {
+                        setIsEditingAccounting(true);
+                        setIsLockEnabled(!!settings?.books_lock_date);
+                    }}
+                >
+                    Edit
+                </CommonButton>
             </div>
             <div className="space-y-3">
                 <div className="grid grid-cols-12 border-b border-gray-100 pb-2">
@@ -343,7 +356,11 @@ const businessTypeConfirmationModalSubmit = () => {
                 </div>
                 <div className="grid grid-cols-12 pb-2">
                     <div className="col-span-4 text-gray-500 text-xs font-bold">Close the books</div>
-                    <div className="col-span-8 text-xs text-gray-800">{accountingForm.data.books_lock_date ? `Locked on or before ${accountingForm.data.books_lock_date}` : 'Off'}</div>
+                    <div className="col-span-8 text-xs text-gray-800 flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${accountingForm.data.books_lock_date ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'}`}>
+                            {accountingForm.data.books_lock_date ? `Locked on or before ${accountingForm.data.books_lock_date}` : 'Unlocked (Off)'}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -391,44 +408,113 @@ const businessTypeConfirmationModalSubmit = () => {
                         { label: 'Cash', value: 'Cash' },
                     ]}
                 />
-                <div className="pt-2 border-t border-gray-100 mt-2">
-                    <label className="font-bold text-slate-600 ml-0.5 text-xs mb-1 block">Lock transactions on and before this date</label>
-                    <CommonInput
-                        type="date"
-                        value={accountingForm.data.books_lock_date}
-                        onChange={e => accountingForm.setData('books_lock_date', e.target.value)}
-                        error={accountingForm.errors.books_lock_date}
-                    />
-                    
-                    {accountingForm.data.books_lock_date && (
-                        <div className="mt-2">
-                            <CommonInput
-                                type="password"
-                                label={settings?.books_lock_pin ? "New PIN (leave blank to keep current)" : "Set 6-digit PIN"}
-                                value={accountingForm.data.books_lock_pin}
-                                onChange={e => accountingForm.setData('books_lock_pin', e.target.value)}
-                                error={accountingForm.errors.books_lock_pin}
-                                maxLength={6}
-                            />
+                <div className="pt-3 border-t border-gray-100 mt-2 space-y-3">
+                    <div className="flex justify-between items-center py-1">
+                        <div>
+                            <label className="font-bold text-slate-700 text-xs block">Close the books</label>
+                            <p className="text-gray-400 text-[11px]">Lock transactions on or before a closing date to prevent accidental changes.</p>
                         </div>
-                    )}
-                    
-                    {settings?.books_lock_pin && (
-                        <div className="mt-2">
-                            <CommonInput
-                                type="password"
-                                label="Current PIN (required to change or remove lock)"
-                                value={accountingForm.data.current_pin}
-                                onChange={e => accountingForm.setData('current_pin', e.target.value)}
-                                error={accountingForm.errors.current_pin}
-                                maxLength={6}
+                        <label className="relative inline-flex items-center cursor-pointer scale-90">
+                            <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={isLockEnabled}
+                                onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setIsLockEnabled(checked);
+                                    if (!checked) {
+                                        accountingForm.setData({
+                                            ...accountingForm.data,
+                                            books_lock_date: '',
+                                            books_lock_pin: '',
+                                        });
+                                    } else {
+                                        accountingForm.setData('books_lock_date', settings?.books_lock_date || new Date().toISOString().split('T')[0]);
+                                    }
+                                }}
                             />
+                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                        </label>
+                    </div>
+
+                    {isLockEnabled ? (
+                        <div className="space-y-3 pt-1">
+                            <div>
+                                <label className="font-bold text-slate-600 ml-0.5 text-xs mb-1 block">Lock transactions on and before this date</label>
+                                <CommonInput
+                                    type="date"
+                                    value={accountingForm.data.books_lock_date}
+                                    onChange={e => accountingForm.setData('books_lock_date', e.target.value)}
+                                    error={accountingForm.errors.books_lock_date}
+                                    required={isLockEnabled}
+                                />
+                            </div>
+                            
+                            <div>
+                                <CommonInput
+                                    type="password"
+                                    label={settings?.books_lock_pin ? "New PIN (leave blank to keep current)" : "Set 6-digit PIN (optional)"}
+                                    value={accountingForm.data.books_lock_pin}
+                                    onChange={e => accountingForm.setData('books_lock_pin', e.target.value)}
+                                    error={accountingForm.errors.books_lock_pin}
+                                    maxLength={6}
+                                    placeholder="6-digit PIN"
+                                />
+                            </div>
+                            
+                            {settings?.books_lock_pin && (
+                                <div>
+                                    <CommonInput
+                                        type="password"
+                                        label="Current PIN (required to change lock settings)"
+                                        value={accountingForm.data.current_pin}
+                                        onChange={e => accountingForm.setData('current_pin', e.target.value)}
+                                        error={accountingForm.errors.current_pin}
+                                        maxLength={6}
+                                        placeholder="Current 6-digit PIN"
+                                    />
+                                </div>
+                            )}
                         </div>
+                    ) : (
+                        settings?.books_lock_pin ? (
+                            <div className="pt-2 bg-amber-50/70 p-3 rounded-md border border-amber-200">
+                                <p className="text-amber-800 text-xs mb-2 font-medium">To unlock and remove the closing date, enter your current PIN before saving:</p>
+                                <CommonInput
+                                    type="password"
+                                    label="Current PIN (required to remove lock)"
+                                    value={accountingForm.data.current_pin}
+                                    onChange={e => accountingForm.setData('current_pin', e.target.value)}
+                                    error={accountingForm.errors.current_pin}
+                                    maxLength={6}
+                                    placeholder="Current 6-digit PIN"
+                                />
+                            </div>
+                        ) : null
                     )}
                 </div>
             </div>
             <div className="mt-6 flex justify-end gap-2 border-t border-gray-100 pt-4">
-                <CommonButton type="button" variant="secondary" onClick={() => setIsEditingAccounting(false)}>Cancel</CommonButton>
+                <CommonButton 
+                    type="button" 
+                    variant="secondary" 
+                    onClick={() => {
+                        setIsEditingAccounting(false);
+                        setIsLockEnabled(!!settings?.books_lock_date);
+                        accountingForm.setData({
+                            acct_method: settings?.acct_method || 'Accrual',
+                            fin_year_start: settings?.fin_year_start || 'January',
+                            tax_year_start: settings?.tax_year_start || 'Same as financial year',
+                            tax_form: settings?.tax_form || 'Partnership or limited liability company',
+                            books_lock_date: settings?.books_lock_date || '',
+                            books_lock_pin: '',
+                            current_pin: '',
+                        });
+                        accountingForm.clearErrors();
+                    }}
+                >
+                    Cancel
+                </CommonButton>
                 <CommonButton type="submit" variant="primary" processing={accountingForm.processing}>Save</CommonButton>
             </div>
         </form>

@@ -274,18 +274,18 @@ export default function AccountHistory({ account, lines = [], accounts = [], fil
                 )}
             </div>
 
-            <div className="w-full overflow-x-auto pb-10" style={{ minWidth: 0 }}>
-                <table className="w-full max-w-full text-[13px] text-left border-collapse table-fixed" style={{ minWidth: 0, tableLayout: 'fixed' }}>
+            <div className="w-full overflow-x-auto pb-10">
+                <table className="min-w-full text-[13px] text-left border-collapse">
                     <thead>
                         <tr className="border-y-2 border-gray-300">
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 break-words">Date</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 break-words">Ref No.</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 break-words">Payee / Account</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 break-words">Memo</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right break-words">Debit</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right break-words">Credit</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right break-words">Balance</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-center break-words"></th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 whitespace-nowrap min-w-[100px]">Date</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 whitespace-nowrap min-w-[110px]">Ref No.</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[180px]">Payee / Account</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[180px]">Memo</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[110px]">Debit</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[110px]">Credit</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px]">Balance</th>
+                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-center whitespace-nowrap min-w-[80px]"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -447,54 +447,54 @@ export default function AccountHistory({ account, lines = [], accounts = [], fil
 
                             return (
                                 <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors group">
-                                    {/* Date */}
-                                    <td className="px-4 py-3 text-[11px] text-slate-600 font-mono">
-                                        {tx.journal_entry?.date}
-                                    </td>
-                                    {/* Ref No */}
-                                    <td className="px-4 py-3 text-[11px] font-bold text-slate-800 font-mono">
-                                        {tx.journal_entry?.reference || '-'}
-                                    </td>
-                                    {/* Payee / Account */}
-                                    <td className="px-4 py-3 text-[11px] text-slate-600">
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-slate-800">{getPayeeLabel(tx.payee_id || tx.journal_entry?.payee_id)}</span>
-                                            <span className={`text-[10px] font-semibold mt-0.5 ${isSplit ? 'text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded w-max' : 'text-slate-400'}`}>
-                                                {getOffsetAccount(tx)}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    {/* Memo / Description */}
-                                    <td className="px-4 py-3 text-[11px] text-slate-600">
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-slate-700">{tx.journal_entry?.description}</span>
-                                            {tx.memo && <span className="text-[10px] text-slate-400 italic mt-0.5">{tx.memo}</span>}
-                                        </div>
-                                    </td>
-                                    {/* Debit Amount */}
-                                    <td className="px-4 py-3 text-[11px] font-bold text-slate-900 text-right font-mono">
-                                        {parseFloat(tx.debit) > 0 ? parseFloat(tx.debit).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
-                                    </td>
-                                    {/* Credit Amount */}
-                                    <td className="px-4 py-3 text-[11px] font-bold text-slate-900 text-right font-mono">
-                                        {parseFloat(tx.credit) > 0 ? parseFloat(tx.credit).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
-                                    </td>
-                                    {/* Balance */}
-                                    <td className="px-4 py-3 text-[11px] font-bold text-primary-600 text-right font-mono">
-                                        {currencyPrefix} {tx.running_balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                    </td>
-                                    {/* Action */}
-                                    <td className="px-4 py-3 text-center">
-                                        <CommonButton
-                                            variant="ghost"
-                                            size="xs"
-                                            href={getEditRoute(tx)}
-                                            className="whitespace-nowrap"
-                                        >
-                                            View/Edit
-                                        </CommonButton>
-                                    </td>
-                                </tr>
+                                     {/* Date */}
+                                     <td className="px-4 py-3 text-[11px] text-slate-600 font-mono whitespace-nowrap">
+                                         {tx.journal_entry?.date}
+                                     </td>
+                                     {/* Ref No */}
+                                     <td className="px-4 py-3 text-[11px] font-bold text-slate-800 font-mono whitespace-nowrap">
+                                         {tx.journal_entry?.reference || '-'}
+                                     </td>
+                                     {/* Payee / Account */}
+                                     <td className="px-4 py-3 text-[11px] text-slate-600">
+                                         <div className="flex flex-col">
+                                             <span className="font-bold text-slate-800">{getPayeeLabel(tx.payee_id || tx.journal_entry?.payee_id)}</span>
+                                             <span className={`text-[10px] font-semibold mt-0.5 ${isSplit ? 'text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded w-max' : 'text-slate-400'}`}>
+                                                 {getOffsetAccount(tx)}
+                                             </span>
+                                         </div>
+                                     </td>
+                                     {/* Memo / Description */}
+                                     <td className="px-4 py-3 text-[11px] text-slate-600">
+                                         <div className="flex flex-col">
+                                             <span className="font-bold text-slate-700">{tx.journal_entry?.description}</span>
+                                             {tx.memo && <span className="text-[10px] text-slate-400 italic mt-0.5">{tx.memo}</span>}
+                                         </div>
+                                     </td>
+                                     {/* Debit Amount */}
+                                     <td className="px-4 py-3 text-[11px] font-bold text-slate-900 text-right font-mono whitespace-nowrap">
+                                         {parseFloat(tx.debit) > 0 ? parseFloat(tx.debit).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                                     </td>
+                                     {/* Credit Amount */}
+                                     <td className="px-4 py-3 text-[11px] font-bold text-slate-900 text-right font-mono whitespace-nowrap">
+                                         {parseFloat(tx.credit) > 0 ? parseFloat(tx.credit).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                                     </td>
+                                     {/* Balance */}
+                                     <td className="px-4 py-3 text-[11px] font-bold text-primary-600 text-right font-mono whitespace-nowrap">
+                                         {currencyPrefix ? `${currencyPrefix} ` : ''}{tx.running_balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                     </td>
+                                     {/* Action */}
+                                     <td className="px-4 py-3 text-center whitespace-nowrap">
+                                         <CommonButton
+                                             variant="ghost"
+                                             size="xs"
+                                             href={getEditRoute(tx)}
+                                             className="whitespace-nowrap"
+                                         >
+                                             View/Edit
+                                         </CommonButton>
+                                     </td>
+                                 </tr>
                             );
                         })}
                         {transactions.length === 0 && (

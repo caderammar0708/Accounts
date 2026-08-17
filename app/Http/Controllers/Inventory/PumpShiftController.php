@@ -10,8 +10,6 @@ use App\Models\FuelStation\PumpShift;
 use App\Models\FuelStation\PumpShiftNozzle;
 use App\Models\Employee;
 use App\Models\FuelStation\Pump;
-use App\Models\FuelStation\Nozzle;
-use App\Models\ChartOfAcc;
 use App\Models\Customer;
 use App\Models\FuelStation\PumpShiftCollection;
 use App\Models\FuelStation\PumpShiftCreditSale;
