@@ -13,31 +13,49 @@ return new class extends Migration
     {
         // 1. Add fields to companies
         Schema::table('companies', function (Blueprint $table) {
-            $table->boolean('multi_currency_enabled')->default(false);
-            $table->uuid('home_currency_id')->nullable();
-            
-            $table->foreign('home_currency_id')->references('id')->on('currencies')->onDelete('set null');
+            if (!Schema::hasColumn('companies', 'multi_currency_enabled')) {
+                $table->boolean('multi_currency_enabled')->default(false);
+            }
+            if (!Schema::hasColumn('companies', 'home_currency_id')) {
+                $table->uuid('home_currency_id')->nullable();
+                $table->foreign('home_currency_id')->references('id')->on('currencies')->onDelete('set null');
+            }
         });
 
         // 2. Data Migration: Copy from company_settings to companies
         $settings = \Illuminate\Support\Facades\DB::table('company_settings')->first();
         if ($settings) {
-            \Illuminate\Support\Facades\DB::table('companies')->update([
-                'multi_currency_enabled' => $settings->multi_currency_enabled,
-                'home_currency_id' => $settings->home_currency_id,
-            ]);
+            $update = [];
+            if (isset($settings->multi_currency_enabled)) {
+                $update['multi_currency_enabled'] = $settings->multi_currency_enabled;
+            }
+            if (isset($settings->home_currency_id)) {
+                $update['home_currency_id'] = $settings->home_currency_id;
+            }
+            if (!empty($update)) {
+                \Illuminate\Support\Facades\DB::table('companies')->update($update);
+            }
         }
 
         // 3. Drop fields from company_settings
         Schema::table('company_settings', function (Blueprint $table) {
-            $table->dropForeign(['home_currency_id']);
-            $table->dropColumn(['multi_currency_enabled', 'home_currency_id']);
+            if (Schema::hasColumn('company_settings', 'home_currency_id')) {
+                try {
+                    $table->dropForeign(['home_currency_id']);
+                } catch (\Throwable $e) {}
+                $table->dropColumn('home_currency_id');
+            }
+            if (Schema::hasColumn('company_settings', 'multi_currency_enabled')) {
+                $table->dropColumn('multi_currency_enabled');
+            }
         });
 
         // 4. Drop is_onboarded from companies
-        Schema::table('companies', function (Blueprint $table) {
-            $table->dropColumn('is_onboarded');
-        });
+        if (Schema::hasColumn('companies', 'is_onboarded')) {
+            Schema::table('companies', function (Blueprint $table) {
+                $table->dropColumn('is_onboarded');
+            });
+        }
     }
 
     /**

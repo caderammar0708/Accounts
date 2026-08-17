@@ -33,6 +33,13 @@ class BankReconciliationController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->has('opening_balance')) {
+            $request->merge(['opening_balance' => str_replace(',', '', (string)$request->opening_balance)]);
+        }
+        if ($request->has('ending_balance')) {
+            $request->merge(['ending_balance' => str_replace(',', '', (string)$request->ending_balance)]);
+        }
+
         $request->validate([
             'account_id' => 'required|exists:chart_of_accs,id',
             'end_date' => 'required|date',
