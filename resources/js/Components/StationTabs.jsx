@@ -6,6 +6,7 @@ export default function StationTabs() {
     const tabs = [
         { name: 'Tanks', href: route('tanks.index'), current: url.startsWith('/tanks') },
         { name: 'Pumps & Nozzles', href: route('pumps.index'), current: url.startsWith('/pumps') },
+        { name: 'Dip Readings', href: route('tank-dip-readings.index'), current: url.startsWith('/tank-dip-readings') },
     ];
 
     return (

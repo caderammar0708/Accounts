@@ -24,6 +24,16 @@ export default function SidebarIcon({ name }) {
             return <span className="material-symbols-outlined inline-flex items-center justify-center text-[18px] leading-none">account_balance_wallet</span>;
         case 'document':
             return <span className="material-symbols-outlined inline-flex items-center justify-center text-[18px] leading-none">description</span>;
+        case 'bank':
+            return <span className="material-symbols-outlined inline-flex items-center justify-center text-[18px] leading-none">account_balance</span>;
+        case 'reconciliation':
+            return <span className="material-symbols-outlined inline-flex items-center justify-center text-[18px] leading-none">fact_check</span>;
+        case 'reports':
+            return <span className="material-symbols-outlined inline-flex items-center justify-center text-[18px] leading-none">bar_chart</span>;
+        case 'locations':
+            return <span className="material-symbols-outlined inline-flex items-center justify-center text-[18px] leading-none">location_on</span>;
+        case 'pump':
+            return <span className="material-symbols-outlined inline-flex items-center justify-center text-[18px] leading-none">local_gas_station</span>;
         default:
             return <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>;
     }

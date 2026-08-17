@@ -168,7 +168,7 @@ export default function LineItemsTable({
     };
 
     return (
-        <div className="mt-6 bg-white border border-slate-200 rounded shadow-sm overflow-hidden">
+        <div className="mt-2 bg-white border border-slate-200 rounded shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[1000px]">
                     <thead>
@@ -446,8 +446,8 @@ export default function LineItemsTable({
                                     <div key={label} className="flex items-center gap-3">
                                         <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{label}</span>
                                         <span className="text-sm font-black text-slate-900 flex items-center gap-1">
-                                            <span className="text-xs font-bold text-slate-400">{currencyPrefix}</span>
-                                            {parseFloat(String(value).replace(/,/g, '') || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                            <span className="text-xs font-bold text-slate-400">{typeof value === 'object' ? value.prefix : currencyPrefix}</span>
+                                            {parseFloat(String(typeof value === 'object' ? value.amount : value).replace(/,/g, '') || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                         </span>
                                     </div>
                                 ))}

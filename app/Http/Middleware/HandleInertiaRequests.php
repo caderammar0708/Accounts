@@ -80,9 +80,9 @@ class HandleInertiaRequests extends Middleware
                 'financial_year_start_month' => $companySetting?->fin_year_start ?? 'January',
                 'business_type'           => $companySetting?->business_type ?? 'Normal',
                 'currency'                => [
-                    'prefix'         => $companySetting?->homeCurrency?->symbol ?? $userCompany?->home_currency_prefix ?? 'Rs.',
-                    'multi_enabled'  => (bool) $companySetting?->multi_currency_enabled,
-                    'home_id'        => $companySetting?->home_currency_id,
+                    'prefix'         => $userCompany?->homeCurrency?->symbol ?? '',
+                    'multi_enabled'  => (bool) $userCompany?->multi_currency_enabled,
+                    'home_id'        => $userCompany?->home_currency_id,
                 ],
                 'books_lock_date'         => $companySetting?->books_lock_date,
                 'has_books_pin'           => !empty($companySetting?->books_lock_pin),

@@ -201,7 +201,13 @@ public function updateAccounting(Request $request)
             'home_currency_id' => 'nullable|exists:currencies,id',
         ]);
 
-        $this->getSettings()->update($validated);
+        $company = $this->getActiveCompany();
+        if ($company) {
+            $company->update($validated);
+        } else {
+            return back()->withErrors(['home_currency_id' => 'Please save your company information first before updating currency settings.']);
+        }
+
         return back()->with('message', 'Currency settings updated successfully.');
     }
 
@@ -311,20 +317,36 @@ public function updateAccounting(Request $request)
             'business_type' => $type
         ]);
 
+        $company = $this->getActiveCompany();
+        if ($company) {
+            $company->update(['business_type' => $type]);
+        }
+
         if ($type === 'Fuel Station') {
             $this->handleModuleMigrations('fuel_station', true);
             if ($dropTables) {
                 $this->handleModuleMigrations('service_station', false, true);
+                $settings->update([
+                    'job_layout_enabled' => false,
+                    'warranty_layout_enabled' => false,
+                    'vehicles_enabled' => false
+                ]);
             }
         } elseif ($type === 'Service Station') {
             $this->handleModuleMigrations('service_station', true);
             if ($dropTables) {
                 $this->handleModuleMigrations('fuel_station', false, true);
+                // No boolean flags exist for fuel station currently
             }
         } else { // Normal
             if ($dropTables) {
                 $this->handleModuleMigrations('fuel_station', false, true);
                 $this->handleModuleMigrations('service_station', false, true);
+                $settings->update([
+                    'job_layout_enabled' => false,
+                    'warranty_layout_enabled' => false,
+                    'vehicles_enabled' => false
+                ]);
             }
         }
 

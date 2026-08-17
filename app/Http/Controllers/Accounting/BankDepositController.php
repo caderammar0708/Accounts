@@ -45,7 +45,13 @@ class BankDepositController extends Controller
                 'total_amount' => $total,
                 'memo' => $request->memo,
                 'status' => 'posted',
+                'currency_id' => $request->input('currency_id'),
+                'exchange_rate' => $request->input('exchange_rate', 1),
             ]);
+
+            $exchangeRate = $request->input('exchange_rate', 1);
+            $currencyId = $request->input('currency_id');
+            $homeTotal = $total * $exchangeRate;
 
             foreach ($items as $it) {
                 BankDepositItem::create([
@@ -65,7 +71,7 @@ class BankDepositController extends Controller
                 'reference' => $request->depositNo,
                 'description' => $request->memo,
                 'transaction_type' => 'bank_deposit',
-                'total_amount' => $total,
+                'total_amount' => $homeTotal,
                 'status' => 'posted',
                 'created_by' => Auth::id(),
                 'transactionable_id' => $deposit->id,
@@ -76,20 +82,27 @@ class BankDepositController extends Controller
             JournalEntryLine::create([
                 'journal_entry_id' => $journalEntry->id,
                 'chart_of_acc_id' => $request->depositTo,
-                'debit' => $total,
+                'debit' => $homeTotal,
                 'credit' => 0,
                 'memo' => $request->memo,
+                'fc_currency_id' => $currencyId,
+                'fc_debit' => $currencyId ? $total : null,
+                'exchange_rate' => $exchangeRate,
             ]);
 
             // Credit each source account
             foreach ($items as $it) {
                 if (!empty($it['account'])) {
+                    $itemAmount = (float) str_replace(',', '', $it['amount']);
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $it['account'],
                         'debit' => 0,
-                        'credit' => (float) str_replace(',', '', $it['amount']),
+                        'credit' => $itemAmount * $exchangeRate,
                         'memo' => $it['description'] ?? $request->memo,
+                        'fc_currency_id' => $currencyId,
+                        'fc_credit' => $currencyId ? $itemAmount : null,
+                        'exchange_rate' => $exchangeRate,
                     ]);
                 }
             }
@@ -119,6 +132,8 @@ class BankDepositController extends Controller
                 'cashBackMemo' => $deposit->cash_back_memo,
                 'cashBackAmount' => $deposit->cash_back_amount,
                 'memo' => $deposit->memo,
+                'exchange_rate' => $deposit->exchange_rate ?? 1,
+                'currency_id' => $deposit->currency_id ?? "",
                 'items' => $deposit->items->map(function($i) {
                     return [
                         'id' => $i->id,
@@ -156,7 +171,13 @@ class BankDepositController extends Controller
                 'cash_back_amount' => (float) str_replace(',', '', $request->cashBackAmount ?? 0),
                 'total_amount' => $total,
                 'memo' => $request->memo,
+                'currency_id' => $request->input('currency_id'),
+                'exchange_rate' => $request->input('exchange_rate', 1),
             ]);
+
+            $exchangeRate = $request->input('exchange_rate', 1);
+            $currencyId = $request->input('currency_id');
+            $homeTotal = $total * $exchangeRate;
 
             $deposit->items()->delete();
 
@@ -176,7 +197,7 @@ class BankDepositController extends Controller
                 'date' => $request->depositDate,
                 'reference' => $request->depositNo,
                 'description' => $request->memo,
-                'total_amount' => $total,
+                'total_amount' => $homeTotal,
             ]);
 
             $journalEntry->lines->each->delete();
@@ -185,20 +206,27 @@ class BankDepositController extends Controller
             JournalEntryLine::create([
                 'journal_entry_id' => $journalEntry->id,
                 'chart_of_acc_id' => $request->depositTo,
-                'debit' => $total,
+                'debit' => $homeTotal,
                 'credit' => 0,
                 'memo' => $request->memo,
+                'fc_currency_id' => $currencyId,
+                'fc_debit' => $currencyId ? $total : null,
+                'exchange_rate' => $exchangeRate,
             ]);
 
             // Credit each source account
             foreach ($items as $it) {
                 if (!empty($it['account'])) {
+                    $itemAmount = (float) str_replace(',', '', $it['amount']);
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $it['account'],
                         'debit' => 0,
-                        'credit' => (float) str_replace(',', '', $it['amount']),
+                        'credit' => $itemAmount * $exchangeRate,
                         'memo' => $it['description'] ?? $request->memo,
+                        'fc_currency_id' => $currencyId,
+                        'fc_credit' => $currencyId ? $itemAmount : null,
+                        'exchange_rate' => $exchangeRate,
                     ]);
                 }
             }

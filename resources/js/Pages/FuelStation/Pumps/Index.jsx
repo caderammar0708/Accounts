@@ -26,8 +26,8 @@ export default function Index({ pumps, tanks }) {
     };
 
     return (
-        <AuthenticatedLayout header="Station Setup">
-            <Head title="Station Setup" />
+        <AuthenticatedLayout header="Pump Setup">
+            <Head title="Pump Setup" />
 
             <div className="py-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
                 <StationTabs />

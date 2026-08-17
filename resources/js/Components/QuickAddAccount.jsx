@@ -388,7 +388,7 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
                             onFocus={e => e.target.select()}
                             onBlur={handleBalanceBlur}
                             error={errors.opening_balance}
-                            icon={<span className="text-[10px] font-bold text-slate-400">{data.currency || company?.home_currency || company?.home_currency_prefix || ''}</span>}
+                            icon={<span className="text-[10px] font-bold text-slate-400">{(typeof data.currency === 'object' ? data.currency?.symbol || data.currency?.code : data.currency) || (typeof company?.home_currency === 'object' ? (company?.home_currency?.symbol || company?.home_currency?.code) : company?.home_currency) || company?.home_currency_prefix || ''}</span>}
                             disabled={data.is_locked}
                         />
                         <CommonInput

@@ -5,6 +5,8 @@ namespace App\Models\FuelStation;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Customer;
 
+use App\Models\Customer;
+
 class PumpShiftCreditSale extends Model
 {
     protected $fillable = [

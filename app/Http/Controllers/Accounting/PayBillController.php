@@ -58,7 +58,13 @@ class PayBillController extends Controller
                     'memo' => $request->memo,
                     'check_date' => $request->checkDate,
                     'check_number' => $request->checkNumber,
+                    'currency_id' => $request->input('currency_id'),
+                    'exchange_rate' => $request->input('exchange_rate', 1),
                 ]);
+
+                $exchangeRate = $request->input('exchange_rate', 1);
+                $currencyId = $request->input('currency_id');
+                $homeAmount = $amount * $exchangeRate;
 
                 $totalAllocated = 0;
                 if (!empty($request->bills)) {
@@ -94,7 +100,7 @@ class PayBillController extends Controller
                     'payee_type' => \App\Models\Supplier::class,
                     'transactionable_type' => BillPayment::class,
                     'transactionable_id' => $receivePayment->id,
-                    'total_amount' => $amount,
+                    'total_amount' => $homeAmount,
                     'status' => 'posted',
                     'created_by' => Auth::id(),
                     ]);
@@ -104,8 +110,11 @@ class PayBillController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $request->paymentAccount,
                     'description' => $request->memo ?? 'Bill Payment',
-                    'credit' => $amount,
+                    'credit' => $homeAmount,
                     'debit' => 0,
+                    'fc_currency_id' => $currencyId,
+                    'fc_credit' => $currencyId ? $amount : null,
+                    'exchange_rate' => $exchangeRate,
                 ]);
 
                 // Debit Accounts Payable
@@ -121,8 +130,11 @@ class PayBillController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $apAccount->id ?? ChartOfAcc::first()->id,
                     'description' => 'ReceivePayment for Bill(s)',
-                    'debit' => $amount,
+                    'debit' => $homeAmount,
                     'credit' => 0,
+                    'fc_currency_id' => $currencyId,
+                    'fc_debit' => $currencyId ? $amount : null,
+                    'exchange_rate' => $exchangeRate,
                 ]);
 
                 return $journalEntry;
@@ -155,6 +167,8 @@ class PayBillController extends Controller
             'memo' => $receivePayment->memo,
             'checkDate' => $receivePayment->check_date,
             'checkNumber' => $receivePayment->check_number,
+            'currency_id' => $receivePayment->currency_id ?? "",
+            'exchange_rate' => $receivePayment->exchange_rate ?? 1,
             'allocations' => $receivePayment->allocations->map(function ($alloc) {
                 return [
                     'bill_id' => $alloc->bill_id,
@@ -221,7 +235,13 @@ class PayBillController extends Controller
                     'memo' => $request->memo,
                     'check_date' => $request->checkDate,
                     'check_number' => $request->checkNumber,
+                    'currency_id' => $request->input('currency_id'),
+                    'exchange_rate' => $request->input('exchange_rate', 1),
                 ]);
+
+                $exchangeRate = $request->input('exchange_rate', 1);
+                $currencyId = $request->input('currency_id');
+                $homeAmount = $amount * $exchangeRate;
 
                 // Create new allocations
                 if (!empty($request->bills)) {
@@ -253,7 +273,7 @@ class PayBillController extends Controller
                     'description' => $request->memo ?? 'Bill Payment',
                     'payee_id' => $request->supplier,
                     'payee_type' => \App\Models\Supplier::class,
-                    'total_amount' => $amount,
+                    'total_amount' => $homeAmount,
                 ]);
 
                 $journalEntry->lines->each->delete();
@@ -262,8 +282,11 @@ class PayBillController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $request->paymentAccount,
                     'description' => $request->memo ?? 'Bill Payment',
-                    'credit' => $amount,
+                    'credit' => $homeAmount,
                     'debit' => 0,
+                    'fc_currency_id' => $currencyId,
+                    'fc_credit' => $currencyId ? $amount : null,
+                    'exchange_rate' => $exchangeRate,
                 ]);
 
                 $apAccount = ChartOfAcc::where('account_type', 'liability')
@@ -277,8 +300,11 @@ class PayBillController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $apAccount->id ?? ChartOfAcc::first()->id,
                     'description' => 'ReceivePayment for Bill(s)',
-                    'debit' => $amount,
+                    'debit' => $homeAmount,
                     'credit' => 0,
+                    'fc_currency_id' => $currencyId,
+                    'fc_debit' => $currencyId ? $amount : null,
+                    'exchange_rate' => $exchangeRate,
                 ]);
             });
 

@@ -21,6 +21,8 @@ use App\Http\Controllers\Accounting\BillReturnController;
 use App\Http\Controllers\Accounting\ChequeController;
 use App\Http\Controllers\Accounting\ChartOfAccController;
 use App\Http\Controllers\Accounting\ReportController;
+use App\Http\Controllers\Accounting\BankController;
+use App\Http\Controllers\Accounting\BankReconciliationController;
 use App\Http\Controllers\Api\TransactionHistoryController;
 
 // Inventory Controllers
@@ -147,6 +149,29 @@ Route::middleware('auth')->group(function () {
         Route::post('/journal-entries/{journalEntry}/quick-update', 'quickUpdate')->name('journal-entries.quick-update');
     });
     Route::resource('journal-entries', JournalEntryController::class);
+
+    // Accounting - Bank Import
+    Route::controller(BankController::class)
+        ->as('bank.')->prefix('bank')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/upload', 'upload')->name('upload');
+        Route::get('/template', 'downloadTemplate')->name('template');
+        Route::post('/{line}/move', 'move')->name('move');
+        Route::post('/{line}/close', 'close')->name('close');
+        Route::post('/{line}/reverse', 'reverse')->name('reverse');
+        Route::delete('/{line}', 'destroy')->name('destroy');
+    });
+
+    // Accounting - Bank Reconciliation
+    Route::controller(BankReconciliationController::class)
+        ->as('bank-reconciliation.')->prefix('bank-reconciliation')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{reconciliation}/process', 'process')->name('process');
+        Route::post('/{reconciliation}/lines/{line}/toggle', 'toggleClear')->name('toggleClear');
+        Route::post('/{reconciliation}/finish', 'finish')->name('finish');
+    });
 
     // POS
     Route::controller(POSController::class)
@@ -310,7 +335,14 @@ Route::middleware('auth')->group(function () {
 
         // Fuel Station Modules
         Route::resource('tanks', \App\Http\Controllers\Inventory\TankController::class);
+        Route::resource('tank-dip-readings', \App\Http\Controllers\Inventory\TankDipReadingController::class);
         Route::resource('pumps', \App\Http\Controllers\Inventory\PumpController::class);
+        Route::get('shifts/{shift}/edit-active', [\App\Http\Controllers\Inventory\PumpShiftController::class, 'editActive'])->name('shifts.edit-active');
+        Route::put('shifts/{shift}/update-active', [\App\Http\Controllers\Inventory\PumpShiftController::class, 'updateActive'])->name('shifts.update-active');
+        Route::get('shifts/{shift}/collections', [\App\Http\Controllers\Inventory\PumpShiftController::class, 'editCollections'])->name('shifts.collections.edit');
+        Route::post('shifts/{shift}/draft', [\App\Http\Controllers\Inventory\PumpShiftController::class, 'saveDraft'])->name('shifts.draft');
+        Route::post('shifts/{shift}/reopen', [\App\Http\Controllers\Inventory\PumpShiftController::class, 'reopen'])->name('shifts.reopen');
+        Route::get('shifts/{shift}/export-csv', [\App\Http\Controllers\Inventory\PumpShiftController::class, 'exportCsv'])->name('shifts.export-csv');
         Route::post('shifts/{shift}/settle', [\App\Http\Controllers\Inventory\PumpShiftController::class, 'settle'])->name('shifts.settle');
         Route::get('shifts/{shift}/export-pdf', [\App\Http\Controllers\Inventory\PumpShiftController::class, 'exportPdf'])->name('shifts.export-pdf');
         Route::resource('shifts', \App\Http\Controllers\Inventory\PumpShiftController::class);

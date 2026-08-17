@@ -14,7 +14,7 @@ class Company extends Model
     {
         return once(fn() => \Illuminate\Support\Facades\Cache::rememberForever(
             'active_company_' . \Illuminate\Support\Facades\DB::connection()->getDatabaseName(),
-            fn() => self::first()
+            fn() => self::with('homeCurrency')->first()
         ));
     }
 
@@ -37,12 +37,16 @@ class Company extends Model
         'tax_id',
         'business_type',
         'legal_address',
-        'is_onboarded',
-        'home_currency_prefix',
+        'multi_currency_enabled',
+        'home_currency_id',
+    ];
+    
+    protected $casts = [
+        'multi_currency_enabled' => 'boolean',
     ];
     
 
-    protected $appends = ['logo_url', 'slug'];
+    protected $appends = ['logo_url', 'slug', 'home_currency_prefix'];
 
     public function getLogoUrlAttribute()
     {
@@ -54,9 +58,14 @@ class Company extends Model
         return Str::slug($this->company_name);
     }
 
-    public function getHomeCurrencyPrefixAttribute($value)
+    public function getHomeCurrencyPrefixAttribute()
     {
-        return $value;
+        return $this->homeCurrency?->symbol ?? '';
+    }
+
+    public function homeCurrency()
+    {
+        return $this->belongsTo(Currency::class, 'home_currency_id');
     }
 
     public function users()

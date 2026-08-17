@@ -64,6 +64,8 @@ class SalesInvoiceController extends Controller
                 })->toArray(),
                 'discountType' => $receipt->discount_type ?? 'percent',
                 'discountValue' => (float)$receipt->discount_value,
+                'currency_id' => $receipt->currency_id ?? '',
+                'exchange_rate' => $receipt->exchange_rate ?? 1.0,
             ];
 
             return Inertia::render('Transaction/SalesInvoice/SalesInvoiceForm', [
@@ -111,6 +113,8 @@ class SalesInvoiceController extends Controller
                 }
                 
                 $totalAmount = $subtotal - $discountAmount;
+                $exchangeRate = (float) ($request->exchange_rate ?? 1.0);
+                $homeTotalAmount = $totalAmount * $exchangeRate;
 
 
                 $customerId = $request->customer;
@@ -140,6 +144,8 @@ class SalesInvoiceController extends Controller
                     'prefix' => $request->prefix,
                     'discount_type' => $discountType,
                     'discount_value' => $discountValue,
+                    'currency_id' => $request->currency_id,
+                    'exchange_rate' => $exchangeRate,
                 ]);
 
 
@@ -163,7 +169,7 @@ class SalesInvoiceController extends Controller
                     'transaction_type' => 'sales_invoice',
                     'payee_id' => $customerId,
                     'payee_type' => Customer::class,
-                    'total_amount' => $totalAmount,
+                    'total_amount' => $homeTotalAmount,
                     'status' => 'posted',
                     'created_by' => Auth::id(),
                     'transactionable_id' => $receipt->id,
@@ -174,19 +180,26 @@ class SalesInvoiceController extends Controller
                 JournalEntryLine::create([
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $request->depositTo,
-                    'debit' => $totalAmount,
+                    'debit' => $homeTotalAmount,
                     'credit' => 0,
+                    'fc_currency_id' => $request->currency_id,
+                    'fc_debit' => $request->currency_id ? $totalAmount : null,
+                    'exchange_rate' => $exchangeRate,
                     'memo' => $request->memo,
                 ]);
 
                 // Debit Discounts Given if discount exists
                 if ($discountAmount > 0) {
+                    $homeDiscountAmount = $discountAmount * $exchangeRate;
                     $discountAccount = ChartOfAcc::getOrCreateDefault('discounts-given');
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $discountAccount->id,
-                        'debit' => $discountAmount,
+                        'debit' => $homeDiscountAmount,
                         'credit' => 0,
+                        'fc_currency_id' => $request->currency_id,
+                        'fc_debit' => $request->currency_id ? $discountAmount : null,
+                        'exchange_rate' => $exchangeRate,
                         'memo' => 'Discount for ' . $request->receiptNo,
                     ]);
                 }
@@ -196,12 +209,16 @@ class SalesInvoiceController extends Controller
                     $itemModel = Item::find($itemData['product']);
                     $incomeAccount = $itemModel?->income_account_id ?? (ChartOfAcc::where('account_type', 'income')->first()?->id ?? ChartOfAcc::getOrCreateDefault('uncategorized-income')->id);
                     $lineAmount = (float) str_replace(',', '', $itemData['amount']);
+                    $homeLineAmount = $lineAmount * $exchangeRate;
 
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $incomeAccount,
                         'debit' => 0,
-                        'credit' => $lineAmount,
+                        'credit' => $homeLineAmount,
+                        'fc_currency_id' => $request->currency_id,
+                        'fc_credit' => $request->currency_id ? $lineAmount : null,
+                        'exchange_rate' => $exchangeRate,
                         'memo' => $itemData['description'] ?? $request->memo,
                     ]);
 
@@ -289,6 +306,8 @@ class SalesInvoiceController extends Controller
             })->toArray(),
             'discountType' => $receipt->discount_type ?? 'percent',
             'discountValue' => (float)$receipt->discount_value,
+            'currency_id' => $receipt->currency_id ?? '',
+            'exchange_rate' => $receipt->exchange_rate ?? 1.0,
         ];
 
         return Inertia::render('Transaction/SalesInvoice/SalesInvoiceForm', [
@@ -335,6 +354,8 @@ class SalesInvoiceController extends Controller
                 }
                 
                 $totalAmount = $subtotal - $discountAmount;
+                $exchangeRate = (float) ($request->exchange_rate ?? 1.0);
+                $homeTotalAmount = $totalAmount * $exchangeRate;
 
 
                 $customerId = $request->customer;
@@ -366,6 +387,8 @@ class SalesInvoiceController extends Controller
                     'prefix' => $request->prefix,
                     'discount_type' => $discountType,
                     'discount_value' => $discountValue,
+                    'currency_id' => $request->currency_id,
+                    'exchange_rate' => $exchangeRate,
                 ]);
 
 
@@ -394,7 +417,7 @@ class SalesInvoiceController extends Controller
                     'reference' => $request->receiptNo,
                     'description' => $request->memo,
                     'payee_id' => $request->customer,
-                    'total_amount' => $totalAmount,
+                    'total_amount' => $homeTotalAmount,
                 ]);
 
                 $journalEntry->lines->each->delete();
@@ -403,19 +426,26 @@ class SalesInvoiceController extends Controller
                 JournalEntryLine::create([
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $request->depositTo,
-                    'debit' => $totalAmount,
+                    'debit' => $homeTotalAmount,
                     'credit' => 0,
+                    'fc_currency_id' => $request->currency_id,
+                    'fc_debit' => $request->currency_id ? $totalAmount : null,
+                    'exchange_rate' => $exchangeRate,
                     'memo' => $request->memo,
                 ]);
 
                 // Debit Discounts Given if discount exists
                 if ($discountAmount > 0) {
+                    $homeDiscountAmount = $discountAmount * $exchangeRate;
                     $discountAccount = ChartOfAcc::getOrCreateDefault('discounts-given');
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $discountAccount->id,
-                        'debit' => $discountAmount,
+                        'debit' => $homeDiscountAmount,
                         'credit' => 0,
+                        'fc_currency_id' => $request->currency_id,
+                        'fc_debit' => $request->currency_id ? $discountAmount : null,
+                        'exchange_rate' => $exchangeRate,
                         'memo' => 'Discount for ' . $request->receiptNo,
                     ]);
                 }
@@ -424,12 +454,17 @@ class SalesInvoiceController extends Controller
                 foreach ($items as $itemData) {
                     $itemModel = Item::find($itemData['product']);
                     $incomeAccount = $itemModel?->income_account_id ?? (ChartOfAcc::where('account_type', 'income')->first()?->id ?? ChartOfAcc::getOrCreateDefault('uncategorized-income')->id);
+                    $lineAmount = (float) str_replace(',', '', $itemData['amount']);
+                    $homeLineAmount = $lineAmount * $exchangeRate;
 
                     JournalEntryLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_acc_id' => $incomeAccount,
                         'debit' => 0,
-                        'credit' => (float) str_replace(',', '', $itemData['amount']),
+                        'credit' => $homeLineAmount,
+                        'fc_currency_id' => $request->currency_id,
+                        'fc_credit' => $request->currency_id ? $lineAmount : null,
+                        'exchange_rate' => $exchangeRate,
                         'memo' => $itemData['description'] ?? $request->memo,
                     ]);
 

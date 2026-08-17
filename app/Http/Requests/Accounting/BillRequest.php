@@ -14,6 +14,8 @@ class BillRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'exchange_rate' => 'nullable|numeric',
+            'currency_id' => 'nullable|string',
             'supplier' => 'required|exists:suppliers,id',
             'billDate' => 'required|date',
             'billNo' => 'required',
@@ -25,6 +27,8 @@ class BillRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'exchange_rate' => 'nullable|numeric',
+            'currency_id' => 'nullable|string',
             'supplier.exists' => 'The selected supplier does not exist. Please select a valid supplier.',
         ];
     }

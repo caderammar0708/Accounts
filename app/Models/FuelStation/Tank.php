@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Item;
 use App\Models\Company;
 
+use App\Models\Item;
+use App\Models\Company;
+
 class Tank extends Model
 {
     use HasFactory;

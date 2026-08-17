@@ -15,6 +15,8 @@ class Bill extends Model implements Auditable
     use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
 
     protected $fillable = [
+        'currency_id',
+        'exchange_rate',
         'supplier_id', 'email', 'bill_date',
         'due_date', 'bill_no', 'total_amount', 'memo', 'status', 'location_id',
     ];

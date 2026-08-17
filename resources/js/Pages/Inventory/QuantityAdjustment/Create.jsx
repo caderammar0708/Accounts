@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, Link } from '@inertiajs/react';
+import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import CommonButton from '@/Components/CommonButton';
 import SearchableSelect from '@/Components/SearchableSelect';
@@ -21,6 +21,7 @@ const FormSection = ({ title, children, show = true }) => {
 };
 
 export default function CreateAdjustment({ items, accounts, nextReference }) {
+    const { auth } = usePage().props;
     const { data, setData, post, processing, errors, transform } = useForm({
         adjustment_date: localStorage.getItem('last_transaction_date') || new Date().toISOString().split('T')[0],
         reference_number: nextReference || '1',

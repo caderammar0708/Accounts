@@ -10,6 +10,7 @@ import QuickAddAccount from "@/Components/QuickAddAccount";
 import QuickAddPayee from "@/Components/QuickAddPayee";
 import QuickAddPaymentMethod from "@/Components/QuickAddPaymentMethod";
 import InventoryItemSidePanel from "@/Components/InventoryItemSidePanel";
+import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
 import { showToast } from "@/Components/ToastNotification";
 import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import PinPromptModal from "@/Components/PinPromptModal";
@@ -22,7 +23,10 @@ export default function PaymentForm({
     nextExpenseNo = ""
 }) {
     const company = auth.company;
-    const currencyPrefix = company?.home_currency_prefix || company?.home_currency || '';
+    const homeCurrencyObj = typeof company?.home_currency === 'object' ? company.home_currency : null;
+    const homeCurrencyStr = typeof company?.home_currency === 'string' ? company.home_currency : '';
+    const currencyPrefix = company?.home_currency_prefix || homeCurrencyObj?.symbol || homeCurrencyStr || '';
+    const defaultCurrencyCode = homeCurrencyObj?.code || homeCurrencyStr || company?.home_currency_prefix || '';
     const dateFormat = useDateFormat();
 
     // Accordion States (Expanded by default)
@@ -122,6 +126,8 @@ export default function PaymentForm({
         })) : [
             { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
         ],
+        exchange_rate: expense?.exchange_rate || 1,
+        currency_id: expense?.currency_id || "",
         action: 'save',
         books_pin: ''
     });
@@ -191,6 +197,8 @@ export default function PaymentForm({
                 })) : [
                     { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }
                 ],
+                exchange_rate: expense.exchange_rate || 1,
+                currency_id: expense.currency_id || "",
                 action: 'save',
                 books_pin: ''
             });
@@ -211,6 +219,8 @@ export default function PaymentForm({
                 itemDetails: [
                     { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
                 ],
+                exchange_rate: 1,
+                currency_id: "",
                 action: 'save',
                 books_pin: ''
             });
@@ -291,7 +301,11 @@ export default function PaymentForm({
     };
 
     const handleAccountChange = (val) => {
-        setData("account", val);
+        setData(prev => ({
+            ...prev,
+            account: val,
+            currency_id: accountOptions.find(a => String(a.value) === String(val))?.currency_id || prev.currency_id
+        }));
         setIsDirty(true);
         if (!expense?.id && val) {
             axios.get(route('api.payments.next-ref', { account_id: val })).then(res => {
@@ -373,7 +387,7 @@ export default function PaymentForm({
                         payee: "", account: "", date: cachedDate, method: getDefaultCashPaymentMethod() || "", ref: nextRef, memo: "",
                         items: [{ category: "", description: "", amount: "0.00" }],
                         itemDetails: [{ product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }],
-                        action: 'save',
+                        exchange_rate: 1, currency_id: "", action: 'save',
                         books_pin: ''
                     });
                     setIsDirty(false);
@@ -483,6 +497,17 @@ export default function PaymentForm({
                                     }}
                                 />
                             </div>
+                        </div>
+
+                        <div>
+                            <CurrencyExchangeInput
+                                auth={auth}
+                                selectedAccount={accountOptions.find(a => String(a.value) === String(data.account))}
+                                exchangeRate={data.exchange_rate}
+                                onExchangeRateChange={(rate) => setData('exchange_rate', rate)}
+                                transactionDate={data.date}
+                                isEdit={!!expense?.id || !!savedEntryId}
+                            />
                         </div>
                     </div>
 

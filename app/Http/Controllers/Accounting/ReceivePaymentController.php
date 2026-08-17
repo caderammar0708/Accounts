@@ -48,6 +48,8 @@ class ReceivePaymentController extends Controller
                 'depositTo' => $receivePayment->deposit_to_account_id,
                 'referenceNo' => $nextPaymentNoLabel,
                 'memo' => $receivePayment->memo,
+                'exchange_rate' => $receivePayment->exchange_rate ?? 1,
+                'currency_id' => $receivePayment->currency_id ?? "",
             ];
 
             return Inertia::render('Transaction/ReceivePayment/ReceivePaymentForm', [
@@ -71,6 +73,9 @@ class ReceivePaymentController extends Controller
             \App\Services\BooksLockService::check($request->paymentDate, $request->books_pin);
             $journalEntry = DB::transaction(function() use ($request) {
                 $amount = (float) str_replace(',', '', $request->amountReceived);
+                $exchangeRate = $request->input('exchange_rate', 1);
+                $currencyId = $request->input('currency_id');
+                $homeAmount = $amount * $exchangeRate;
 
                 // 1. Create Business Document (Payment)
                 $receivePayment = \App\Models\Accounting\ReceivePayment::create([
@@ -83,6 +88,8 @@ class ReceivePaymentController extends Controller
                     'memo' => $request->memo,
                     'check_date' => $request->checkDate,
                     'check_number' => $request->checkNumber,
+                    'currency_id' => $currencyId,
+                    'exchange_rate' => $exchangeRate,
                 ]);
 
                 // Allocations (Business Details)
@@ -114,7 +121,7 @@ class ReceivePaymentController extends Controller
                     'transaction_type' => 'receive_payment',
                     'payee_id' => $request->customer,
                     'payee_type' => Customer::class,
-                    'total_amount' => $amount,
+                    'total_amount' => $homeAmount,
                     'status' => 'posted',
                     'created_by' => Auth::id(),
                     'transactionable_id' => $receivePayment->id,
@@ -129,8 +136,11 @@ class ReceivePaymentController extends Controller
                     'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $request->depositTo,
-                    'debit' => $amount,
+                    'debit' => $homeAmount,
                     'credit' => 0,
+                    'fc_currency_id' => $currencyId,
+                    'fc_debit' => $currencyId ? $amount : null,
+                    'exchange_rate' => $exchangeRate,
                     'memo' => $request->memo,
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -143,7 +153,10 @@ class ReceivePaymentController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $arAccount->id,
                     'debit' => 0,
-                    'credit' => $amount,
+                    'credit' => $homeAmount,
+                    'fc_currency_id' => $currencyId,
+                    'fc_credit' => $currencyId ? $amount : null,
+                    'exchange_rate' => $exchangeRate,
                     'memo' => $request->memo,
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -183,6 +196,8 @@ class ReceivePaymentController extends Controller
             'memo' => $receivePayment->memo,
             'checkDate' => $receivePayment->check_date,
             'checkNumber' => $receivePayment->check_number,
+            'exchange_rate' => $receivePayment->exchange_rate ?? 1,
+            'currency_id' => $receivePayment->currency_id ?? "",
         ];
 
         return Inertia::render('Transaction/ReceivePayment/ReceivePaymentForm', [
@@ -203,6 +218,9 @@ class ReceivePaymentController extends Controller
 
             DB::transaction(function() use ($request, $journalEntry) {
                 $amount = (float) str_replace(',', '', $request->amountReceived);
+                $exchangeRate = $request->input('exchange_rate', 1);
+                $currencyId = $request->input('currency_id');
+                $homeAmount = $amount * $exchangeRate;
 
                 // 1. Update Business Document (Payment)
                 $receivePayment = \App\Models\Accounting\ReceivePayment::find($journalEntry->transactionable_id);
@@ -220,6 +238,8 @@ class ReceivePaymentController extends Controller
                     'memo' => $request->memo,
                     'check_date' => $request->checkDate,
                     'check_number' => $request->checkNumber,
+                    'currency_id' => $currencyId,
+                    'exchange_rate' => $exchangeRate,
                 ]);
 
                 // 2. Re-create Allocations
@@ -250,7 +270,7 @@ class ReceivePaymentController extends Controller
                     'reference' => $request->referenceNo,
                     'description' => $request->memo,
                     'payee_id' => $request->customer,
-                    'total_amount' => $amount,
+                    'total_amount' => $homeAmount,
                 ]);
 
                 // Re-create lines
@@ -264,8 +284,11 @@ class ReceivePaymentController extends Controller
                     'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $request->depositTo,
-                    'debit' => $amount,
+                    'debit' => $homeAmount,
                     'credit' => 0,
+                    'fc_currency_id' => $currencyId,
+                    'fc_debit' => $currencyId ? $amount : null,
+                    'exchange_rate' => $exchangeRate,
                     'memo' => $request->memo,
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -278,7 +301,10 @@ class ReceivePaymentController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id' => $arAccount->id,
                     'debit' => 0,
-                    'credit' => $amount,
+                    'credit' => $homeAmount,
+                    'fc_currency_id' => $currencyId,
+                    'fc_credit' => $currencyId ? $amount : null,
+                    'exchange_rate' => $exchangeRate,
                     'memo' => $request->memo,
                     'created_at' => $now,
                     'updated_at' => $now,

@@ -16,7 +16,7 @@ export default function Create({ shift, employees, pumps, lastEndTime }) {
 
     const { data, setData, post, put, processing, errors, transform } = useForm({
         employee_id: isEdit ? shift.employee_id : '',
-        start_time: isEdit ? shift.start_time.slice(0, 16) : dayjs(lastEndTime || undefined).format('YYYY-MM-DDTHH:mm'),
+        start_time: isEdit ? shift.start_time.slice(0, 16) : (lastEndTime ? dayjs(lastEndTime).format('YYYY-MM-DDTHH:mm') : dayjs().hour(8).minute(0).format('YYYY-MM-DDTHH:mm')),
         nozzles: initialNozzles
     });
 

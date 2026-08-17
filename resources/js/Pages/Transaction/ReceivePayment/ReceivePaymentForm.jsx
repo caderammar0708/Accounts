@@ -10,13 +10,17 @@ import { showToast } from "@/Components/ToastNotification";
 import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import CommonButton from "@/Components/CommonButton";
 import QuickAddAccount from "@/Components/QuickAddAccount";
+import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function ReceivePaymentForm({ paymentMethods = [], payment = null, nextPaymentNo = "" }) {
     const { auth } = usePage().props;
-    const currencyPrefix = auth?.company?.home_currency_prefix || auth?.company?.home_currency || '';
+    const homeCurrencyObj = typeof auth?.company?.home_currency === 'object' ? auth.company.home_currency : null;
+    const homeCurrencyStr = typeof auth?.company?.home_currency === 'string' ? auth.company.home_currency : '';
+    const currencyPrefix = auth?.company?.home_currency_prefix || homeCurrencyObj?.symbol || homeCurrencyStr || '';
+    const defaultCurrencyCode = homeCurrencyObj?.code || homeCurrencyStr || auth?.company?.home_currency_prefix || '';
     const dateFormat = useDateFormat();
 
     const [customerOptions, setCustomerOptions] = useState([]);
@@ -31,7 +35,6 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
 
     const [isDirty, setIsDirty] = useState(false);
     const [savedEntryId, setSavedEntryId] = useState(payment?.id || null);
-    const defaultCurrencyCode = auth?.company?.home_currency || auth?.company?.home_currency_prefix || '';
 
     const { data, setData, post, patch, processing, errors, reset, clearErrors, transform } = useForm({
         customer: payment?.customer || "",
@@ -44,6 +47,8 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
         memo: payment?.memo || "",
         checkDate: payment?.checkDate || "",
         checkNumber: payment?.checkNumber || "",
+        exchange_rate: payment?.exchange_rate || 1,
+        currency_id: payment?.currency_id || "",
         action: 'save',
         books_pin: ''
     });
@@ -268,6 +273,8 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                 memo: payment.memo || "",
                 checkDate: payment.checkDate || "",
                 checkNumber: payment.checkNumber || "",
+                exchange_rate: payment.exchange_rate || 1,
+                currency_id: payment.currency_id || "",
                 action: 'save',
                 books_pin: ''
             });
@@ -295,6 +302,8 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                 memo: "",
                 checkDate: "",
                 checkNumber: "",
+                exchange_rate: 1,
+                currency_id: "",
                 action: 'save',
                 books_pin: ''
             });
@@ -392,7 +401,8 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                     setData({
                         customer: "", email: "", paymentDate: cachedDate,
                         paymentMethod: getDefaultCashPaymentMethod() || "", referenceNo: nextRef,
-                        depositTo: "", amountReceived: "0.00", memo: "", action: 'save',
+                        depositTo: "", amountReceived: "0.00", memo: "", 
+                        exchange_rate: 1, currency_id: "", action: 'save',
                         books_pin: ''
                     });
                     setIsDirty(false);
@@ -542,7 +552,14 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                             onSearch={fetchAccounts}
                             onAddNew={() => setIsAccountModalOpen(true)}
                             value={data.depositTo}
-                            onChange={(val) => { setData("depositTo", val); setIsDirty(true); }}
+                            onChange={(val) => { 
+                                setData(prev => ({
+                                    ...prev,
+                                    depositTo: val,
+                                    currency_id: accountOptions.find(a => String(a.value) === String(val))?.currency_id || prev.currency_id
+                                }));
+                                setIsDirty(true); 
+                            }}
                             placeholder="Select Account"
                             size="sm"
                             error={errors.depositTo}
@@ -574,6 +591,16 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                         />
                     </div>
                 </div>
+
+                <CurrencyExchangeInput
+                    auth={auth}
+                    selectedAccount={accountOptions.find(a => String(a.value) === String(data.depositTo))}
+                    exchangeRate={data.exchange_rate}
+                    onExchangeRateChange={(val) => { setData('exchange_rate', val); setIsDirty(true); }}
+                    error={errors.exchange_rate}
+                    transactionDate={data.paymentDate}
+                    isEdit={!!payment?.id || !!savedEntryId}
+                />
 
                 {/* ROW 3: Memo */}
                 <div className="w-[500px] mt-8 pt-4 border-t border-slate-100">

@@ -21,7 +21,10 @@ export default function CreditInvoiceForm({
 }) {
     const { props } = usePage();
     const company = auth.company;
-    const currencyPrefix = company?.home_currency_prefix || company?.home_currency || '';
+    const homeCurrencyObj = typeof company?.home_currency === 'object' ? company.home_currency : null;
+    const homeCurrencyStr = typeof company?.home_currency === 'string' ? company.home_currency : '';
+    const currencyPrefix = company?.home_currency_prefix || homeCurrencyObj?.symbol || homeCurrencyStr || '';
+    const defaultCurrencyCode = homeCurrencyObj?.code || homeCurrencyStr || company?.home_currency_prefix || '';
     const dateFormat = useDateFormat();
 
     const [customerOptions, setCustomerOptions] = useState([]);
@@ -628,7 +631,7 @@ export default function CreditInvoiceForm({
                                     onClick={() => { setData(prev => ({ ...prev, discount_type: 'fixed' })); setIsDirty(true); }}
                                     className={`px-2 text-xs font-bold transition-colors ${data.discount_type === 'fixed' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
                                 >
-                                    $
+                                    {currencyPrefix}
                                 </button>
                             </div>
                         </div>

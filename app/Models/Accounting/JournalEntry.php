@@ -14,6 +14,8 @@ class JournalEntry extends Model implements Auditable
     use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
 
     protected $fillable = [
+        'currency_id',
+        'exchange_rate',
         'date',
         'reference',
         'description',

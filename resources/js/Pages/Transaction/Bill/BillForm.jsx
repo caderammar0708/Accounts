@@ -8,6 +8,7 @@ import CommonInput from "@/Components/CommonInput";
 import QuickAddAccount from "@/Components/QuickAddAccount";
 import QuickAddPayee from "@/Components/QuickAddPayee";
 import InventoryItemSidePanel from "@/Components/InventoryItemSidePanel";
+import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
 import TermModal from "@/Components/TermModal";
 import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
@@ -23,7 +24,10 @@ export default function BillForm({
 }) {
     const { props } = usePage();
     const company = auth.company;
-    const currencyPrefix = company?.home_currency_prefix || company?.home_currency || '';
+    const homeCurrencyObj = typeof company?.home_currency === 'object' ? company.home_currency : null;
+    const homeCurrencyStr = typeof company?.home_currency === 'string' ? company.home_currency : '';
+    const currencyPrefix = company?.home_currency_prefix || homeCurrencyObj?.symbol || homeCurrencyStr || '';
+    const defaultCurrencyCode = homeCurrencyObj?.code || homeCurrencyStr || company?.home_currency_prefix || '';
     const dateFormat = useDateFormat();
 
     // Accordion States (Expanded by default)
@@ -166,6 +170,8 @@ export default function BillForm({
             { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
             { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
         ],
+        exchange_rate: bill?.exchange_rate || 1,
+        currency_id: bill?.currency_id || "",
         action: 'save',
         books_pin: ''
     });
@@ -198,6 +204,8 @@ export default function BillForm({
                     { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
                     { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
                 ],
+                exchange_rate: bill.exchange_rate || 1,
+                currency_id: bill.currency_id || "",
                 action: 'save'
             });
         }
@@ -394,7 +402,8 @@ export default function BillForm({
                         itemDetails: [
                             { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
                             { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
-                        ]
+                        ],
+                        exchange_rate: 1, currency_id: "",
                     });
                     clearErrors();
                     setIsDirty(false);
@@ -474,12 +483,14 @@ export default function BillForm({
                                 placeholder="Who are you paying?"
                                 value={data.supplier}
                                 onChange={(val) => {
-                                    setData('supplier', val);
-                                    setIsDirty(true);
                                     const payee = payeeOptions.find(p => p.value === val);
-                                    if (payee && payee.billing_address) {
-                                        setData("mailingAddress", payee.billing_address);
-                                    }
+                                    setData(prev => ({
+                                        ...prev,
+                                        supplier: val,
+                                        mailingAddress: payee?.billing_address || prev.mailingAddress,
+                                        currency_id: payee?.currency_id || prev.currency_id
+                                    }));
+                                    setIsDirty(true);
                                 }}
                                 options={payeeOptions}
                                 onSearch={fetchPayees}
@@ -541,6 +552,16 @@ export default function BillForm({
                         />
                     </div>
                 </div>
+
+                <CurrencyExchangeInput
+                    auth={auth}
+                    selectedAccount={payeeOptions.find(a => String(a.value) === String(data.supplier))}
+                    exchangeRate={data.exchange_rate}
+                    onExchangeRateChange={(val) => { setData('exchange_rate', val); setIsDirty(true); }}
+                    error={errors.exchange_rate}
+                    transactionDate={data.billDate}
+                    isEdit={!!bill?.id || !!savedEntryId}
+                />
             </div>
 
             {/* Collapsible Category details Accordion */}

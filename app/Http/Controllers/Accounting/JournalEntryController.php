@@ -90,6 +90,8 @@ class JournalEntryController extends Controller
             'transaction_type' => 'journal_entry',
             'status' => 'posted',
             'created_by' => Auth::id(),
+            'currency_id' => $request->input('currency_id'),
+            'exchange_rate' => $request->input('exchange_rate', 1),
         ]);
 
         foreach ($request->lines as $line) {
@@ -112,10 +114,10 @@ class JournalEntryController extends Controller
                 'chart_of_acc_id' => $line['account_id'],
                 'payee_id' => $payeeId,
                 'payee_type' => $payeeType,
-                'fc_currency_id' => $line['fc_currency_id'] ?? null,
+                'fc_currency_id' => $request->input('currency_id'),
                 'fc_debit' => $line['fc_debit'] ?? null,
                 'fc_credit' => $line['fc_credit'] ?? null,
-                'exchange_rate' => $line['exchange_rate'] ?? 1,
+                'exchange_rate' => $request->input('exchange_rate', 1),
                 'debit' => $debit,
                 'credit' => $credit,
                 'memo' => $line['description'] ?? null,
@@ -164,6 +166,8 @@ class JournalEntryController extends Controller
                 'date' => $request->date,
                 'reference' => $request->reference_no,
                 'description' => $request->description,
+                'currency_id' => $request->input('currency_id'),
+                'exchange_rate' => $request->input('exchange_rate', 1),
             ]);
 
             $journalEntry->lines->each->delete();
@@ -187,10 +191,10 @@ class JournalEntryController extends Controller
                     'chart_of_acc_id' => $line['account_id'],
                     'payee_id' => $payeeId,
                     'payee_type' => $payeeType,
-                    'fc_currency_id' => $line['fc_currency_id'] ?? null,
+                    'fc_currency_id' => $request->input('currency_id'),
                     'fc_debit' => $line['fc_debit'] ?? null,
                     'fc_credit' => $line['fc_credit'] ?? null,
-                    'exchange_rate' => $line['exchange_rate'] ?? 1,
+                    'exchange_rate' => $request->input('exchange_rate', 1),
                     'debit' => $debit,
                     'credit' => $credit,
                     'memo' => $line['description'] ?? null,

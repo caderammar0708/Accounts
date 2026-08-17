@@ -17,6 +17,8 @@ class ChartOfAccController extends Controller
     {
         $accounts = ChartOfAcc::withSum('journalLines', 'debit')
             ->withSum('journalLines', 'credit')
+            ->withSum('journalLines', 'fc_debit')
+            ->withSum('journalLines', 'fc_credit')
             ->orderByRaw('FIELD(LOWER(account_type), "asset", "liability", "equity", "income", "expense")')
             ->orderBy('sub_type')
             ->orderBy('name')
@@ -32,7 +34,7 @@ class ChartOfAccController extends Controller
         };
         $buildTree(null);
 
-        $currencies = \App\Models\CompanySetting::first()?->multi_currency_enabled ? \App\Models\Currency::where('is_active', true)->get() : [];
+        $currencies = \App\Models\Company::current()?->multi_currency_enabled ? \App\Models\Currency::where('is_active', true)->get() : [];
 
         $chartOfAccounts = $chartOfAccounts->map(function ($account) {
             $account->currency_code = $account->currency_id ? $account->currency?->code : null;
@@ -42,8 +44,8 @@ class ChartOfAccController extends Controller
         return Inertia::render('Accounting/chart-of-acc-index', [
             'chartOfAccounts' => $chartOfAccounts,
             'currencies' => $currencies,
-            'multi_currency_enabled' => \App\Models\CompanySetting::first()?->multi_currency_enabled,
-            'home_currency_id' => \App\Models\CompanySetting::first()?->home_currency_id,
+            'multi_currency_enabled' => \App\Models\Company::current()?->multi_currency_enabled,
+            'home_currency_id' => \App\Models\Company::current()?->home_currency_id,
             'lastOpeningBalanceDate' => session('last_opening_balance_date', date('Y-m-d')),
         ]);
     }
@@ -66,7 +68,7 @@ class ChartOfAccController extends Controller
             'balance' => 0,
             'description' => $request->input('description'),
             'is_active' => $request->boolean('is_active', true),
-            'currency_id' => $request->input('currency_id') ?: \App\Models\CompanySetting::first()?->home_currency_id ?: null,
+            'currency_id' => $request->input('currency_id') ?: \App\Models\Company::current()?->home_currency_id ?: null,
             'parent_id' => $request->input('is_subaccount') ? $request->input('parent_id') : null,
             'is_locked' => $request->boolean('is_locked', false),
         ]);
@@ -198,7 +200,7 @@ class ChartOfAccController extends Controller
             'account_type' => $request->input('account_type'),
             'sub_type' => $request->input('sub_type'),
             'description' => $request->input('description'),
-            'currency_id' => $request->input('currency_id') ?: \App\Models\CompanySetting::first()?->home_currency_id ?: null,
+            'currency_id' => $request->input('currency_id') ?: \App\Models\Company::current()?->home_currency_id ?: null,
             'parent_id' => $request->input('is_subaccount') ? $request->input('parent_id') : null,
             'is_locked' => $request->boolean('is_locked', false),
         ]);
@@ -208,7 +210,7 @@ class ChartOfAccController extends Controller
 
     public function history(Request $request, ChartOfAcc $chartOfAccount)
     {
-        $query = \App\Models\Accounting\JournalEntryLine::with(['journalEntry.creator', 'journalEntry.lines.account'])
+        $query = \App\Models\Accounting\JournalEntryLine::with(['journalEntry.creator', 'journalEntry.lines.account', 'journalEntry.transactionable'])
              ->where('chart_of_acc_id', $chartOfAccount->id)
              ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id');
 

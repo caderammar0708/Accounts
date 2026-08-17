@@ -22,6 +22,7 @@ class LookupController extends Controller
 
         if (!$requestedType || $requestedType === 'Supplier') {
             $suppliers = Supplier::select('id', 'display_name as label')
+                ->selectRaw("NULL as currency_id")
                 ->selectRaw("'Supplier' as type")
                 ->when($search, fn($q) => $q->where('display_name', 'like', "%{$search}%"));
             $query = $suppliers;
@@ -29,6 +30,7 @@ class LookupController extends Controller
 
         if (!$requestedType || $requestedType === 'Customer') {
             $customers = Customer::select('id', 'display_name as label')
+                ->selectRaw("NULL as currency_id")
                 ->selectRaw("'Customer' as type")
                 ->when($search, fn($q) => $q->where('display_name', 'like', "%{$search}%"));
             $query = $query ? $query->union($customers) : $customers;
@@ -36,6 +38,7 @@ class LookupController extends Controller
 
         if (!$requestedType || $requestedType === 'Employee') {
             $employees = Employee::select('id', 'name as label')
+                ->selectRaw("NULL as currency_id")
                 ->selectRaw("'Employee' as type")
                 ->when($search, fn($q) => $q->where('name', 'like', "%{$search}%"));
             $query = $query ? $query->union($employees) : $employees;
@@ -47,7 +50,8 @@ class LookupController extends Controller
                 return [
                     'value' => $p->id,
                     'label' => $p->label,
-                    'type' => $p->type
+                    'type' => $p->type,
+                    'currency_id' => $p->currency_id
                 ];
             });
 
@@ -66,12 +70,13 @@ class LookupController extends Controller
         $includeSelectedId = $request->query('include_selected_id');
 
         $settings = class_exists(\App\Models\CompanySetting::class) ? \App\Models\CompanySetting::current() : null;
-        $homeCurrencyId = $settings?->home_currency_id;
-        $isMultiCurrency = $settings?->multi_currency_enabled;
+        $company = \App\Models\Company::current();
+        $homeCurrencyId = $company?->home_currency_id;
+        $isMultiCurrency = $company?->multi_currency_enabled;
         
         $homeCurrency = $homeCurrencyId ? \App\Models\Currency::find($homeCurrencyId) : null;
-        $homeCurrencyCode = $homeCurrency?->code ?: 'Rs.';
-        $homeCurrencySymbol = $homeCurrency?->symbol ?: 'Rs.';
+        $homeCurrencyCode = $homeCurrency?->code ?: '';
+        $homeCurrencySymbol = $homeCurrency?->symbol ?: '';
 
         $accounts = \App\Models\Accounting\ChartOfAcc::select('id', 'name', 'account_code', 'balance', 'account_type', 'sub_type', 'currency_id')
             ->withSum('journalLines', 'debit')
@@ -90,6 +95,8 @@ class LookupController extends Controller
             ->when($includeSelectedId, function($q) use ($includeSelectedId) {
                 $q->orWhere('id', $includeSelectedId);
             })
+            ->withSum('journalLines', 'debit')
+            ->withSum('journalLines', 'credit')
             ->orderBy('account_code')
             ->get()
             ->map(function($acc) use ($homeCurrencyId, $isMultiCurrency, $homeCurrencyCode, $homeCurrencySymbol) {
@@ -126,12 +133,13 @@ class LookupController extends Controller
         }
 
         $settings = class_exists(\App\Models\CompanySetting::class) ? \App\Models\CompanySetting::current() : null;
-        $homeCurrencyId = $settings?->home_currency_id;
-        $isMultiCurrency = $settings?->multi_currency_enabled;
+        $company = \App\Models\Company::current();
+        $homeCurrencyId = $company?->home_currency_id;
+        $isMultiCurrency = $company?->multi_currency_enabled;
         
         $homeCurrency = $homeCurrencyId ? \App\Models\Currency::find($homeCurrencyId) : null;
-        $currencyCode = $account->currency ? $account->currency->code : ($homeCurrency?->code ?: 'Rs.');
-        $currencySymbol = $account->currency ? $account->currency->symbol : ($homeCurrency?->symbol ?: 'Rs.');
+        $currencyCode = $account->currency ? $account->currency->code : ($homeCurrency?->code ?: '');
+        $currencySymbol = $account->currency ? $account->currency->symbol : ($homeCurrency?->symbol ?: '');
         
         $isForeignCurrency = $isMultiCurrency && $account->currency_id && $account->currency_id !== $homeCurrencyId;
 
@@ -142,11 +150,6 @@ class LookupController extends Controller
             'currency_id' => $account->currency_id,
             'flag' => $this->currencyFlagEmoji($currencyCode),
         ]);
-    }
-
-    private function getCurrencySymbol(?string $currencyCode): string
-    {
-        return 'Rs.';
     }
 
     private function currencyFlagEmoji(?string $code): string
@@ -169,7 +172,7 @@ class LookupController extends Controller
     public function currencies(Request $request)
     {
         $currencies = \App\Models\Currency::where('is_active', true)
-            ->get(['id', 'code', 'symbol', 'exchange_rate']);
+            ->get(['id', 'code', 'symbol', 'name']);
             
         return response()->json($currencies);
     }

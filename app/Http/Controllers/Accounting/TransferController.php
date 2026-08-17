@@ -31,7 +31,6 @@ class TransferController extends Controller
             $journalEntry = DB::transaction(function() use ($request) {
                 $amount = (float) $request->amount;
 
-                // 1. Create Business Document (Transfer)
                 $transfer = Transfer::create([
                     'from_account_id' => $request->transfer_from,
                     'to_account_id'   => $request->transfer_to,
@@ -39,7 +38,13 @@ class TransferController extends Controller
                     'date'            => $request->date,
                     'memo'            => $request->memo,
                     'reference_no'    => $request->referenceNo ?? 'TRF-' . time(),
+                    'currency_id'     => $request->input('currency_id'),
+                    'exchange_rate'   => $request->input('exchange_rate', 1),
                 ]);
+
+                $exchangeRate = clone $request->input('exchange_rate', 1);
+                $currencyId = clone $request->input('currency_id');
+                $homeAmount = $amount * $exchangeRate;
 
                 // 2. Create Financial Truth (Journal Entry)
                 $journalEntry = JournalEntry::create([
@@ -47,11 +52,13 @@ class TransferController extends Controller
                     'reference'           => $transfer->reference_no,
                     'description'         => $request->memo,
                     'transaction_type'    => 'transfer',
-                    'total_amount'        => $amount,
+                    'total_amount'        => $homeAmount,
                     'status'              => 'posted',
                     'created_by'          => Auth::id(),
                     'transactionable_id'  => $transfer->id,
                     'transactionable_type' => Transfer::class,
+                    'currency_id'         => $currencyId,
+                    'exchange_rate'       => $exchangeRate,
                 ]);
 
                 // From Account (Credit - Money leaving Asset)
@@ -59,17 +66,23 @@ class TransferController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id'  => $request->transfer_from,
                     'debit'            => 0,
-                    'credit'           => $amount,
+                    'credit'           => $homeAmount,
                     'memo'             => $request->memo,
+                    'fc_currency_id'   => $currencyId,
+                    'fc_credit'        => $currencyId ? $amount : null,
+                    'exchange_rate'    => $exchangeRate,
                 ]);
 
                 // To Account (Debit - Money entering Asset)
                 JournalEntryLine::create([
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id'  => $request->transfer_to,
-                    'debit'            => $amount,
+                    'debit'            => $homeAmount,
                     'credit'           => 0,
                     'memo'             => $request->memo,
+                    'fc_currency_id'   => $currencyId,
+                    'fc_debit'         => $currencyId ? $amount : null,
+                    'exchange_rate'    => $exchangeRate,
                 ]);
                 return $journalEntry;
             });
@@ -105,6 +118,8 @@ class TransferController extends Controller
                 'date' => $transfer->date,
                 'memo' => $transfer->memo,
                 'referenceNo' => $transfer->reference_no,
+                'currency_id' => $transfer->currency_id ?? "",
+                'exchange_rate' => $transfer->exchange_rate ?? 1,
             ]
         ]);
     }
@@ -128,14 +143,22 @@ class TransferController extends Controller
                     'date'            => $request->date,
                     'memo'            => $request->memo,
                     'reference_no'    => $request->referenceNo ?? $transfer->reference_no,
+                    'currency_id'     => $request->input('currency_id'),
+                    'exchange_rate'   => $request->input('exchange_rate', 1),
                 ]);
+
+                $exchangeRate = clone $request->input('exchange_rate', 1);
+                $currencyId = clone $request->input('currency_id');
+                $homeAmount = $amount * $exchangeRate;
 
                 // 2. Update Financial Truth (Journal Entry)
                 $journalEntry->update([
                     'date'                => $request->date,
                     'reference'           => $transfer->reference_no,
                     'description'         => $request->memo,
-                    'total_amount'        => $amount,
+                    'total_amount'        => $homeAmount,
+                    'currency_id'         => $currencyId,
+                    'exchange_rate'       => $exchangeRate,
                 ]);
 
                 // Clear existing lines
@@ -146,17 +169,23 @@ class TransferController extends Controller
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id'  => $request->transfer_from,
                     'debit'            => 0,
-                    'credit'           => $amount,
+                    'credit'           => $homeAmount,
                     'memo'             => $request->memo,
+                    'fc_currency_id'   => $currencyId,
+                    'fc_credit'        => $currencyId ? $amount : null,
+                    'exchange_rate'    => $exchangeRate,
                 ]);
 
                 // To Account (Debit - Money entering Asset)
                 JournalEntryLine::create([
                     'journal_entry_id' => $journalEntry->id,
                     'chart_of_acc_id'  => $request->transfer_to,
-                    'debit'            => $amount,
+                    'debit'            => $homeAmount,
                     'credit'           => 0,
                     'memo'             => $request->memo,
+                    'fc_currency_id'   => $currencyId,
+                    'fc_debit'         => $currencyId ? $amount : null,
+                    'exchange_rate'    => $exchangeRate,
                 ]);
             });
 

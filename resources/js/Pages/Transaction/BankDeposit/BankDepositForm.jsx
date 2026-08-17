@@ -8,6 +8,7 @@ import SearchableSelect from "@/Components/SearchableSelect";
 import CommonInput from "@/Components/CommonInput";
 import QuickAddPayee from "@/Components/QuickAddPayee";
 import QuickAddAccount from "@/Components/QuickAddAccount";
+import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
 import { showToast } from "@/Components/ToastNotification";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import PinPromptModal from "@/Components/PinPromptModal";
@@ -15,7 +16,10 @@ import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
 
 export default function BankDepositForm({ auth, nextRef = "", deposit = null, onModeChange = null, onClose = null }) {
     const company = auth.company;
-    const currencyPrefix = company?.home_currency_prefix || company?.home_currency || '';
+    const homeCurrencyObj = typeof company?.home_currency === 'object' ? company.home_currency : null;
+    const homeCurrencyStr = typeof company?.home_currency === 'string' ? company.home_currency : '';
+    const currencyPrefix = company?.home_currency_prefix || homeCurrencyObj?.symbol || homeCurrencyStr || '';
+    const defaultCurrencyCode = homeCurrencyObj?.code || homeCurrencyStr || company?.home_currency_prefix || '';
 
     const [payeeOptions, setPayeeOptions] = useState([]);
     const [accountOptions, setAccountOptions] = useState([]);
@@ -33,7 +37,6 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
     const [accountModalRowIndex, setAccountModalRowIndex] = useState(null);
     const [isDirty, setIsDirty] = useState(false);
     const [savedEntryId, setSavedEntryId] = useState(deposit?.id || null);
-    const defaultCurrencyCode = company?.home_currency || company?.home_currency_prefix || '';
 
     const fetchPayees = (search = "") => {
         axios.get(route('api.payees', { search })).then(res => setPayeeOptions(res.data));
@@ -102,6 +105,8 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
         cashBackMemo: deposit?.cashBackMemo || "",
         cashBackAmount: deposit?.cashBackAmount ? parseFloat(deposit.cashBackAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00",
         memo: deposit?.memo || "",
+        exchange_rate: deposit?.exchange_rate || 1,
+        currency_id: deposit?.currency_id || "",
         action: 'save',
         books_pin: ''
     });
@@ -135,6 +140,8 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                 cashBackMemo: deposit.cashBackMemo || "",
                 cashBackAmount: deposit.cashBackAmount ? parseFloat(deposit.cashBackAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00",
                 memo: deposit.memo || "",
+                exchange_rate: deposit.exchange_rate || 1,
+                currency_id: deposit.currency_id || "",
                 action: 'save'
             });
         }
@@ -256,7 +263,11 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                                 label="Account"
                                 options={depositAccountOptions}
                                 value={data.depositTo}
-                                onChange={(val) => { setData('depositTo', val); setIsDirty(true); }}
+                                onChange={(val) => { 
+                                    const acct = depositAccountOptions.find(a => String(a.value) === String(val));
+                                    setData(prev => ({...prev, depositTo: val, currency_id: acct?.currency_id || prev.currency_id}));
+                                    setIsDirty(true); 
+                                }}
                                 onSearch={fetchDepositAccounts}
                                 onAddNew={() => openAccountModal('depositTo')}
                                 size="sm"
@@ -310,6 +321,16 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                         </div>
                     </div>
                 </div>
+
+                <CurrencyExchangeInput
+                    auth={auth}
+                    selectedAccount={depositAccountOptions.find(a => String(a.value) === String(data.depositTo))}
+                    exchangeRate={data.exchange_rate}
+                    onExchangeRateChange={(val) => { setData('exchange_rate', val); setIsDirty(true); }}
+                    error={errors.exchange_rate}
+                    transactionDate={data.depositDate}
+                    isEdit={!!deposit?.id || !!savedEntryId}
+                />
 
                 <LineItemsTable
                     columns={COLUMNS}
