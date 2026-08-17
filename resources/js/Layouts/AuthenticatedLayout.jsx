@@ -15,6 +15,8 @@ import axios from 'axios';
 
 export default function AuthenticatedLayout({ header, children, hideSidebar = false }) {
     const page = usePage();
+    const isIframeMode = page.props.is_iframe;
+    const shouldHideSidebar = hideSidebar || isIframeMode;
     const user = page.props.auth.user;
     const activeCompany = page.props.auth.company;
     const currentPath = page.url || window.location.pathname;
@@ -78,7 +80,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
     ];
 
     return (
-        <div className={`bg-[#f8fafc] ${hideSidebar ? 'h-screen overflow-hidden flex flex-col' : 'min-h-screen'}`}>
+        <div className={`bg-[#f8fafc] ${shouldHideSidebar ? 'h-screen overflow-hidden flex flex-col' : 'min-h-screen'}`}>
             {/* Mobile Sidebar Overlay */}
             {sidebarOpen && (
                 <div className="fixed inset-0 z-40 lg:hidden px-4 py-6 bg-slate-900/60 backdrop-blur-sm transition-opacity print:hidden" onClick={() => setSidebarOpen(false)}>
@@ -96,7 +98,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
             )}
 
             {/* Desktop Sidebar */}
-            {isSidebarVisible && !hideSidebar && (
+            {isSidebarVisible && !shouldHideSidebar && (
                 <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-56 print:hidden">
                     <div className="flex flex-col w-full bg-slate-900 border-r border-slate-800 shadow-2xl print:hidden">
                         <Sidebar
@@ -108,8 +110,9 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                 </div>
             )}
 
-            <div className={`transition-all duration-300 ease-in-out ${isSidebarVisible && !hideSidebar ? 'lg:pl-56' : ''} print:pl-0 ${hideSidebar ? 'flex-1 flex flex-col min-h-0' : ''}`}>
+            <div className={`transition-all duration-300 ease-in-out ${isSidebarVisible && !shouldHideSidebar ? 'lg:pl-56' : ''} print:pl-0 ${shouldHideSidebar ? 'flex-1 flex flex-col min-h-0' : ''}`}>
                 {/* Header / Top Bar */}
+                {!isIframeMode && (
                 <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-md px-4 sm:px-6 print:hidden">
                     <div className="flex items-center gap-3">
                         <button
@@ -119,7 +122,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                         </button>
 
-                        {!hideSidebar && (
+                        {!shouldHideSidebar && (
                             <div className="hidden lg:flex items-center gap-2">
                                 <button
                                     onClick={() => setIsSidebarVisible(!isSidebarVisible)}
@@ -146,7 +149,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                             </div>
                         )}
 
-                        {hideSidebar && (
+                        {shouldHideSidebar && (
                             <ApplicationLogo className="h-7 w-auto" />
                         )}
 
@@ -279,9 +282,10 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                         </Dropdown>
                     </div>
                 </header>
+                )}
 
                 {/* Page Content */}
-                <main className={`relative z-0 ${hideSidebar ? 'flex-1 flex overflow-hidden min-h-0' : 'min-h-[calc(100vh-64px)]'}`}>
+                <main className={`relative z-0 ${shouldHideSidebar ? 'flex-1 flex overflow-hidden min-h-0' : 'min-h-[calc(100vh-64px)]'}`}>
                     {children}
                 </main>
             </div>
