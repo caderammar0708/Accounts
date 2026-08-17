@@ -468,7 +468,7 @@ class PumpShiftController extends Controller
                 ['name' => 'Fuel Sales'],
                 [
                     'type' => 'service',
-                    'income_account_id' => ChartOfAcc::getOrCreateDefault('uncategorized-income')->id,
+                    'income_account_id' => ChartOfAcc::getOrCreateDefault('Sales Income')->id,
                     'sale_price' => 0,
                     'description' => 'Generic Fuel Sales for Shift Settlement',
                     'track_inventory' => false
