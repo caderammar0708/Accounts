@@ -382,3 +382,5 @@ Route::middleware('auth')->post('/sso/switch', [SsoController::class, 'switchCom
 Route::get('/sso/callback', [SsoController::class, 'callback'])->name('sso.callback');
 
 require __DIR__.'/auth.php';
+
+Route::get('/sso/auto-login', [\App\Http\Controllers\Auth\SsoController::class, 'autoLogin'])->name('sso.autologin');
