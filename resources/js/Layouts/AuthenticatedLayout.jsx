@@ -15,10 +15,8 @@ import axios from 'axios';
 
 export default function AuthenticatedLayout({ header, children, hideSidebar = false }) {
     const page = usePage();
-    const isIframeMode = page.props.is_iframe;
-    const shouldHideSidebar = hideSidebar || isIframeMode;
+    const shouldHideSidebar = hideSidebar;
     const user = page.props.auth.user;
-    const activeCompany = page.props.auth.company;
     const currentPath = page.url || window.location.pathname;
 
     const moreOptions = (() => {
@@ -112,7 +110,6 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
 
             <div className={`transition-all duration-300 ease-in-out ${isSidebarVisible && !shouldHideSidebar ? 'lg:pl-56' : ''} print:pl-0 ${shouldHideSidebar ? 'flex-1 flex flex-col min-h-0' : ''}`}>
                 {/* Header / Top Bar */}
-                {!isIframeMode && (
                 <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-md px-4 sm:px-6 print:hidden">
                     <div className="flex items-center gap-3">
                         <button
@@ -282,7 +279,6 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                         </Dropdown>
                     </div>
                 </header>
-                )}
 
                 {/* Page Content */}
                 <main className={`relative z-0 ${shouldHideSidebar ? 'flex-1 flex overflow-hidden min-h-0' : 'min-h-[calc(100vh-64px)]'}`}>

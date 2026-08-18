@@ -81,7 +81,4 @@ jobs:
             **/.git/**
             **/.github/**
             **/database/migrations/modules/**
-            **/database/migrations/modules/jobs/**
-            **/database/migrations/modules/vehicles/**
-            **/database/migrations/modules/warranty/**
             database/migrations/modules/**

@@ -96,7 +96,6 @@ class SsoController extends Controller
         $email = $request->query('email');
         $time = $request->query('time');
         $hash = $request->query('hash');
-        $isIframe = $request->query('iframe');
 
         if (!$email || !$time || !$hash) {
             abort(400, 'Missing SSO parameters.');
@@ -121,10 +120,6 @@ class SsoController extends Controller
         }
 
         \Illuminate\Support\Facades\Auth::login($user);
-
-        if ($isIframe) {
-            session(['is_iframe' => true]);
-        }
 
         return redirect()->route('dashboard');
     }

@@ -74,7 +74,6 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
-            'is_iframe' => session('is_iframe', false),
             'auth' => [
                 'user'    => $request->user(),
                 'company' => $userCompany,
