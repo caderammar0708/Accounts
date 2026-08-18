@@ -56,14 +56,14 @@ export default function Sidebar({ navigation, user, onQuickMenuOpen }) {
         <div className="flex flex-col h-full">
             {/* Sidebar Branding */}
             <div className="px-6 pt-6 pb-4 border-b border-slate-800/50">
-                <div className="flex items-center gap-3 group">
-                    <div className="rounded-xl bg-white/10 border border-white/20 transition-all flex items-center justify-center overflow-hidden w-9 h-9">
+                <Link href={route('dashboard')} className="flex items-center gap-3 group">
+                    <div className="rounded-xl bg-white/10 border border-white/20 transition-all flex items-center justify-center overflow-hidden w-9 h-9 group-hover:bg-white/20">
                         <ApplicationLogo className="h-8 w-auto filter invert brightness-200" type="icon" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-white text-sm font-black tracking-tight leading-none">JBooks</span>
+                        <span className="text-white text-sm font-black tracking-tight leading-none group-hover:text-white/90">JBooks</span>
                     </div>
-                </div>
+                </Link>
             </div>
 
             {/* Quick Action Button (QuickBooks Style) */}

@@ -147,7 +147,9 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                         )}
 
                         {hideSidebar && (
-                            <ApplicationLogo className="h-7 w-auto" />
+                            <Link href={route('dashboard')} className="flex items-center">
+                                <ApplicationLogo className="h-7 w-auto hover:opacity-80 transition-opacity" />
+                            </Link>
                         )}
 
                         <div className="h-5 w-px bg-slate-200 hidden sm:block mx-1" />
