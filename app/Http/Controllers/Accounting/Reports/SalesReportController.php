@@ -117,16 +117,32 @@ class SalesReportController extends Controller
                 'total_amount' => $lines->sum('amount'),
             ];
 
+            $allLineItems = $lines->map(function ($line) {
+                return [
+                    'id' => $line->line_id,
+                    'journal_entry_id' => $line->invoice_id,
+                    'invoice_id' => $line->invoice_id,
+                    'date' => $line->date,
+                    'transaction_type' => $line->transaction_type,
+                    'reference' => $line->reference,
+                    'contact_name' => $line->customer_name,
+                    'qty' => (float) $line->quantity,
+                    'rate' => (float) $line->rate,
+                    'amount' => (float) $line->amount,
+                ];
+            })->values();
+
             if ($displayBy === 'month') {
                 $monthlyTotals = [];
                 foreach ($months as $m) {
-                    $monthlyTotals[$m] = ['qty' => 0, 'amount' => 0];
+                    $monthlyTotals[$m] = ['qty' => 0, 'amount' => 0, 'lines' => []];
                 }
-                foreach ($lines as $l) {
-                    $m = substr($l->date, 0, 7);
+                foreach ($allLineItems as $l) {
+                    $m = substr($l['date'], 0, 7);
                     if (isset($monthlyTotals[$m])) {
-                        $monthlyTotals[$m]['qty'] += (float)$l->quantity;
-                        $monthlyTotals[$m]['amount'] += (float)$l->amount;
+                        $monthlyTotals[$m]['qty'] += (float)$l['qty'];
+                        $monthlyTotals[$m]['amount'] += (float)$l['amount'];
+                        $monthlyTotals[$m]['lines'][] = $l;
                     }
                 }
                 $itemData['monthly_totals'] = $monthlyTotals;
@@ -134,19 +150,7 @@ class SalesReportController extends Controller
 
             return [
                 'item' => $itemData,
-                'lines' => $displayBy === 'month' ? [] : $lines->map(function ($line) {
-                    return [
-                        'id' => $line->line_id,
-                        'journal_entry_id' => $line->invoice_id,
-                        'date' => $line->date,
-                        'transaction_type' => $line->transaction_type,
-                        'reference' => $line->reference,
-                        'contact_name' => $line->customer_name,
-                        'qty' => (float) $line->quantity,
-                        'rate' => (float) $line->rate,
-                        'amount' => (float) $line->amount,
-                    ];
-                })->values(),
+                'lines' => $allLineItems,
             ];
         })->values();
 
@@ -175,10 +179,18 @@ class SalesReportController extends Controller
 
         $salesQuery = DB::table('sales_invoices')
             ->join('customers', 'sales_invoices.customer_id', '=', 'customers.id')
+            ->leftJoin('journal_entries', function($join) {
+                $join->on('sales_invoices.id', '=', 'journal_entries.transactionable_id')
+                     ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\SalesInvoice');
+            })
             ->where('sales_invoices.status', 'posted');
             
         $creditQuery = DB::table('credit_invoices')
             ->join('customers', 'credit_invoices.customer_id', '=', 'customers.id')
+            ->leftJoin('journal_entries', function($join) {
+                $join->on('credit_invoices.id', '=', 'journal_entries.transactionable_id')
+                     ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\CreditInvoice');
+            })
             ->where('credit_invoices.status', 'posted');
 
         if (session()->has('current_location_id')) {
@@ -207,16 +219,22 @@ class SalesReportController extends Controller
             'sales_invoices.customer_id',
             'customers.display_name as customer_name',
             'sales_invoices.receipt_date as date',
-            'sales_invoices.total_amount',
-            'sales_invoices.id'
+            'sales_invoices.receipt_no as reference',
+            'sales_invoices.total_amount as amount',
+            'sales_invoices.id',
+            DB::raw('COALESCE(journal_entries.id, sales_invoices.id) as invoice_id'),
+            DB::raw("COALESCE(journal_entries.transaction_type, 'sales_invoice') as transaction_type")
         );
 
         $creditQuery->select(
             'credit_invoices.customer_id',
             'customers.display_name as customer_name',
             'credit_invoices.invoice_date as date',
-            'credit_invoices.total_amount',
-            'credit_invoices.id'
+            'credit_invoices.invoice_no as reference',
+            'credit_invoices.total_amount as amount',
+            'credit_invoices.id',
+            DB::raw('COALESCE(journal_entries.id, credit_invoices.id) as invoice_id'),
+            DB::raw("COALESCE(journal_entries.transaction_type, 'credit_invoice') as transaction_type")
         );
 
         $combinedQuery = DB::query()->fromSub($salesQuery->unionAll($creditQuery), 'combined');
@@ -232,48 +250,47 @@ class SalesReportController extends Controller
             }
         }
 
-        if ($displayBy === 'month') {
-            $reportData = $combinedQuery->select(
-                    'customer_id',
-                    'customer_name',
-                    'date',
-                    'total_amount',
-                    'id'
-                )
-                ->get()
-                ->groupBy('customer_id')
-                ->map(function ($txs, $customerId) use ($months) {
-                    $customerName = $txs->first()->customer_name;
-                    $monthlyTotals = [];
-                    foreach ($months as $m) {
-                        $monthlyTotals[$m] = ['invoice_count' => 0, 'amount' => 0];
+        $allLines = $combinedQuery->orderBy('date', 'asc')->get();
+
+        $reportData = $allLines->groupBy('customer_id')->map(function ($lines, $customerId) use ($displayBy, $months) {
+            $customerName = $lines->first()->customer_name;
+            $allLineItems = $lines->map(function ($line) {
+                return [
+                    'id' => $line->id,
+                    'journal_entry_id' => $line->invoice_id,
+                    'invoice_id' => $line->invoice_id,
+                    'date' => $line->date,
+                    'transaction_type' => $line->transaction_type,
+                    'reference' => $line->reference,
+                    'contact_name' => $line->customer_name,
+                    'amount' => (float) $line->amount,
+                ];
+            })->values();
+
+            $monthlyTotals = [];
+            if ($displayBy === 'month') {
+                foreach ($months as $m) {
+                    $monthlyTotals[$m] = ['invoice_count' => 0, 'amount' => 0, 'lines' => []];
+                }
+                foreach ($allLineItems as $l) {
+                    $m = substr($l['date'], 0, 7);
+                    if (isset($monthlyTotals[$m])) {
+                        $monthlyTotals[$m]['invoice_count'] += 1;
+                        $monthlyTotals[$m]['amount'] += (float)$l['amount'];
+                        $monthlyTotals[$m]['lines'][] = $l;
                     }
-                    foreach ($txs as $tx) {
-                        $m = substr($tx->date, 0, 7);
-                        if (isset($monthlyTotals[$m])) {
-                            $monthlyTotals[$m]['invoice_count'] += 1;
-                            $monthlyTotals[$m]['amount'] += (float)$tx->total_amount;
-                        }
-                    }
-                    return [
-                        'customer_id' => $customerId,
-                        'customer_name' => $customerName,
-                        'invoice_count' => $txs->count(),
-                        'total_amount' => $txs->sum('total_amount'),
-                        'monthly_totals' => $monthlyTotals,
-                    ];
-                })->values()->sortByDesc('total_amount')->values();
-        } else {
-            $reportData = $combinedQuery->select(
-                    'customer_id',
-                    'customer_name',
-                    DB::raw('COUNT(id) as invoice_count'),
-                    DB::raw('SUM(total_amount) as total_amount')
-                )
-                ->groupBy('customer_id', 'customer_name')
-                ->orderByDesc('total_amount')
-                ->get();
-        }
+                }
+            }
+
+            return [
+                'customer_id' => $customerId,
+                'customer_name' => $customerName,
+                'invoice_count' => $lines->count(),
+                'total_amount' => (float) $lines->sum('amount'),
+                'monthly_totals' => $monthlyTotals,
+                'lines' => $allLineItems,
+            ];
+        })->values()->sortByDesc('total_amount')->values();
 
         return Inertia::render('Reports/SalesByCustomer', [
             'reportData' => $reportData,

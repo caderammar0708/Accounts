@@ -111,16 +111,32 @@ class PurchaseReportController extends Controller
                 'total_amount' => $lines->sum('amount'),
             ];
 
+            $allLineItems = $lines->map(function ($line) {
+                return [
+                    'id' => $line->line_id,
+                    'journal_entry_id' => $line->journal_entry_id,
+                    'invoice_id' => $line->journal_entry_id,
+                    'date' => $line->date,
+                    'transaction_type' => $line->transaction_type,
+                    'reference' => $line->reference,
+                    'contact_name' => $line->supplier_name,
+                    'qty' => (float) $line->quantity,
+                    'rate' => (float) $line->rate,
+                    'amount' => (float) $line->amount,
+                ];
+            })->values();
+
             if ($displayBy === 'month') {
                 $monthlyTotals = [];
                 foreach ($months as $m) {
-                    $monthlyTotals[$m] = ['qty' => 0, 'amount' => 0];
+                    $monthlyTotals[$m] = ['qty' => 0, 'amount' => 0, 'lines' => []];
                 }
-                foreach ($lines as $l) {
-                    $m = substr($l->date, 0, 7);
+                foreach ($allLineItems as $l) {
+                    $m = substr($l['date'], 0, 7);
                     if (isset($monthlyTotals[$m])) {
-                        $monthlyTotals[$m]['qty'] += (float)$l->quantity;
-                        $monthlyTotals[$m]['amount'] += (float)$l->amount;
+                        $monthlyTotals[$m]['qty'] += (float)$l['qty'];
+                        $monthlyTotals[$m]['amount'] += (float)$l['amount'];
+                        $monthlyTotals[$m]['lines'][] = $l;
                     }
                 }
                 $itemData['monthly_totals'] = $monthlyTotals;
@@ -128,19 +144,7 @@ class PurchaseReportController extends Controller
 
             return [
                 'item' => $itemData,
-                'lines' => $displayBy === 'month' ? [] : $lines->map(function ($line) {
-                    return [
-                        'id' => $line->line_id,
-                        'journal_entry_id' => $line->journal_entry_id,
-                        'date' => $line->date,
-                        'transaction_type' => $line->transaction_type,
-                        'reference' => $line->reference,
-                        'contact_name' => $line->supplier_name,
-                        'qty' => (float) $line->quantity,
-                        'rate' => (float) $line->rate,
-                        'amount' => (float) $line->amount,
-                    ];
-                })->values(),
+                'lines' => $allLineItems,
             ];
         })->values();
 
@@ -169,10 +173,18 @@ class PurchaseReportController extends Controller
 
         $billsQuery = DB::table('bills')
             ->join('suppliers', 'bills.supplier_id', '=', 'suppliers.id')
+            ->leftJoin('journal_entries', function($join) {
+                $join->on('bills.id', '=', 'journal_entries.transactionable_id')
+                     ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\Bill');
+            })
             ->where('bills.status', 'posted');
             
         $expensesQuery = DB::table('payments')
             ->join('suppliers', 'payments.payee_id', '=', 'suppliers.id')
+            ->leftJoin('journal_entries', function($join) {
+                $join->on('payments.id', '=', 'journal_entries.transactionable_id')
+                     ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\Payment');
+            })
             ->where('payments.payee_type', \App\Models\Supplier::class)
             ->where('payments.status', 'posted');
 
@@ -209,81 +221,69 @@ class PurchaseReportController extends Controller
             }
         }
 
-        if ($displayBy === 'month') {
-            $billsData = $billsQuery->select(
-                    'bills.supplier_id',
-                    'suppliers.display_name as supplier_name',
-                    'bills.bill_date as date',
-                    'bills.total_amount',
-                    'bills.id as tx_id'
-                )->get();
-                
-            $expensesData = $expensesQuery->select(
-                    'payments.payee_id as supplier_id',
-                    'suppliers.display_name as supplier_name',
-                    'payments.payment_date as date',
-                    'payments.total_amount',
-                    'payments.id as tx_id'
-                )->get();
+        $billsData = $billsQuery->select(
+                'bills.supplier_id',
+                'suppliers.display_name as supplier_name',
+                'bills.bill_date as date',
+                'bills.bill_no as reference',
+                'bills.total_amount as amount',
+                'bills.id as tx_id',
+                DB::raw('COALESCE(journal_entries.id, bills.id) as journal_entry_id'),
+                DB::raw("COALESCE(journal_entries.transaction_type, 'bill') as transaction_type")
+            )->get();
+            
+        $expensesData = $expensesQuery->select(
+                'payments.payee_id as supplier_id',
+                'suppliers.display_name as supplier_name',
+                'payments.payment_date as date',
+                'payments.payment_no as reference',
+                'payments.total_amount as amount',
+                'payments.id as tx_id',
+                DB::raw('COALESCE(journal_entries.id, payments.id) as journal_entry_id'),
+                DB::raw("COALESCE(journal_entries.transaction_type, 'payment') as transaction_type")
+            )->get();
 
-            $reportData = $billsData->concat($expensesData)
-                ->groupBy('supplier_id')
-                ->map(function ($txs, $supplierId) use ($months) {
-                    $supplierName = $txs->first()->supplier_name;
-                    $monthlyTotals = [];
-                    foreach ($months as $m) {
-                        $monthlyTotals[$m] = ['tx_count' => 0, 'amount' => 0];
-                    }
-                    foreach ($txs as $tx) {
-                        $m = substr($tx->date, 0, 7);
-                        if (isset($monthlyTotals[$m])) {
-                            $monthlyTotals[$m]['tx_count'] += 1;
-                            $monthlyTotals[$m]['amount'] += (float)$tx->total_amount;
-                        }
-                    }
-                    return [
-                        'supplier_id' => $supplierId,
-                        'supplier_name' => $supplierName,
-                        'tx_count' => $txs->count(),
-                        'total_amount' => $txs->sum('total_amount'),
-                        'monthly_totals' => $monthlyTotals,
-                    ];
-                })->values()->sortByDesc('total_amount')->values();
-        } else {
-            $billsData = $billsQuery->select(
-                    'bills.supplier_id',
-                    'suppliers.display_name as supplier_name',
-                    DB::raw('COUNT(bills.id) as tx_count'),
-                    DB::raw('SUM(bills.total_amount) as total_amount')
-                )
-                ->groupBy('bills.supplier_id', 'suppliers.display_name')
-                ->get();
-                
-            $expensesData = $expensesQuery->select(
-                    'payments.payee_id as supplier_id',
-                    'suppliers.display_name as supplier_name',
-                    DB::raw('COUNT(payments.id) as tx_count'),
-                    DB::raw('SUM(payments.total_amount) as total_amount')
-                )
-                ->groupBy('payments.payee_id', 'suppliers.display_name')
-                ->get();
-                
-            $reportData = collect();
-            foreach ([$billsData, $expensesData] as $data) {
-                foreach ($data as $row) {
-                    $existing = $reportData->firstWhere('supplier_id', $row->supplier_id);
-                    if ($existing) {
-                        $existing->tx_count += $row->tx_count;
-                        $existing->total_amount += $row->total_amount;
-                    } else {
-                        $row->tx_count = (int)$row->tx_count;
-                        $row->total_amount = (float)$row->total_amount;
-                        $reportData->push($row);
+        $allLines = $billsData->concat($expensesData)->sortBy('date')->values();
+
+        $reportData = $allLines->groupBy('supplier_id')->map(function ($lines, $supplierId) use ($displayBy, $months) {
+            $supplierName = $lines->first()->supplier_name;
+            $allLineItems = $lines->map(function ($line) {
+                return [
+                    'id' => $line->tx_id,
+                    'journal_entry_id' => $line->journal_entry_id,
+                    'invoice_id' => $line->journal_entry_id,
+                    'date' => $line->date,
+                    'transaction_type' => $line->transaction_type,
+                    'reference' => $line->reference,
+                    'contact_name' => $line->supplier_name,
+                    'amount' => (float) $line->amount,
+                ];
+            })->values();
+
+            $monthlyTotals = [];
+            if ($displayBy === 'month') {
+                foreach ($months as $m) {
+                    $monthlyTotals[$m] = ['tx_count' => 0, 'amount' => 0, 'lines' => []];
+                }
+                foreach ($allLineItems as $l) {
+                    $m = substr($l['date'], 0, 7);
+                    if (isset($monthlyTotals[$m])) {
+                        $monthlyTotals[$m]['tx_count'] += 1;
+                        $monthlyTotals[$m]['amount'] += (float)$l['amount'];
+                        $monthlyTotals[$m]['lines'][] = $l;
                     }
                 }
             }
-            $reportData = $reportData->sortByDesc('total_amount')->values();
-        }
+
+            return [
+                'supplier_id' => $supplierId,
+                'supplier_name' => $supplierName,
+                'tx_count' => $lines->count(),
+                'total_amount' => (float) $lines->sum('amount'),
+                'monthly_totals' => $monthlyTotals,
+                'lines' => $allLineItems,
+            ];
+        })->values()->sortByDesc('total_amount')->values();
 
         return Inertia::render('Reports/PurchaseBySupplier', [
             'reportData' => $reportData,

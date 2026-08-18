@@ -210,15 +210,30 @@ class ChartOfAccController extends Controller
 
     public function history(Request $request, ChartOfAcc $chartOfAccount)
     {
+        $startDate = $request->start_date ?? date('Y-01-01');
+        $endDate = $request->end_date ?? date('Y-m-d');
+
+        // Calculate opening balance before start_date
+        $priorLines = \App\Models\Accounting\JournalEntryLine::where('chart_of_acc_id', $chartOfAccount->id)
+            ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+            ->where('journal_entries.date', '<', $startDate)
+            ->selectRaw('SUM(journal_entry_lines.debit) as total_debit, SUM(journal_entry_lines.credit) as total_credit')
+            ->first();
+
+        $totalDebit = (float)($priorLines->total_debit ?? 0);
+        $totalCredit = (float)($priorLines->total_credit ?? 0);
+
+        $isNormalDebit = in_array(strtolower($chartOfAccount->account_type), ['asset', 'expense']);
+        $openingBalance = $isNormalDebit ? ($totalDebit - $totalCredit) : ($totalCredit - $totalDebit);
+
         $query = \App\Models\Accounting\JournalEntryLine::with(['journalEntry.creator', 'journalEntry.lines.account', 'journalEntry.transactionable'])
              ->where('chart_of_acc_id', $chartOfAccount->id)
-             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id');
+             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+             ->whereBetween('journal_entries.date', [$startDate, $endDate]);
 
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('journal_entries.date', [$request->start_date, $request->end_date]);
-        }
-
-        $lines = $query->orderBy('journal_entries.date', 'desc')
+        $lines = $query->orderBy('journal_entries.date', 'asc')
+             ->orderBy('journal_entries.reference', 'asc')
+             ->orderBy('journal_entry_lines.id', 'asc')
              ->select('journal_entry_lines.*')
              ->get();
 
@@ -228,9 +243,10 @@ class ChartOfAccController extends Controller
             'account' => $chartOfAccount,
             'lines' => $lines,
             'accounts' => $accounts,
+            'opening_balance' => $openingBalance,
             'filters' => [
-                'start_date' => $request->start_date ?? date('Y-01-01'),
-                'end_date' => $request->end_date ?? date('Y-m-d')
+                'start_date' => $startDate,
+                'end_date' => $endDate
             ]
         ]);
     }

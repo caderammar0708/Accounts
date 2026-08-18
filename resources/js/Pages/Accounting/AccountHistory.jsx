@@ -8,7 +8,7 @@ import ReportDateFilter from '@/Components/ReportDateFilter';
 import { useDateFormat, formatDate } from '@/Utils/dateFormat';
 import axios from 'axios';
 
-export default function AccountHistory({ account, lines = [], accounts = [], filters = {} }) {
+export default function AccountHistory({ account, lines = [], accounts = [], opening_balance = 0, filters = {} }) {
     const { auth } = usePage().props;
     const currencyPrefix = account.currency || auth.company?.home_currency_prefix || auth.company?.home_currency || '';
     const dateFormat = useDateFormat();
@@ -26,12 +26,9 @@ export default function AccountHistory({ account, lines = [], accounts = [], fil
     };
     // Calculate running balance
     const transactions = useMemo(() => {
-        let currentBalance = 0;
-        // The lines are already ordered by date desc in the controller.
-        // For running balance, we need them ordered by date asc.
-        const sortedLines = [...lines].reverse();
+        let currentBalance = parseFloat(opening_balance || 0);
 
-        return sortedLines.map(line => {
+        return (lines || []).map(line => {
             const debit = parseFloat(line.debit || 0);
             const credit = parseFloat(line.credit || 0);
 
@@ -49,8 +46,8 @@ export default function AccountHistory({ account, lines = [], accounts = [], fil
                 ...line,
                 running_balance: currentBalance
             };
-        }).reverse(); // Reverse back to show newest first in the table
-    }, [account, lines]);
+        });
+    }, [account, lines, opening_balance]);
 
     const isNormalDebit = ['asset', 'expense'].includes(account.account_type);
 
@@ -126,7 +123,7 @@ export default function AccountHistory({ account, lines = [], accounts = [], fil
                 return route('sales-invoice.edit', id);
             case 'bill':
                 return route('bill.edit', id);
-            case 'payment': 
+            case 'payment':
                 return route('payment.edit', id);
             case 'receive_payment':
                 return route('receive-payment.edit', id);
@@ -222,6 +219,12 @@ export default function AccountHistory({ account, lines = [], accounts = [], fil
         // Headers
         csvContent += `"Date","Ref No.","Payee / Account","Memo","Debit","Credit","Balance"\n`;
 
+        // Opening Balance
+        if (parseFloat(opening_balance || 0) !== 0) {
+            const ob = parseFloat(opening_balance || 0).toFixed(2);
+            csvContent += `"${filters.start_date || ''}","-","Opening Balance","Balance prior to ${filters.start_date || ''}","","","${ob}"\n`;
+        }
+
         // Transactions
         transactions.forEach(tx => {
             const date = tx.journal_entry?.date || '';
@@ -300,6 +303,26 @@ export default function AccountHistory({ account, lines = [], accounts = [], fil
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
+                        {parseFloat(opening_balance || 0) !== 0 && (
+                            <tr className="bg-slate-50/70 border-b border-slate-200">
+                                <td className="px-4 py-3 text-[11px] text-slate-500 font-mono italic">
+                                    {filters.start_date}
+                                </td>
+                                <td className="px-4 py-3 text-[11px] text-slate-400 font-mono">-</td>
+                                <td className="px-4 py-3 text-[11px] font-bold text-slate-700 italic">
+                                    Opening Balance
+                                </td>
+                                <td className="px-4 py-3 text-[11px] text-slate-400 italic">
+                                    Balance prior to {filters.start_date}
+                                </td>
+                                <td className="px-4 py-3 text-[11px] text-slate-400 text-right font-mono">-</td>
+                                <td className="px-4 py-3 text-[11px] text-slate-400 text-right font-mono">-</td>
+                                <td className="px-4 py-3 text-[11px] font-bold text-primary-600 text-right font-mono whitespace-nowrap">
+                                    {currencyPrefix ? `${currencyPrefix} ` : ''}{parseFloat(opening_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="px-4 py-3 text-center whitespace-nowrap"></td>
+                            </tr>
+                        )}
                         {transactions.map((tx) => {
                             const isEditing = editingTxId === tx.id;
                             const isSplit = (tx.journal_entry?.lines || []).length > 2;
@@ -458,54 +481,54 @@ export default function AccountHistory({ account, lines = [], accounts = [], fil
 
                             return (
                                 <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors group">
-                                     {/* Date */}
-                                     <td className="px-4 py-3 text-[11px] text-slate-600 font-mono whitespace-nowrap">
-                                         {tx.journal_entry?.date}
-                                     </td>
-                                     {/* Ref No */}
-                                     <td className="px-4 py-3 text-[11px] font-bold text-slate-800 font-mono whitespace-nowrap">
-                                         {tx.journal_entry?.reference || '-'}
-                                     </td>
-                                     {/* Payee / Account */}
-                                     <td className="px-4 py-3 text-[11px] text-slate-600">
-                                         <div className="flex flex-col">
-                                             <span className="font-bold text-slate-800">{getPayeeLabel(tx.payee_id || tx.journal_entry?.payee_id)}</span>
-                                             <span className={`text-[10px] font-semibold mt-0.5 ${isSplit ? 'text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded w-max' : 'text-slate-400'}`}>
-                                                 {getOffsetAccount(tx)}
-                                             </span>
-                                         </div>
-                                     </td>
-                                     {/* Memo / Description */}
-                                     <td className="px-4 py-3 text-[11px] text-slate-600">
-                                         <div className="flex flex-col">
-                                             <span className="font-bold text-slate-700">{tx.journal_entry?.description}</span>
-                                             {tx.memo && <span className="text-[10px] text-slate-400 italic mt-0.5">{tx.memo}</span>}
-                                         </div>
-                                     </td>
-                                     {/* Debit Amount */}
-                                     <td className="px-4 py-3 text-[11px] font-bold text-slate-900 text-right font-mono whitespace-nowrap">
-                                         {parseFloat(tx.debit) > 0 ? parseFloat(tx.debit).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
-                                     </td>
-                                     {/* Credit Amount */}
-                                     <td className="px-4 py-3 text-[11px] font-bold text-slate-900 text-right font-mono whitespace-nowrap">
-                                         {parseFloat(tx.credit) > 0 ? parseFloat(tx.credit).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
-                                     </td>
-                                     {/* Balance */}
-                                     <td className="px-4 py-3 text-[11px] font-bold text-primary-600 text-right font-mono whitespace-nowrap">
-                                         {currencyPrefix ? `${currencyPrefix} ` : ''}{tx.running_balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                     </td>
-                                     {/* Action */}
-                                     <td className="px-4 py-3 text-center whitespace-nowrap">
-                                         <CommonButton
-                                             variant="ghost"
-                                             size="xs"
-                                             href={getEditRoute(tx)}
-                                             className="whitespace-nowrap"
-                                         >
-                                             View/Edit
-                                         </CommonButton>
-                                     </td>
-                                 </tr>
+                                    {/* Date */}
+                                    <td className="px-4 py-3 text-[11px] text-slate-600 font-mono whitespace-nowrap">
+                                        {tx.journal_entry?.date}
+                                    </td>
+                                    {/* Ref No */}
+                                    <td className="px-4 py-3 text-[11px] font-bold text-slate-800 font-mono whitespace-nowrap">
+                                        {tx.journal_entry?.reference || '-'}
+                                    </td>
+                                    {/* Payee / Account */}
+                                    <td className="px-4 py-3 text-[11px] text-slate-600">
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-slate-800">{getPayeeLabel(tx.payee_id || tx.journal_entry?.payee_id)}</span>
+                                            <span className={`text-[10px] font-semibold mt-0.5 ${isSplit ? 'text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded w-max' : 'text-slate-400'}`}>
+                                                {getOffsetAccount(tx)}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    {/* Memo / Description */}
+                                    <td className="px-4 py-3 text-[11px] text-slate-600">
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-slate-700">{tx.journal_entry?.description}</span>
+                                            {tx.memo && <span className="text-[10px] text-slate-400 italic mt-0.5">{tx.memo}</span>}
+                                        </div>
+                                    </td>
+                                    {/* Debit Amount */}
+                                    <td className="px-4 py-3 text-[11px] font-bold text-slate-900 text-right font-mono whitespace-nowrap">
+                                        {parseFloat(tx.debit) > 0 ? parseFloat(tx.debit).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                                    </td>
+                                    {/* Credit Amount */}
+                                    <td className="px-4 py-3 text-[11px] font-bold text-slate-900 text-right font-mono whitespace-nowrap">
+                                        {parseFloat(tx.credit) > 0 ? parseFloat(tx.credit).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                                    </td>
+                                    {/* Balance */}
+                                    <td className="px-4 py-3 text-[11px] font-bold text-primary-600 text-right font-mono whitespace-nowrap">
+                                        {currencyPrefix ? `${currencyPrefix} ` : ''}{tx.running_balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                    </td>
+                                    {/* Action */}
+                                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                                        <CommonButton
+                                            variant="ghost"
+                                            size="xs"
+                                            href={getEditRoute(tx)}
+                                            className="whitespace-nowrap"
+                                        >
+                                            View/Edit
+                                        </CommonButton>
+                                    </td>
+                                </tr>
                             );
                         })}
                         {transactions.length === 0 && (

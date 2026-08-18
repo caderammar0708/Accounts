@@ -4,12 +4,14 @@ import { Head, Link, router } from '@inertiajs/react';
 import CommonButton from '@/Components/CommonButton';
 import ReportDateFilter from '@/Components/ReportDateFilter';
 import { useDateFormat, formatDate } from '@/Utils/dateFormat';
-import { getEditRoute } from '@/Utils/routeUtils';
+import { getEditRoute, getTransactionUrl } from '@/Utils/routeUtils';
 import ReportCurrency from '@/Components/ReportCurrency';
+import Modal from '@/Components/Modal';
 
 export default function PurchaseByItem({ reportData, filters, auth }) {
     const dateFormat = useDateFormat();
     const [collapsedGroups, setCollapsedGroups] = useState(new Set());
+    const [drillDown, setDrillDown] = useState(null);
 
     const toggleGroup = (id) => {
         setCollapsedGroups(prev => {
@@ -24,7 +26,7 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
     };
 
     const handleFilterChange = (newFilters) => {
-        router.get(route('reports.purchases-by-item'), {
+        router.get(route('reports.purchase-by-item'), {
             start_date: newFilters.start_date,
             end_date: newFilters.end_date,
             type: newFilters.type,
@@ -41,7 +43,7 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
 
     const toggleDisplayBy = () => {
         const newDisplayBy = displayBy === 'month' ? 'total' : 'month';
-        router.get(route('reports.purchases-by-item'), {
+        router.get(route('reports.purchase-by-item'), {
             ...filters,
             display_by: newDisplayBy,
         }, {
@@ -65,11 +67,44 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
         return <span>{Number(val).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>;
     };
 
+    const handleMonthCellClick = (item, monthKey, mData) => {
+        const txLines = mData?.lines || [];
+        if (txLines.length === 0) return;
+        if (txLines.length === 1) {
+            const url = getTransactionUrl(txLines[0]);
+            if (url && url !== '#') {
+                router.visit(url);
+            }
+        } else {
+            const monthLabel = monthKey ? new Date(monthKey + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '';
+            setDrillDown({
+                title: `${item.name} (${monthLabel})`,
+                lines: txLines
+            });
+        }
+    };
+
+    const handleMonthTotalCellClick = (group) => {
+        const txLines = group.lines || [];
+        if (txLines.length === 0) return;
+        if (txLines.length === 1) {
+            const url = getTransactionUrl(txLines[0]);
+            if (url && url !== '#') {
+                router.visit(url);
+            }
+        } else {
+            setDrillDown({
+                title: `${group.item.name} (All Months)`,
+                lines: txLines
+            });
+        }
+    };
+
     const handleExportExcel = () => {
         const companyName = auth.company?.company_name || 'Company';
         let csvContent = `"${companyName}"\n"Purchase By Item Report"\n`;
         csvContent += `"Date Range: ${filters.start_date} to ${filters.end_date}"\n\n`;
-        
+
         if (isMonthWise) {
             csvContent += `"Item Name",`;
             monthCols.forEach(m => {
@@ -191,19 +226,31 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
                                                 </div>
                                             </td>
                                             {monthCols.map(m => {
-                                                const mData = group.item.monthly_totals?.[m] || { qty: 0, amount: 0 };
+                                                const mData = group.item.monthly_totals?.[m] || { qty: 0, amount: 0, lines: [] };
+                                                const hasLines = mData.lines && mData.lines.length > 0;
                                                 return (
-                                                    <td key={m} className="py-3 px-3 text-right whitespace-nowrap">
+                                                    <td
+                                                        key={m}
+                                                        className={`py-3 px-3 text-right whitespace-nowrap ${hasLines ? 'cursor-pointer hover:bg-indigo-50/50 group/cell' : ''}`}
+                                                        onClick={() => handleMonthCellClick(group.item, m, mData)}
+                                                    >
                                                         <div className="flex flex-col items-end justify-center">
-                                                            <div className="font-medium text-gray-900"><Currency value={mData.amount} /></div>
+                                                            <div className={`font-medium ${hasLines ? 'text-indigo-600 group-hover/cell:text-indigo-900 group-hover/cell:underline' : 'text-gray-900'}`}>
+                                                                <Currency value={mData.amount} />
+                                                            </div>
                                                             {mData.qty !== 0 && <div className="text-[11px] text-gray-500 leading-tight mt-0.5">{formatQty(mData.qty)} qty</div>}
                                                         </div>
                                                     </td>
                                                 );
                                             })}
-                                            <td className="py-3 px-3 text-right whitespace-nowrap border-l border-gray-100">
+                                            <td
+                                                className={`py-3 px-3 text-right whitespace-nowrap border-l border-gray-100 ${group.lines?.length > 0 ? 'cursor-pointer hover:bg-indigo-50/50 group/cell' : ''}`}
+                                                onClick={() => handleMonthTotalCellClick(group)}
+                                            >
                                                 <div className="flex flex-col items-end justify-center">
-                                                    <div className="font-bold text-gray-900"><Currency value={group.item.total_amount} /></div>
+                                                    <div className={`font-bold ${group.lines?.length > 0 ? 'text-indigo-600 group-hover/cell:text-indigo-900 group-hover/cell:underline' : 'text-gray-900'}`}>
+                                                        <Currency value={group.item.total_amount} />
+                                                    </div>
                                                     <div className="text-[11px] text-gray-500 leading-tight mt-0.5">{formatQty(group.item.total_qty)} qty</div>
                                                 </div>
                                             </td>
@@ -238,33 +285,44 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
                                             </td>
                                         </tr>
 
-                                        {!isCollapsed && group.lines.map((tx) => (
-                                            <tr key={`${tx.transaction_type}-${tx.id}`} className="hover:bg-slate-50 transition-colors bg-white">
-                                                <td className="py-2 px-3 text-gray-600 pl-10 whitespace-nowrap">
-                                                    {tx.date}
-                                                </td>
-                                                <td className="py-2 px-3 text-gray-600 capitalize truncate">
-                                                    {tx.transaction_type}
-                                                </td>
-                                                <td className="py-2 px-3 text-gray-600 whitespace-nowrap">
-                                                    {tx.reference || '-'}
-                                                </td>
-                                                <td className="py-2 px-3 text-gray-600 truncate" title={tx.contact_name}>
-                                                    {tx.contact_name || '-'}
-                                                </td>
-                                                <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900">
-                                                    {formatQty(tx.qty)}
-                                                </td>
-                                                <td className="py-2 px-3 text-right whitespace-nowrap text-gray-600">
-                                                    {tx.rate ? <Currency value={tx.rate} /> : '-'}
-                                                </td>
-                                                <td className="py-2 px-3 text-right whitespace-nowrap font-medium text-gray-900">
-                                                    <Link href={route(getEditRoute(tx.transaction_type), tx.journal_entry_id)} className="text-indigo-600 hover:text-indigo-900 hover:underline">
-                                                        <Currency value={tx.amount} />
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {!isCollapsed && group.lines.map((tx) => {
+                                            const url = getTransactionUrl(tx);
+                                            return (
+                                                <tr
+                                                    key={`${tx.transaction_type}-${tx.id}`}
+                                                    className="hover:bg-slate-50 transition-colors bg-white cursor-pointer group"
+                                                    onClick={() => url && url !== '#' && router.visit(url)}
+                                                >
+                                                    <td className="py-2 px-3 text-gray-600 pl-10 whitespace-nowrap">
+                                                        {tx.date}
+                                                    </td>
+                                                    <td className="py-2 px-3 text-gray-600 capitalize truncate group-hover:text-primary transition-colors">
+                                                        {tx.transaction_type?.replace('_', ' ')}
+                                                    </td>
+                                                    <td className="py-2 px-3 text-gray-600 whitespace-nowrap">
+                                                        {tx.reference || '-'}
+                                                    </td>
+                                                    <td className="py-2 px-3 text-gray-600 truncate" title={tx.contact_name}>
+                                                        {tx.contact_name || '-'}
+                                                    </td>
+                                                    <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900">
+                                                        {formatQty(tx.qty)}
+                                                    </td>
+                                                    <td className="py-2 px-3 text-right whitespace-nowrap text-gray-600">
+                                                        {tx.rate ? <Currency value={tx.rate} /> : '-'}
+                                                    </td>
+                                                    <td className="py-2 px-3 text-right whitespace-nowrap font-medium text-gray-900">
+                                                        <Link
+                                                            href={url}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="text-indigo-600 hover:text-indigo-900 hover:underline cursor-pointer"
+                                                        >
+                                                            <Currency value={tx.amount} />
+                                                        </Link>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
 
                                         {!isCollapsed && group.lines.length > 0 && (
                                             <tr className="border-t border-gray-100 bg-white">
@@ -317,8 +375,8 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
                                 <td className="py-3 px-3 text-right font-bold text-gray-900 text-lg whitespace-nowrap">
                                     {formatQty(totalQuantity)}
                                 </td>
-                                <td className="py-3 px-3"></td>
-                                <td className="py-3 px-3 text-right font-bold text-gray-900 text-lg whitespace-nowrap">
+                                <td className="py-2 px-3"></td>
+                                <td className="py-2 px-3 text-right font-bold text-gray-900 text-lg whitespace-nowrap">
                                     <Currency value={totalAmount} />
                                 </td>
                             </tr>
@@ -326,6 +384,87 @@ export default function PurchaseByItem({ reportData, filters, auth }) {
                     </tbody>
                 </table>
             </div>
+
+            {/* Drill-down Modal for multi-transaction cells */}
+            <Modal show={!!drillDown} onClose={() => setDrillDown(null)} maxWidth="3xl">
+                <div className="p-6">
+                    <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                        <div>
+                            <h3 className="text-base font-bold text-gray-900">
+                                {drillDown?.title}
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                {drillDown?.lines?.length} transaction{drillDown?.lines?.length === 1 ? '' : 's'} — click any row to open the transaction
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setDrillDown(null)}
+                            className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div className="mt-4 max-h-[60vh] overflow-y-auto">
+                        <table className="min-w-full text-[13px] text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-gray-200 text-gray-500 text-xs uppercase bg-gray-50">
+                                    <th className="py-2.5 px-3 font-semibold">Date</th>
+                                    <th className="py-2.5 px-3 font-semibold">Type</th>
+                                    <th className="py-2.5 px-3 font-semibold">Number</th>
+                                    <th className="py-2.5 px-3 font-semibold">Supplier</th>
+                                    <th className="py-2.5 px-3 font-semibold text-right">Qty</th>
+                                    <th className="py-2.5 px-3 font-semibold text-right">Rate</th>
+                                    <th className="py-2.5 px-3 font-semibold text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {drillDown?.lines?.map((tx) => {
+                                    const url = getTransactionUrl(tx);
+                                    return (
+                                        <tr
+                                            key={`${tx.transaction_type}-${tx.id}`}
+                                            className="hover:bg-indigo-50/60 transition-colors cursor-pointer group"
+                                            onClick={() => url && url !== '#' && router.visit(url)}
+                                        >
+                                            <td className="py-2.5 px-3 text-gray-600 whitespace-nowrap">
+                                                {tx.date}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-gray-600 capitalize truncate group-hover:text-primary transition-colors">
+                                                {tx.transaction_type?.replace('_', ' ')}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-gray-600 whitespace-nowrap font-mono">
+                                                {tx.reference || '-'}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-gray-600 truncate max-w-[150px]" title={tx.contact_name}>
+                                                {tx.contact_name || '-'}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-900">
+                                                {formatQty(tx.qty)}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-600">
+                                                {tx.rate ? <Currency value={tx.rate} /> : '-'}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-right whitespace-nowrap font-medium text-indigo-600 group-hover:underline">
+                                                <Currency value={tx.amount} />
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+                        <CommonButton variant="secondary" onClick={() => setDrillDown(null)}>
+                            Close
+                        </CommonButton>
+                    </div>
+                </div>
+            </Modal>
         </ReportLayout>
     );
 }
