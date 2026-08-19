@@ -652,7 +652,7 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
                                                     {currencyPrefix} {parseFloat(bill.open_balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                 </td>
                                                 <td className="px-4 py-3 text-right">
-                                                    <input
+                                                    <CommonInput
                                                         type="text"
                                                         placeholder="0.00"
                                                         value={bill.applied || ""}
@@ -670,7 +670,8 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
                                                             handleBillPaymentChange(originalIdx, val);
                                                             setTimeout(() => e.target.select(), 0);
                                                         }}
-                                                        className="w-full px-2.5 h-[30px] border border-slate-300 rounded-sm text-xs font-mono text-slate-800 text-right focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all bg-white"
+                                                        size="sm"
+                                                        inputClass="font-mono text-right"
                                                     />
                                                 </td>
                                             </tr>

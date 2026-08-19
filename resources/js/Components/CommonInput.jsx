@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef, useState, useImperativeHandle } from 'react';
+import { forwardRef, useEffect, useLayoutEffect, useRef, useState, useImperativeHandle } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import SearchableSelect from './SearchableSelect';
@@ -30,6 +30,7 @@ export default forwardRef(function CommonInput(
 ) {
     const inputRef = useRef(null);
     const datePickerRef = useRef(null);
+    const pendingCursorRef = useRef(null);
     const [showPassword, setShowPassword] = useState(false);
     const resolvedDateFormat = dateFormat || 'DD/MM/YYYY';
 
@@ -64,6 +65,60 @@ export default forwardRef(function CommonInput(
             }
         }
     }, [isFocused, type]);
+
+    const handleInputChange = (e) => {
+        const input = e.target;
+        if (input && typeof input.selectionStart === 'number') {
+            const rawVal = input.value || '';
+            const cursorPos = input.selectionStart;
+            // Count non-comma characters before cursor
+            let nonCommaCount = 0;
+            for (let i = 0; i < cursorPos && i < rawVal.length; i++) {
+                if (rawVal[i] !== ',') {
+                    nonCommaCount++;
+                }
+            }
+            pendingCursorRef.current = {
+                nonCommaCount,
+                rawCursor: cursorPos
+            };
+        }
+
+        if (props.onChange) {
+            props.onChange(e);
+        }
+    };
+
+    useLayoutEffect(() => {
+        if (pendingCursorRef.current && inputRef.current && document.activeElement === inputRef.current) {
+            const { nonCommaCount } = pendingCursorRef.current;
+            pendingCursorRef.current = null;
+
+            const currentVal = inputRef.current.value || '';
+            let newCursor = currentVal.length;
+
+            if (nonCommaCount === 0) {
+                newCursor = 0;
+            } else {
+                let count = 0;
+                for (let i = 0; i < currentVal.length; i++) {
+                    if (currentVal[i] !== ',') {
+                        count++;
+                    }
+                    if (count === nonCommaCount) {
+                        newCursor = i + 1;
+                        break;
+                    }
+                }
+            }
+
+            if (inputRef.current.type === 'text' || inputRef.current.type === 'password' || inputRef.current.type === 'search' || inputRef.current.type === 'tel' || inputRef.current.type === 'url' || inputRef.current.tagName === 'TEXTAREA') {
+                try {
+                    inputRef.current.setSelectionRange(newCursor, newCursor);
+                } catch (_) {}
+            }
+        }
+    });
 
     const sizeClasses = {
         sm: "h-[30px] text-xs px-2 rounded-sm",
@@ -219,6 +274,7 @@ export default forwardRef(function CommonInput(
                         {...props}
                         value={normalizedValue}
                         ref={inputRef}
+                        onChange={handleInputChange}
                         className={`${baseInputClasses} ${errorClasses} py-1.5 resize-y ${className} ${inputClass}`}
                     />
                 ) : type === 'select' ? (
@@ -353,6 +409,7 @@ export default forwardRef(function CommonInput(
                         value={normalizedValue}
                         type={type === 'password' ? (showPassword ? 'text' : 'password') : type}
                         ref={inputRef}
+                        onChange={handleInputChange}
                         onPaste={props.onPaste || handlePaste}
                         placeholder={props.placeholder}
                         className={`${baseInputClasses} ${errorClasses} ${className} ${inputClass} ${(type === 'password' || icon) ? 'pr-8' : ''}`}

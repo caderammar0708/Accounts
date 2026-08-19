@@ -395,7 +395,7 @@ export default function LineItemsTable({
                             <div className="flex justify-between items-center w-full gap-4">
                                 <span className="text-xs font-black text-slate-500 uppercase tracking-widest mt-2">Discount</span>
                                 <div className="flex items-center">
-                                    <input
+                                    <CommonInput
                                         type="text"
                                         value={discountValue}
                                         onChange={(e) => {
@@ -409,7 +409,9 @@ export default function LineItemsTable({
                                             const val = parseFloat(e.target.value || 0).toString();
                                             onDiscountChange(val, discountType);
                                         }}
-                                        className="w-[80px] h-8 text-right text-sm font-medium border border-slate-300 rounded-l-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none px-2"
+                                        containerClass="w-[80px]"
+                                        inputClass="text-right text-sm font-medium rounded-r-none"
+                                        size="sm"
                                     />
                                     <div className="flex h-8 bg-slate-100 border border-l-0 border-slate-300 rounded-r-md overflow-hidden">
                                         <button
