@@ -65,10 +65,10 @@
     },
     "tgl-kandy": {
         "prod": {
-            "APP_URL": "https://tgl-kandy.jbooks.cloud/",
+            "APP_URL": "https://tglk-acc.jobalign.lk/",
             "SSO_CLIENT_SECRET": "526454b4317fecf46a7550b42347bbec",
-            "DB_DATABASE": "u487520070_tgl_kandy",
-            "DB_USERNAME": "u487520070_tgl_kandy",
+            "DB_DATABASE": "u487520070_tglk_acc",
+            "DB_USERNAME": "u487520070_tglk_acc",
             "DB_PASSWORD": "Grow2025@"
         },
         "local": {
