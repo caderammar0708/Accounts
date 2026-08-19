@@ -36,17 +36,36 @@
 .react-datepicker__day-name, 
 .react-datepicker__day, 
 .react-datepicker__time-name {
-    width: 1.6rem !important;
-    line-height: 1.6rem !important;
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+    line-height: 1.75rem !important;
     margin: 0.1rem !important;
     color: #475569 !important; /* slate-600 */
     border-radius: 50% !important; /* Circle hover effects */
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 .react-datepicker__day:hover {
     background-color: #f1f5f9 !important; /* slate-100 */
+    border-radius: 50% !important;
 }
 
+/* Today's date highlighted with filled green circle */
+.react-datepicker__day--today {
+    background-color: #22c55e !important; /* green-500 */
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border-radius: 50% !important;
+}
+
+.react-datepicker__day--today:hover {
+    background-color: #16a34a !important;
+    color: #ffffff !important;
+}
+
+/* Selected date */
 .react-datepicker__day--selected, 
 .react-datepicker__day--in-selecting-range, 
 .react-datepicker__day--in-range, 
@@ -59,14 +78,21 @@
 .react-datepicker__year-text--selected, 
 .react-datepicker__year-text--in-selecting-range, 
 .react-datepicker__year-text--in-range {
-    background-color: #22c55e !important; /* green-500 */
+    background-color: #15803d !important; /* green-700 / dark green */
     color: #fff !important;
     font-weight: bold !important;
+    border-radius: 50% !important;
+}
+
+.react-datepicker__day--selected:hover {
+    background-color: #166534 !important;
+    color: #ffffff !important;
 }
 
 .react-datepicker__day--keyboard-selected {
-    background-color: #bbf7d0 !important; /* green-200 */
+    background-color: #dcfce7 !important; /* green-100 */
     color: #166534 !important; /* green-800 */
+    border-radius: 50% !important;
 }
 
 /* Hide default react-datepicker navigation buttons since custom header renders styled buttons */

@@ -20,10 +20,11 @@ class HandleInertiaRequests extends Middleware
                 $transactionPrefixes = [
                     'sales-invoice.', 'credit-invoice.', 'invoice-return.', 'receive-payment.', 
                     'payment.', 'bill.', 'pay-bill.', 'bill-return.', 'cheque.', 
-                    'transfer.', 'bank-deposit.', 'cheque-deposit.', 'inventory-adjustment.'
+                    'transfer.', 'bank-deposit.', 'cheque-deposit.', 'inventory-adjustment.',
+                    'journal-entries.'
                 ];
                 
-                $isTransactionForm = false;
+                $isTransactionForm = ($routeName === 'journal');
                 foreach ($transactionPrefixes as $prefix) {
                     if (str_starts_with($routeName, $prefix) && (str_ends_with($routeName, '.create') || str_ends_with($routeName, '.edit'))) {
                         $isTransactionForm = true;

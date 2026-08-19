@@ -16,10 +16,11 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
     const [startDate, setStartDate] = useState(filters.start_date || '');
     const [endDate, setEndDate] = useState(filters.end_date || '');
 
-    const handleRunReport = (overrideStart, overrideEnd) => {
+    const handleRunReport = (overrideStart, overrideEnd, overrideType) => {
         const s = typeof overrideStart === 'string' ? overrideStart : startDate;
         const e = typeof overrideEnd === 'string' ? overrideEnd : endDate;
-        router.get(route('chart-of-account.history', account.id), { start_date: s, end_date: e }, {
+        const t = typeof overrideType === 'string' ? overrideType : filters.type;
+        router.get(route('chart-of-account.history', account.id), { start_date: s, end_date: e, type: t }, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -258,11 +259,11 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
 
     const filterElements = (
         <ReportDateFilter
-            currentFilter={{ start_date: filters.start_date || '', end_date: filters.end_date || '', type: filters.type || 'custom' }}
-            onFilterChange={({ start_date: newStart, end_date: newEnd }) => {
+            currentFilter={{ start_date: filters.start_date, end_date: filters.end_date, type: filters.type }}
+            onFilterChange={({ start_date: newStart, end_date: newEnd, type: newType }) => {
                 setStartDate(newStart);
                 setEndDate(newEnd);
-                handleRunReport(newStart, newEnd);
+                handleRunReport(newStart, newEnd, newType);
             }}
         />
     );
@@ -281,11 +282,13 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                 <p className="text-[13px] text-gray-500 mt-1">
                     {account.account_code} • {account.account_type}
                 </p>
-                {filters.start_date && filters.end_date && (
+                {filters.type === 'all_dates' ? (
+                    <p className="text-[13px] text-gray-500 mt-1">All Dates</p>
+                ) : (filters.start_date && filters.end_date && (
                     <p className="text-[13px] text-gray-500 mt-1">
                         {formatDate(filters.start_date, dateFormat)} - {formatDate(filters.end_date, dateFormat)}
                     </p>
-                )}
+                ))}
             </div>
 
             <div className="w-full overflow-x-auto pb-10">

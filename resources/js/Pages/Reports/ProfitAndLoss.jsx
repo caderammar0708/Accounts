@@ -230,6 +230,27 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
         </div>
     );
 
+    const getDrillDownUrl = (accountId, monthCol = null) => {
+        const params = new URLSearchParams();
+        if (monthCol) {
+            const [y, m] = monthCol.split('-');
+            const sDate = `${monthCol}-01`;
+            const lastDay = new Date(y, m, 0).getDate();
+            const eDate = `${monthCol}-${lastDay.toString().padStart(2, '0')}`;
+            params.set('start_date', sDate);
+            params.set('end_date', eDate);
+            params.set('type', 'custom');
+        } else if (filters.type === 'all_dates') {
+            params.set('type', 'all_dates');
+        } else {
+            if (filters.start_date) params.set('start_date', filters.start_date);
+            if (filters.end_date) params.set('end_date', filters.end_date);
+            params.set('type', filters.type || 'custom');
+        }
+        const qs = params.toString();
+        return route('chart-of-account.history', accountId) + (qs ? `?${qs}` : '');
+    };
+
     const AccountRow = ({ item, depth = 0 }) => {
         const hasChildren = item.children && item.children.length > 0;
         const isCollapsed = collapsedGroups.has(item.id);
@@ -250,17 +271,12 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                         {item.name}
                     </td>
                     {isMonthWise && monthCols.map(ym => {
-                        const [y, m] = ym.split('-');
-                        const sDate = `${ym}-01`;
-                        const lastDay = new Date(y, m, 0).getDate();
-                        const eDate = `${ym}-${lastDay.toString().padStart(2, '0')}`;
-                        
                         const displayVal = (hasChildren && isCollapsed) ? item.total_monthly_balances?.[ym] : item.monthly_balances?.[ym];
                         
                         return (
                             <td key={ym} className="py-2 px-3 text-right whitespace-nowrap min-w-[120px]">
                                 {(hasChildren && !isCollapsed && (item.monthly_balances?.[ym] || 0) === 0) ? null : (
-                                    <Link href={route('chart-of-account.history', item.id) + '?start_date=' + sDate + '&end_date=' + eDate} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4" onClick={(e) => hasChildren && e.stopPropagation()}>
+                                    <Link href={getDrillDownUrl(item.id, ym)} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4" onClick={(e) => hasChildren && e.stopPropagation()}>
                                         <Currency value={displayVal || 0} />
                                     </Link>
                                 )}
@@ -272,7 +288,7 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                             const displayVal = (hasChildren && isCollapsed) ? item.total_balance : item.balance;
                             if (hasChildren && !isCollapsed && item.balance === 0) return null;
                             return (
-                                <Link href={route('chart-of-account.history', item.id) + '?start_date=' + filters.start_date + '&end_date=' + filters.end_date} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4 font-medium" onClick={(e) => hasChildren && e.stopPropagation()}>
+                                <Link href={getDrillDownUrl(item.id)} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4 font-medium" onClick={(e) => hasChildren && e.stopPropagation()}>
                                     <Currency value={displayVal || 0} />
                                 </Link>
                             );
@@ -312,9 +328,13 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
             <div className="text-center mb-8 font-serif">
                 <h2 className="text-xl font-bold text-gray-900">Profit and Loss Summary</h2>
                 <h3 className="text-sm text-gray-700 mt-1">{auth.company?.company_name}</h3>
-                <p className="text-[13px] text-gray-500 mt-1">
-                    {formatDate(filters.start_date, dateFormat)} - {formatDate(filters.end_date, dateFormat)}
-                </p>
+                {filters.type === 'all_dates' ? (
+                    <p className="text-[13px] text-gray-500 mt-1">All Dates</p>
+                ) : (
+                    <p className="text-[13px] text-gray-500 mt-1">
+                        {formatDate(filters.start_date, dateFormat)} - {formatDate(filters.end_date, dateFormat)}
+                    </p>
+                )}
             </div>
 
             <div className="w-full overflow-x-auto pb-10">

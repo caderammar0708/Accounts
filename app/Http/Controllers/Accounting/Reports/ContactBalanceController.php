@@ -14,9 +14,18 @@ class ContactBalanceController extends Controller
 {
     public function customerBalance(Request $request)
     {
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date');
-        $endDate = $endDate !== null && $endDate !== '' ? $endDate : now()->toDateString();
+        $type = $request->query('type');
+        $hasStart = $request->has('start_date') && $request->query('start_date') !== null && $request->query('start_date') !== '';
+        $hasEnd = $request->has('end_date') && $request->query('end_date') !== null && $request->query('end_date') !== '';
+
+        if ($type === 'all_dates' || (!$type && !$hasStart && !$hasEnd && $request->has('start_date') && $request->has('end_date'))) {
+            $type = 'all_dates';
+            $startDate = '';
+            $endDate = '';
+        } else {
+            $startDate = $request->query('start_date');
+            $endDate = $hasEnd ? $request->query('end_date') : now()->toDateString();
+        }
         $displayBy = $request->query('display_by', 'total');
 
         $customers = Customer::query()->get();
@@ -25,14 +34,18 @@ class ContactBalanceController extends Controller
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
             ->where('journal_entries.payee_type', Customer::class)
-            ->where('chart_of_accs.sub_type', 'accounts-receivable')
-            ->where('journal_entries.date', '<=', $endDate);
+            ->where('chart_of_accs.sub_type', 'accounts-receivable');
+
+        if ($type !== 'all_dates' && $endDate) {
+            $query->where('journal_entries.date', '<=', $endDate);
+        }
 
         $months = [];
         if ($displayBy === 'month') {
-            $minDate = $startDate ?: (clone $query)->min('journal_entries.date') ?: $endDate;
+            $minDate = $startDate ?: (clone $query)->min('journal_entries.date') ?: ($endDate ?: now()->toDateString());
+            $calcEnd = $endDate ?: now()->toDateString();
             $startDt = new \DateTime(substr($minDate, 0, 7) . '-01');
-            $endDt = new \DateTime(substr($endDate, 0, 7) . '-01');
+            $endDt = new \DateTime(substr($calcEnd, 0, 7) . '-01');
             while ($startDt <= $endDt) {
                 $months[] = $startDt->format('Y-m');
                 $startDt->modify('+1 month');
@@ -126,18 +139,28 @@ class ContactBalanceController extends Controller
             'reportData' => $reportData,
             'filters' => [
                 'start_date' => $startDate ?? '',
-                'end_date' => $endDate,
+                'end_date' => $endDate ?? '',
                 'display_by' => $displayBy,
                 'months' => $months,
-                'type' => $request->query('type'),
+                'type' => $type,
             ],
         ]);
     }
 
     public function customerBalanceDetailAll(Request $request)
     {
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date', now()->toDateString());
+        $type = $request->query('type');
+        $hasStart = $request->has('start_date') && $request->query('start_date') !== null && $request->query('start_date') !== '';
+        $hasEnd = $request->has('end_date') && $request->query('end_date') !== null && $request->query('end_date') !== '';
+
+        if ($type === 'all_dates' || (!$type && !$hasStart && !$hasEnd && $request->has('start_date') && $request->has('end_date'))) {
+            $type = 'all_dates';
+            $startDate = '';
+            $endDate = '';
+        } else {
+            $startDate = $request->query('start_date');
+            $endDate = $hasEnd ? $request->query('end_date') : now()->toDateString();
+        }
 
         $customers = Customer::query()->get();
 
@@ -147,10 +170,14 @@ class ContactBalanceController extends Controller
             ->where('journal_entries.payee_type', Customer::class)
             ->where('chart_of_accs.sub_type', 'accounts-receivable');
 
-        if ($startDate) {
-            $query->whereBetween('journal_entries.date', [$startDate, $endDate]);
-        } else {
-            $query->where('journal_entries.date', '<=', $endDate);
+        if ($type !== 'all_dates') {
+            if ($startDate && $endDate) {
+                $query->whereBetween('journal_entries.date', [$startDate, $endDate]);
+            } elseif ($startDate) {
+                $query->where('journal_entries.date', '>=', $startDate);
+            } elseif ($endDate) {
+                $query->where('journal_entries.date', '<=', $endDate);
+            }
         }
 
         $allLines = $query->orderBy('journal_entries.date', 'asc')
@@ -182,8 +209,8 @@ class ContactBalanceController extends Controller
             'contactType' => 'Customer',
             'filters' => [
                 'start_date' => $startDate ?? '',
-                'end_date' => $endDate,
-                'type' => $request->query('type')
+                'end_date' => $endDate ?? '',
+                'type' => $type,
             ]
         ]);
     }
@@ -191,8 +218,18 @@ class ContactBalanceController extends Controller
     public function customerDetail(Request $request, $customerId)
     {
         $customer = Customer::findOrFail($customerId);
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date', now()->toDateString());
+        $type = $request->query('type');
+        $hasStart = $request->has('start_date') && $request->query('start_date') !== null && $request->query('start_date') !== '';
+        $hasEnd = $request->has('end_date') && $request->query('end_date') !== null && $request->query('end_date') !== '';
+
+        if ($type === 'all_dates' || (!$type && !$hasStart && !$hasEnd && $request->has('start_date') && $request->has('end_date'))) {
+            $type = 'all_dates';
+            $startDate = '';
+            $endDate = '';
+        } else {
+            $startDate = $request->query('start_date');
+            $endDate = $hasEnd ? $request->query('end_date') : now()->toDateString();
+        }
 
         $query = JournalEntryLine::query()
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
@@ -201,10 +238,14 @@ class ContactBalanceController extends Controller
             ->where('journal_entries.payee_id', $customerId)
             ->where('chart_of_accs.sub_type', 'accounts-receivable');
 
-        if ($startDate) {
-            $query->whereBetween('journal_entries.date', [$startDate, $endDate]);
-        } else {
-            $query->where('journal_entries.date', '<=', $endDate);
+        if ($type !== 'all_dates') {
+            if ($startDate && $endDate) {
+                $query->whereBetween('journal_entries.date', [$startDate, $endDate]);
+            } elseif ($startDate) {
+                $query->where('journal_entries.date', '>=', $startDate);
+            } elseif ($endDate) {
+                $query->where('journal_entries.date', '<=', $endDate);
+            }
         }
 
         $lines = $query
@@ -228,17 +269,26 @@ class ContactBalanceController extends Controller
             'lines'       => $lines,
             'filters'     => [
                 'start_date' => $startDate ?? '',
-                'end_date'   => $endDate,
-                'type'       => $request->query('type'),
+                'end_date'   => $endDate ?? '',
+                'type'       => $type,
             ],
         ]);
     }
 
     public function supplierBalance(Request $request)
     {
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date');
-        $endDate = $endDate !== null && $endDate !== '' ? $endDate : now()->toDateString();
+        $type = $request->query('type');
+        $hasStart = $request->has('start_date') && $request->query('start_date') !== null && $request->query('start_date') !== '';
+        $hasEnd = $request->has('end_date') && $request->query('end_date') !== null && $request->query('end_date') !== '';
+
+        if ($type === 'all_dates' || (!$type && !$hasStart && !$hasEnd && $request->has('start_date') && $request->has('end_date'))) {
+            $type = 'all_dates';
+            $startDate = '';
+            $endDate = '';
+        } else {
+            $startDate = $request->query('start_date');
+            $endDate = $hasEnd ? $request->query('end_date') : now()->toDateString();
+        }
         $displayBy = $request->query('display_by', 'total');
 
         $suppliers = Supplier::query()->get();
@@ -247,14 +297,18 @@ class ContactBalanceController extends Controller
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
             ->where('journal_entries.payee_type', Supplier::class)
-            ->where('chart_of_accs.sub_type', 'accounts-payable')
-            ->where('journal_entries.date', '<=', $endDate);
+            ->where('chart_of_accs.sub_type', 'accounts-payable');
+
+        if ($type !== 'all_dates' && $endDate) {
+            $query->where('journal_entries.date', '<=', $endDate);
+        }
 
         $months = [];
         if ($displayBy === 'month') {
-            $minDate = $startDate ?: (clone $query)->min('journal_entries.date') ?: $endDate;
+            $minDate = $startDate ?: (clone $query)->min('journal_entries.date') ?: ($endDate ?: now()->toDateString());
+            $calcEnd = $endDate ?: now()->toDateString();
             $startDt = new \DateTime(substr($minDate, 0, 7) . '-01');
-            $endDt = new \DateTime(substr($endDate, 0, 7) . '-01');
+            $endDt = new \DateTime(substr($calcEnd, 0, 7) . '-01');
             while ($startDt <= $endDt) {
                 $months[] = $startDt->format('Y-m');
                 $startDt->modify('+1 month');
@@ -345,18 +399,28 @@ class ContactBalanceController extends Controller
             'reportData' => $reportData,
             'filters' => [
                 'start_date' => $startDate ?? '',
-                'end_date' => $endDate,
+                'end_date' => $endDate ?? '',
                 'display_by' => $displayBy,
                 'months' => $months,
-                'type' => $request->query('type'),
+                'type' => $type,
             ],
         ]);
     }
 
     public function supplierBalanceDetailAll(Request $request)
     {
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date', now()->toDateString());
+        $type = $request->query('type');
+        $hasStart = $request->has('start_date') && $request->query('start_date') !== null && $request->query('start_date') !== '';
+        $hasEnd = $request->has('end_date') && $request->query('end_date') !== null && $request->query('end_date') !== '';
+
+        if ($type === 'all_dates' || (!$type && !$hasStart && !$hasEnd && $request->has('start_date') && $request->has('end_date'))) {
+            $type = 'all_dates';
+            $startDate = '';
+            $endDate = '';
+        } else {
+            $startDate = $request->query('start_date');
+            $endDate = $hasEnd ? $request->query('end_date') : now()->toDateString();
+        }
 
         $suppliers = Supplier::query()->get();
 
@@ -366,10 +430,14 @@ class ContactBalanceController extends Controller
             ->where('journal_entries.payee_type', Supplier::class)
             ->where('chart_of_accs.sub_type', 'accounts-payable');
 
-        if ($startDate) {
-            $query->whereBetween('journal_entries.date', [$startDate, $endDate]);
-        } else {
-            $query->where('journal_entries.date', '<=', $endDate);
+        if ($type !== 'all_dates') {
+            if ($startDate && $endDate) {
+                $query->whereBetween('journal_entries.date', [$startDate, $endDate]);
+            } elseif ($startDate) {
+                $query->where('journal_entries.date', '>=', $startDate);
+            } elseif ($endDate) {
+                $query->where('journal_entries.date', '<=', $endDate);
+            }
         }
 
         $allLines = $query->orderBy('journal_entries.date', 'asc')
@@ -401,8 +469,8 @@ class ContactBalanceController extends Controller
             'contactType' => 'Supplier',
             'filters' => [
                 'start_date' => $startDate ?? '',
-                'end_date' => $endDate,
-                'type' => $request->query('type')
+                'end_date' => $endDate ?? '',
+                'type' => $type,
             ]
         ]);
     }
@@ -410,8 +478,18 @@ class ContactBalanceController extends Controller
     public function supplierDetail(Request $request, $supplierId)
     {
         $supplier = Supplier::findOrFail($supplierId);
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date', now()->toDateString());
+        $type = $request->query('type');
+        $hasStart = $request->has('start_date') && $request->query('start_date') !== null && $request->query('start_date') !== '';
+        $hasEnd = $request->has('end_date') && $request->query('end_date') !== null && $request->query('end_date') !== '';
+
+        if ($type === 'all_dates' || (!$type && !$hasStart && !$hasEnd && $request->has('start_date') && $request->has('end_date'))) {
+            $type = 'all_dates';
+            $startDate = '';
+            $endDate = '';
+        } else {
+            $startDate = $request->query('start_date');
+            $endDate = $hasEnd ? $request->query('end_date') : now()->toDateString();
+        }
 
         $query = JournalEntryLine::query()
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
@@ -420,10 +498,14 @@ class ContactBalanceController extends Controller
             ->where('journal_entries.payee_id', $supplierId)
             ->where('chart_of_accs.sub_type', 'accounts-payable');
 
-        if ($startDate) {
-            $query->whereBetween('journal_entries.date', [$startDate, $endDate]);
-        } else {
-            $query->where('journal_entries.date', '<=', $endDate);
+        if ($type !== 'all_dates') {
+            if ($startDate && $endDate) {
+                $query->whereBetween('journal_entries.date', [$startDate, $endDate]);
+            } elseif ($startDate) {
+                $query->where('journal_entries.date', '>=', $startDate);
+            } elseif ($endDate) {
+                $query->where('journal_entries.date', '<=', $endDate);
+            }
         }
 
         $lines = $query
@@ -447,8 +529,8 @@ class ContactBalanceController extends Controller
             'lines'       => $lines,
             'filters'     => [
                 'start_date' => $startDate ?? '',
-                'end_date'   => $endDate,
-                'type'       => $request->query('type'),
+                'end_date'   => $endDate ?? '',
+                'type'       => $type,
             ],
         ]);
     }

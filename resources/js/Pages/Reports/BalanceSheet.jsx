@@ -171,37 +171,53 @@ export default function BalanceSheet({ reportData, filters, auth }) {
         </div>
     );
 
+    const getDrillDownUrl = (accountId, monthCol = null) => {
+        const params = new URLSearchParams();
+        if (monthCol) {
+            const [y, m] = monthCol.split('-');
+            const sDate = `${monthCol}-01`;
+            const lastDay = new Date(y, m, 0).getDate();
+            const eDate = `${monthCol}-${lastDay.toString().padStart(2, '0')}`;
+            params.set('start_date', sDate);
+            params.set('end_date', eDate);
+            params.set('type', 'custom');
+        } else if (filters.type === 'all_dates') {
+            params.set('type', 'all_dates');
+        } else {
+            if (filters.start_date) params.set('start_date', filters.start_date);
+            if (filters.end_date) params.set('end_date', filters.end_date);
+            params.set('type', filters.type || 'custom');
+        }
+        const qs = params.toString();
+        return route('chart-of-account.history', accountId) + (qs ? `?${qs}` : '');
+    };
+
     const AccountRow = ({ item, depth = 0 }) => {
         const hasChildren = item.children && item.children.length > 0;
-        const isCollapsed = hasChildren && collapsedGroups.has(item.id);
-        const paddingLeft = depth === 0 ? '2rem' : `${2 + depth * 1.5}rem`;
+        const isCollapsed = collapsedGroups.has(item.id);
+        const paddingLeft = `${1.5 + depth * 1.5}rem`;
 
         return (
             <React.Fragment>
-                <tr className="hover:bg-gray-50 transition-colors">
-                    <td
-                        className={`py-2 px-3 text-gray-900 ${hasChildren ? 'cursor-pointer' : ''}`}
-                        style={{ paddingLeft }}
-                        onClick={() => hasChildren && toggleGroup(item.id)}
-                    >
+                <tr 
+                    className={`hover:bg-gray-50 transition-colors ${hasChildren ? 'cursor-pointer' : ''}`}
+                    onClick={() => hasChildren && toggleGroup(item.id)}
+                >
+                    <td className="py-2 px-3 text-gray-900 min-w-[200px]" style={{ paddingLeft }}>
                         {hasChildren && (
-                            <span className="inline-block mr-2 text-[10px]">
+                            <span className="inline-block mr-2 text-[10px] w-3 text-center text-gray-500">
                                 {isCollapsed ? '▶' : '▼'}
                             </span>
                         )}
                         {item.name}
                     </td>
                     {isMonthWise && monthCols.map(ym => {
-                        const [y, m] = ym.split('-');
-                        const sDate = `${ym}-01`;
-                        const lastDay = new Date(y, m, 0).getDate();
-                        const eDate = `${ym}-${lastDay.toString().padStart(2, '0')}`;
                         const displayVal = item.monthly_balances?.[ym] || 0;
 
                         return (
                             <td key={ym} className="py-2 px-3 text-right whitespace-nowrap min-w-[120px]">
                                 {hasChildren && displayVal === 0 ? null : (
-                                    <Link href={route('chart-of-account.history', item.id) + '?start_date=' + sDate + '&end_date=' + eDate} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4">
+                                    <Link href={getDrillDownUrl(item.id, ym)} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4">
                                         <Currency value={displayVal} />
                                     </Link>
                                 )}
@@ -210,7 +226,7 @@ export default function BalanceSheet({ reportData, filters, auth }) {
                     })}
                     <td className="py-2 px-3 text-right whitespace-nowrap min-w-[130px]">
                         {hasChildren && item.balance === 0 ? null : (
-                            <Link href={route('chart-of-account.history', item.id) + '?start_date=' + (filters.start_date || '') + '&end_date=' + filters.end_date} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4">
+                            <Link href={getDrillDownUrl(item.id)} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4">
                                 <Currency value={item.balance} />
                             </Link>
                         )}
@@ -221,7 +237,7 @@ export default function BalanceSheet({ reportData, filters, auth }) {
                 ))}
                 {hasChildren && (
                     <tr className="hover:bg-gray-50 transition-colors font-medium border-t border-gray-100">
-                        <td className="py-2 px-3 text-gray-700" style={{ paddingLeft }}>
+                        <td className="py-2 px-3 text-gray-700" style={{ paddingLeft: `${1.5 + depth * 1.5}rem` }}>
                             Total {item.name}
                         </td>
                         {isMonthWise && monthCols.map(ym => (
@@ -249,9 +265,13 @@ export default function BalanceSheet({ reportData, filters, auth }) {
             <div className="text-center mb-8 font-serif">
                 <h2 className="text-xl font-bold text-gray-900">Balance Sheet</h2>
                 <h3 className="text-sm text-gray-700 mt-1">{auth.company?.company_name}</h3>
-                <p className="text-[13px] text-gray-500 mt-1">
-                    As of {formatDate(filters.end_date, dateFormat)}
-                </p>
+                {filters.type === 'all_dates' ? (
+                    <p className="text-[13px] text-gray-500 mt-1">All Dates</p>
+                ) : (
+                    <p className="text-[13px] text-gray-500 mt-1">
+                        As of {formatDate(filters.end_date, dateFormat)}
+                    </p>
+                )}
             </div>
 
             <div className="w-full overflow-x-auto pb-10">

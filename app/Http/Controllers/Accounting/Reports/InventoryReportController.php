@@ -11,8 +11,18 @@ class InventoryReportController extends Controller
 {
     public function inventorySummary(Request $request)
     {
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date') ?: date('Y-m-d');
+        $type = $request->query('type');
+        $hasStart = $request->has('start_date') && $request->query('start_date') !== null && $request->query('start_date') !== '';
+        $hasEnd = $request->has('end_date') && $request->query('end_date') !== null && $request->query('end_date') !== '';
+
+        if ($type === 'all_dates' || (!$type && !$hasStart && !$hasEnd && $request->has('start_date') && $request->has('end_date'))) {
+            $type = 'all_dates';
+            $startDate = '';
+            $endDate = '';
+        } else {
+            $startDate = $request->query('start_date');
+            $endDate = $hasEnd ? $request->query('end_date') : date('Y-m-d');
+        }
         $displayBy = $request->query('display_by', 'total');
 
         $items = \App\Models\Item::with('category')
@@ -26,7 +36,6 @@ class InventoryReportController extends Controller
                 $join->on('credit_invoices.id', '=', 'journal_entries.transactionable_id')
                      ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\CreditInvoice');
             })
-            ->where('credit_invoices.invoice_date', '<=', $endDate)
             ->select('item_id', 'credit_invoices.invoice_date as date', DB::raw('-(quantity) as qty_change'));
 
         $salesInvoices = DB::table('sales_invoice_items')
@@ -35,7 +44,6 @@ class InventoryReportController extends Controller
                 $join->on('sales_invoices.id', '=', 'journal_entries.transactionable_id')
                      ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\SalesInvoice');
             })
-            ->where('sales_invoices.receipt_date', '<=', $endDate)
             ->select('item_id', 'sales_invoices.receipt_date as date', DB::raw('-(quantity) as qty_change'));
 
         $invoiceReturns = DB::table('invoice_return_items')
@@ -44,7 +52,6 @@ class InventoryReportController extends Controller
                 $join->on('invoice_returns.id', '=', 'journal_entries.transactionable_id')
                      ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\InvoiceReturn');
             })
-            ->where('invoice_returns.date', '<=', $endDate)
             ->select('item_id', 'invoice_returns.date as date', 'quantity as qty_change');
 
         $payments = DB::table('payment_items')
@@ -53,7 +60,6 @@ class InventoryReportController extends Controller
                 $join->on('payments.id', '=', 'journal_entries.transactionable_id')
                      ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\Payment');
             })
-            ->where('payments.payment_date', '<=', $endDate)
             ->select('item_id', 'payments.payment_date as date', 'quantity as qty_change');
 
         $bills = DB::table('bill_items')
@@ -62,7 +68,6 @@ class InventoryReportController extends Controller
                 $join->on('bills.id', '=', 'journal_entries.transactionable_id')
                      ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\Bill');
             })
-            ->where('bills.bill_date', '<=', $endDate)
             ->select('item_id', 'bills.bill_date as date', 'quantity as qty_change');
 
         $billReturns = DB::table('bill_return_items')
@@ -71,7 +76,6 @@ class InventoryReportController extends Controller
                 $join->on('bill_returns.id', '=', 'journal_entries.transactionable_id')
                      ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\BillReturn');
             })
-            ->where('bill_returns.date', '<=', $endDate)
             ->select('item_id', 'bill_returns.date as date', DB::raw('-(quantity) as qty_change'));
 
         $adjustments = DB::table('inventory_quantity_adjustment_items')
@@ -80,16 +84,26 @@ class InventoryReportController extends Controller
                 $join->on('inventory_quantity_adjustments.id', '=', 'journal_entries.transactionable_id')
                      ->where('journal_entries.transactionable_type', '=', 'App\\Models\\Accounting\\InventoryQuantityAdjustment');
             })
-            ->where('inventory_quantity_adjustments.adjustment_date', '<=', $endDate)
             ->select('item_id', 'inventory_quantity_adjustments.adjustment_date as date', 'change_in_qty as qty_change');
+
+        if ($type !== 'all_dates' && $endDate) {
+            $invoices->where('credit_invoices.invoice_date', '<=', $endDate);
+            $salesInvoices->where('sales_invoices.receipt_date', '<=', $endDate);
+            $invoiceReturns->where('invoice_returns.date', '<=', $endDate);
+            $payments->where('payments.payment_date', '<=', $endDate);
+            $bills->where('bills.bill_date', '<=', $endDate);
+            $billReturns->where('bill_returns.date', '<=', $endDate);
+            $adjustments->where('inventory_quantity_adjustments.adjustment_date', '<=', $endDate);
+        }
 
         $allLinesQuery = $invoices->unionAll($salesInvoices)->unionAll($invoiceReturns)->unionAll($payments)->unionAll($bills)->unionAll($billReturns)->unionAll($adjustments);
 
         $months = [];
         if ($displayBy === 'month') {
-            $minDate = $startDate ?: (clone $allLinesQuery)->min('date') ?: $endDate;
+            $minDate = $startDate ?: (clone $allLinesQuery)->min('date') ?: ($endDate ?: date('Y-m-d'));
+            $calcEnd = $endDate ?: date('Y-m-d');
             $startDt = new \DateTime(substr($minDate, 0, 7) . '-01');
-            $endDt = new \DateTime(substr($endDate, 0, 7) . '-01');
+            $endDt = new \DateTime(substr($calcEnd, 0, 7) . '-01');
             while ($startDt <= $endDt) {
                 $months[] = $startDt->format('Y-m');
                 $startDt->modify('+1 month');
@@ -175,18 +189,28 @@ class InventoryReportController extends Controller
             'reportData' => $groups,
             'filters' => [
                 'start_date' => $startDate ?? '',
-                'end_date' => $endDate,
+                'end_date' => $endDate ?? '',
                 'display_by' => $displayBy,
                 'months' => $months,
-                'type' => $request->query('type')
+                'type' => $type,
             ]
         ]);
     }
 
     public function inventoryDetailAll(Request $request)
     {
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date') ?: date('Y-m-d');
+        $type = $request->query('type');
+        $hasStart = $request->has('start_date') && $request->query('start_date') !== null && $request->query('start_date') !== '';
+        $hasEnd = $request->has('end_date') && $request->query('end_date') !== null && $request->query('end_date') !== '';
+
+        if ($type === 'all_dates' || (!$type && !$hasStart && !$hasEnd && $request->has('start_date') && $request->has('end_date'))) {
+            $type = 'all_dates';
+            $startDate = '';
+            $endDate = '';
+        } else {
+            $startDate = $request->query('start_date');
+            $endDate = $hasEnd ? $request->query('end_date') : date('Y-m-d');
+        }
         $itemIds = $request->query('item_ids');
         if ($itemIds && is_string($itemIds)) {
             $itemIds = explode(',', $itemIds);
@@ -339,22 +363,32 @@ class InventoryReportController extends Controller
             );
 
 
-        if ($startDate) {
-            $invoices->whereBetween('credit_invoices.invoice_date', [$startDate, $endDate]);
-            $salesInvoices->whereBetween('sales_invoices.receipt_date', [$startDate, $endDate]);
-            $invoiceReturns->whereBetween('invoice_returns.date', [$startDate, $endDate]);
-            $payments->whereBetween('payments.payment_date', [$startDate, $endDate]);
-            $bills->whereBetween('bills.bill_date', [$startDate, $endDate]);
-            $billReturns->whereBetween('bill_returns.date', [$startDate, $endDate]);
-            $adjustments->whereBetween('inventory_quantity_adjustments.adjustment_date', [$startDate, $endDate]);
-        } else {
-            $invoices->where('credit_invoices.invoice_date', '<=', $endDate);
-            $salesInvoices->where('sales_invoices.receipt_date', '<=', $endDate);
-            $invoiceReturns->where('invoice_returns.date', '<=', $endDate);
-            $payments->where('payments.payment_date', '<=', $endDate);
-            $bills->where('bills.bill_date', '<=', $endDate);
-            $billReturns->where('bill_returns.date', '<=', $endDate);
-            $adjustments->where('inventory_quantity_adjustments.adjustment_date', '<=', $endDate);
+        if ($type !== 'all_dates') {
+            if ($startDate && $endDate) {
+                $invoices->whereBetween('credit_invoices.invoice_date', [$startDate, $endDate]);
+                $salesInvoices->whereBetween('sales_invoices.receipt_date', [$startDate, $endDate]);
+                $invoiceReturns->whereBetween('invoice_returns.date', [$startDate, $endDate]);
+                $payments->whereBetween('payments.payment_date', [$startDate, $endDate]);
+                $bills->whereBetween('bills.bill_date', [$startDate, $endDate]);
+                $billReturns->whereBetween('bill_returns.date', [$startDate, $endDate]);
+                $adjustments->whereBetween('inventory_quantity_adjustments.adjustment_date', [$startDate, $endDate]);
+            } elseif ($startDate) {
+                $invoices->where('credit_invoices.invoice_date', '>=', $startDate);
+                $salesInvoices->where('sales_invoices.receipt_date', '>=', $startDate);
+                $invoiceReturns->where('invoice_returns.date', '>=', $startDate);
+                $payments->where('payments.payment_date', '>=', $startDate);
+                $bills->where('bills.bill_date', '>=', $startDate);
+                $billReturns->where('bill_returns.date', '>=', $startDate);
+                $adjustments->where('inventory_quantity_adjustments.adjustment_date', '>=', $startDate);
+            } elseif ($endDate) {
+                $invoices->where('credit_invoices.invoice_date', '<=', $endDate);
+                $salesInvoices->where('sales_invoices.receipt_date', '<=', $endDate);
+                $invoiceReturns->where('invoice_returns.date', '<=', $endDate);
+                $payments->where('payments.payment_date', '<=', $endDate);
+                $bills->where('bills.bill_date', '<=', $endDate);
+                $billReturns->where('bill_returns.date', '<=', $endDate);
+                $adjustments->where('inventory_quantity_adjustments.adjustment_date', '<=', $endDate);
+            }
         }
 
         if (!empty($itemIds)) {
@@ -416,8 +450,8 @@ class InventoryReportController extends Controller
             'allInventoryItems' => $allInventoryItems,
             'filters' => [
                 'start_date' => $startDate ?? '',
-                'end_date' => $endDate,
-                'type' => $request->query('type'),
+                'end_date' => $endDate ?? '',
+                'type' => $type,
                 'item_ids' => $itemIds,
             ]
         ]);
@@ -429,8 +463,18 @@ class InventoryReportController extends Controller
             abort(404);
         }
 
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date') ?: date('Y-m-d');
+        $type = $request->query('type');
+        $hasStart = $request->has('start_date') && $request->query('start_date') !== null && $request->query('start_date') !== '';
+        $hasEnd = $request->has('end_date') && $request->query('end_date') !== null && $request->query('end_date') !== '';
+
+        if ($type === 'all_dates' || (!$type && !$hasStart && !$hasEnd && $request->has('start_date') && $request->has('end_date'))) {
+            $type = 'all_dates';
+            $startDate = '';
+            $endDate = '';
+        } else {
+            $startDate = $request->query('start_date');
+            $endDate = $hasEnd ? $request->query('end_date') : date('Y-m-d');
+        }
 
         $invoices = DB::table('credit_invoice_items')
             ->join('credit_invoices', 'credit_invoice_items.credit_invoice_id', '=', 'credit_invoices.id')
@@ -573,7 +617,7 @@ class InventoryReportController extends Controller
             );
 
         $openingQty = 0;
-        if ($startDate) {
+        if ($type !== 'all_dates' && $startDate) {
             $invQty = DB::table('credit_invoice_items')
                 ->join('credit_invoices', 'credit_invoice_items.credit_invoice_id', '=', 'credit_invoices.id')
                 ->where('credit_invoice_items.item_id', $item->id)
@@ -619,22 +663,32 @@ class InventoryReportController extends Controller
             $openingQty = (float)$invQty + (float)$salesInvQty + (float)$invRetQty + (float)$payQty + (float)$billQty + (float)$billRetQty + (float)$adjQty;
         }
 
-        if ($startDate) {
-            $invoices->whereBetween('credit_invoices.invoice_date', [$startDate, $endDate]);
-            $salesInvoices->whereBetween('sales_invoices.receipt_date', [$startDate, $endDate]);
-            $invoiceReturns->whereBetween('invoice_returns.date', [$startDate, $endDate]);
-            $payments->whereBetween('payments.payment_date', [$startDate, $endDate]);
-            $bills->whereBetween('bills.bill_date', [$startDate, $endDate]);
-            $billReturns->whereBetween('bill_returns.date', [$startDate, $endDate]);
-            $adjustments->whereBetween('inventory_quantity_adjustments.adjustment_date', [$startDate, $endDate]);
-        } else {
-            $invoices->where('credit_invoices.invoice_date', '<=', $endDate);
-            $salesInvoices->where('sales_invoices.receipt_date', '<=', $endDate);
-            $invoiceReturns->where('invoice_returns.date', '<=', $endDate);
-            $payments->where('payments.payment_date', '<=', $endDate);
-            $bills->where('bills.bill_date', '<=', $endDate);
-            $billReturns->where('bill_returns.date', '<=', $endDate);
-            $adjustments->where('inventory_quantity_adjustments.adjustment_date', '<=', $endDate);
+        if ($type !== 'all_dates') {
+            if ($startDate && $endDate) {
+                $invoices->whereBetween('credit_invoices.invoice_date', [$startDate, $endDate]);
+                $salesInvoices->whereBetween('sales_invoices.receipt_date', [$startDate, $endDate]);
+                $invoiceReturns->whereBetween('invoice_returns.date', [$startDate, $endDate]);
+                $payments->whereBetween('payments.payment_date', [$startDate, $endDate]);
+                $bills->whereBetween('bills.bill_date', [$startDate, $endDate]);
+                $billReturns->whereBetween('bill_returns.date', [$startDate, $endDate]);
+                $adjustments->whereBetween('inventory_quantity_adjustments.adjustment_date', [$startDate, $endDate]);
+            } elseif ($startDate) {
+                $invoices->where('credit_invoices.invoice_date', '>=', $startDate);
+                $salesInvoices->where('sales_invoices.receipt_date', '>=', $startDate);
+                $invoiceReturns->where('invoice_returns.date', '>=', $startDate);
+                $payments->where('payments.payment_date', '>=', $startDate);
+                $bills->where('bills.bill_date', '>=', $startDate);
+                $billReturns->where('bill_returns.date', '>=', $startDate);
+                $adjustments->where('inventory_quantity_adjustments.adjustment_date', '>=', $startDate);
+            } elseif ($endDate) {
+                $invoices->where('credit_invoices.invoice_date', '<=', $endDate);
+                $salesInvoices->where('sales_invoices.receipt_date', '<=', $endDate);
+                $invoiceReturns->where('invoice_returns.date', '<=', $endDate);
+                $payments->where('payments.payment_date', '<=', $endDate);
+                $bills->where('bills.bill_date', '<=', $endDate);
+                $billReturns->where('bill_returns.date', '<=', $endDate);
+                $adjustments->where('inventory_quantity_adjustments.adjustment_date', '<=', $endDate);
+            }
         }
 
         $lines = $invoices->unionAll($salesInvoices)->unionAll($invoiceReturns)->unionAll($payments)->unionAll($bills)->unionAll($billReturns)->unionAll($adjustments)
@@ -665,8 +719,8 @@ class InventoryReportController extends Controller
             'lines' => $lines,
             'filters' => [
                 'start_date' => $startDate ?? '',
-                'end_date' => $endDate,
-                'type' => $request->query('type')
+                'end_date' => $endDate ?? '',
+                'type' => $type,
             ]
         ]);
     }

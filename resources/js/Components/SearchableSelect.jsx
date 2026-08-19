@@ -325,7 +325,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                         top: dropdownPos.top,
                         left: dropdownPos.left,
                         width: dropdownPos.width,
-                        zIndex: 9999
+                        zIndex: 100000
                     }}
                     className="mt-1 bg-white border border-slate-300 rounded-sm shadow-xl overflow-hidden"
                 >

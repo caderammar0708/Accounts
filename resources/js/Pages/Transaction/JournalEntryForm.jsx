@@ -320,7 +320,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
 
         router[method](url, payload, {
             replace: true,
-            preserveState: true,   // STAY ON SAME PAGE
+            preserveState: (page) => Object.keys(page.props?.errors || {}).length > 0 || type === 'save',
             preserveScroll: true,
             onSuccess: (page) => {
                 showToast('success', 'Record saved successfully.');
@@ -339,8 +339,6 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 if (type === 'close') {
                     if (typeof onClose === 'function') {
                         onClose();
-                    } else {
-                        window.location.href = '/dashboard';
                     }
                 }
 

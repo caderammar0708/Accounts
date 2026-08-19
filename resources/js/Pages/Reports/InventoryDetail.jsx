@@ -76,11 +76,15 @@ export default function InventoryDetail({ item, lines, filters, auth }) {
                 <h2 className="text-xl font-bold text-gray-900">Inventory Transaction Detail</h2>
                 <h3 className="text-sm text-gray-700 mt-1">{auth.company?.company_name}</h3>
                 <h4 className="text-md font-semibold text-primary mt-2">{item.name} {item.sku ? `(SKU: ${item.sku})` : ''}</h4>
-                <p className="text-[13px] text-gray-500 mt-1">
-                    {filters.start_date ? formatDate(filters.start_date, dateFormat) : 'All Time'}
-                    {' '}to{' '}
-                    {filters.end_date ? formatDate(filters.end_date, dateFormat) : 'Present'}
-                </p>
+                {filters.type === 'all_dates' ? (
+                    <p className="text-[13px] text-gray-500 mt-1">All Dates</p>
+                ) : (
+                    <p className="text-[13px] text-gray-500 mt-1">
+                        {filters.start_date ? formatDate(filters.start_date, dateFormat) : 'All Time'}
+                        {' '}to{' '}
+                        {filters.end_date ? formatDate(filters.end_date, dateFormat) : 'Present'}
+                    </p>
+                )}
             </div>
 
             <div className="w-full overflow-x-auto pb-10">

@@ -107,6 +107,27 @@ export default function CustomerBalance({ reportData, filters, auth }) {
         </div>
     );
 
+    const getDrillDownUrl = (customerId, monthCol = null) => {
+        const params = new URLSearchParams();
+        if (monthCol) {
+            const [y, m] = monthCol.split('-');
+            const sDate = `${monthCol}-01`;
+            const lastDay = new Date(y, m, 0).getDate();
+            const eDate = `${monthCol}-${lastDay.toString().padStart(2, '0')}`;
+            params.set('start_date', sDate);
+            params.set('end_date', eDate);
+            params.set('type', 'custom');
+        } else if (filters.type === 'all_dates') {
+            params.set('type', 'all_dates');
+        } else {
+            if (filters.start_date) params.set('start_date', filters.start_date);
+            if (filters.end_date) params.set('end_date', filters.end_date);
+            if (filters.type) params.set('type', filters.type);
+        }
+        const qs = params.toString();
+        return route('reports.customer-detail', customerId) + (qs ? `?${qs}` : '');
+    };
+
     return (
         <ReportLayout
             title="Customer Balance Summary"
@@ -118,9 +139,13 @@ export default function CustomerBalance({ reportData, filters, auth }) {
             <div className="text-center mb-8 font-serif">
                 <h2 className="text-xl font-bold text-gray-900">Customer Balance Summary</h2>
                 <h3 className="text-sm text-gray-700 mt-1">{auth.company?.company_name}</h3>
-                <p className="text-[13px] text-gray-500 mt-1">
-                    {filters.end_date ? `As of ${formatDate(filters.end_date, dateFormat)}` : `As of ${formatDate(new Date(), dateFormat)}`}
-                </p>
+                {filters.type === 'all_dates' ? (
+                    <p className="text-[13px] text-gray-500 mt-1">All Dates</p>
+                ) : (
+                    <p className="text-[13px] text-gray-500 mt-1">
+                        {filters.end_date ? `As of ${formatDate(filters.end_date, dateFormat)}` : `As of ${formatDate(new Date(), dateFormat)}`}
+                    </p>
+                )}
             </div>
 
             <div className="w-full overflow-x-auto pb-10">
@@ -140,10 +165,12 @@ export default function CustomerBalance({ reportData, filters, auth }) {
                                             </th>
                                         );
                                     })}
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px] border-l border-gray-100">Final Balance</th>
+                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right min-w-[130px] whitespace-nowrap border-l border-gray-200">
+                                        Final Balance
+                                    </th>
                                 </>
                             ) : (
-                                <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px]">
+                                <th className="py-2.5 px-3 font-semibold text-gray-900 text-right min-w-[130px] whitespace-nowrap">
                                     Open Balance <span className="inline-block ml-1 text-gray-400 text-[10px]">↕</span>
                                 </th>
                             )}
@@ -152,11 +179,13 @@ export default function CustomerBalance({ reportData, filters, auth }) {
                     <tbody className="divide-y divide-gray-200">
                         {customers.length === 0 ? (
                             <tr>
-                                <td colSpan={isMonthWise ? monthCols.length + 2 : 2} className="py-8 text-center text-gray-500">No customer balances found.</td>
+                                <td colSpan={isMonthWise ? monthCols.length + 2 : 2} className="py-8 text-center text-gray-500">
+                                    No customer balances found for the selected date.
+                                </td>
                             </tr>
                         ) : (
-                            customers.map((item, index) => (
-                                <tr key={index} className="hover:bg-gray-50 transition-colors group">
+                            customers.map((item) => (
+                                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="py-2 px-3 text-gray-900 min-w-[200px]">
                                         {item.name}
                                         {(item.email || item.phone) && (
@@ -171,19 +200,21 @@ export default function CustomerBalance({ reportData, filters, auth }) {
                                                 const mData = item.monthly_balances?.[m] || 0;
                                                 return (
                                                     <td key={m} className="py-2 px-3 text-right whitespace-nowrap">
-                                                        <Currency value={mData} />
+                                                        <Link href={getDrillDownUrl(item.id, m)} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4">
+                                                            <Currency value={mData} />
+                                                        </Link>
                                                     </td>
                                                 );
                                             })}
                                             <td className="py-2 px-3 text-right whitespace-nowrap font-bold border-l border-gray-100">
-                                                <Link href={route('reports.customer-detail', item.id) + '?end_date=' + filters.end_date} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4">
+                                                <Link href={getDrillDownUrl(item.id, null)} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4">
                                                     <Currency value={item.balance} />
                                                 </Link>
                                             </td>
                                         </>
                                     ) : (
                                         <td className="py-2 px-3 text-right whitespace-nowrap">
-                                            <Link href={route('reports.customer-detail', item.id) + '?end_date=' + filters.end_date} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4">
+                                            <Link href={getDrillDownUrl(item.id)} className="hover:underline cursor-pointer decoration-slate-400 underline-offset-4">
                                                 <Currency value={item.balance} />
                                             </Link>
                                         </td>

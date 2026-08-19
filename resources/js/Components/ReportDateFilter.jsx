@@ -4,9 +4,9 @@ import { Link, usePage } from '@inertiajs/react';
 
 export default function ReportDateFilter({ currentFilter, onFilterChange }) {
     const { auth } = usePage().props;
-    const [filterType, setFilterType] = useState('custom');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const [filterType, setFilterType] = useState(currentFilter?.type || 'all_dates');
+    const [startDate, setStartDate] = useState(currentFilter?.start_date || '');
+    const [endDate, setEndDate] = useState(currentFilter?.end_date || '');
 
     // Date formatting helper YYYY-MM-DD
     const formatDate = (date) => {
@@ -29,6 +29,15 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
         return {
             start: formatDate(start),
             end: formatDate(end),
+        };
+    };
+
+    const getOneYearRange = () => {
+        const today = new Date();
+        const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+        return {
+            start: formatDate(oneYearAgo),
+            end: formatDate(today),
         };
     };
 
@@ -148,10 +157,12 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                 end = formatDate(new Date(lfyStartYear + 1, finStartMonthIdx, 0));
                 break;
             }
-            case 'custom':
-                start = customStart || startDate;
-                end = customEnd || endDate;
+            case 'custom': {
+                const customRange = getOneYearRange();
+                start = customStart || startDate || customRange.start;
+                end = customEnd || endDate || customRange.end;
                 break;
+            }
         }
 
         setFilterType(type);
@@ -166,18 +177,39 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
         }
     };
 
-    // On mount: initialise local state. If the server provided an explicit filter
+    // On mount or when currentFilter changes: initialise local state. If the server provided an explicit filter
     // type via URL params, honour it. Otherwise restore the last filter the user
     // chose in another report (sessionStorage), so the date doesn't reset when
     // switching between reports. Falls back to current-month if nothing is saved.
     useEffect(() => {
         if (currentFilter) {
+            const hasExplicitStart = currentFilter.start_date !== undefined && currentFilter.start_date !== null && currentFilter.start_date !== '';
+            const hasExplicitEnd = currentFilter.end_date !== undefined && currentFilter.end_date !== null && currentFilter.end_date !== '';
+
             if (currentFilter.type) {
                 // Server-driven filter (user navigated with query params) — honour it.
                 setFilterType(currentFilter.type);
-                const defaultRange = getCurrentMonthRange();
-                setStartDate(currentFilter.start_date ?? defaultRange.start);
-                setEndDate(currentFilter.end_date ?? defaultRange.end);
+                if (currentFilter.type === 'all_dates') {
+                    setStartDate('');
+                    setEndDate('');
+                } else if (currentFilter.type === 'custom') {
+                    const customRange = getOneYearRange();
+                    setStartDate(currentFilter.start_date || customRange.start);
+                    setEndDate(currentFilter.end_date || customRange.end);
+                } else {
+                    const defaultRange = getCurrentMonthRange();
+                    setStartDate(currentFilter.start_date ?? defaultRange.start);
+                    setEndDate(currentFilter.end_date ?? defaultRange.end);
+                }
+                saveToSession(currentFilter.type, currentFilter.type === 'all_dates' ? '' : (currentFilter.start_date || ''), currentFilter.type === 'all_dates' ? '' : (currentFilter.end_date || ''));
+                return;
+            }
+
+            if (hasExplicitStart || hasExplicitEnd) {
+                setFilterType('custom');
+                setStartDate(currentFilter.start_date || '');
+                setEndDate(currentFilter.end_date || '');
+                saveToSession('custom', currentFilter.start_date || '', currentFilter.end_date || '');
                 return;
             }
 
@@ -189,12 +221,12 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                 return;
             }
 
-            // No saved filter — fall back to current-month defaults.
-            const defaultRange = getCurrentMonthRange();
-            setStartDate(currentFilter.start_date ?? defaultRange.start);
-            setEndDate(currentFilter.end_date ?? defaultRange.end);
+            // No saved filter — fall back to all_dates.
+            setFilterType('all_dates');
+            setStartDate('');
+            setEndDate('');
         }
-    }, []); // Run only on mount — each Inertia navigation creates a fresh component instance
+    }, [currentFilter?.type, currentFilter?.start_date, currentFilter?.end_date]);
 
     return (
         <div className="flex flex-row items-center gap-2 flex-wrap">
@@ -209,9 +241,14 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                 <select
                     value={filterType}
                     onChange={(e) => {
-                        setFilterType(e.target.value);
-                        if (e.target.value !== 'custom') {
-                            handleApply(e.target.value);
+                        const newType = e.target.value;
+                        setFilterType(newType);
+                        if (newType !== 'custom') {
+                            handleApply(newType);
+                        } else {
+                            const range = getOneYearRange();
+                            setStartDate(range.start);
+                            setEndDate(range.end);
                         }
                     }}
                     title="Date Range"

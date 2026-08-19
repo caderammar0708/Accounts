@@ -210,32 +210,61 @@ class ChartOfAccController extends Controller
 
     public function history(Request $request, ChartOfAcc $chartOfAccount)
     {
-        $startDate = $request->start_date ?? date('Y-01-01');
-        $endDate = $request->end_date ?? date('Y-m-d');
+        $type = $request->query('type');
+        $hasStartDate = $request->has('start_date') && $request->query('start_date') !== null && $request->query('start_date') !== '';
+        $hasEndDate = $request->has('end_date') && $request->query('end_date') !== null && $request->query('end_date') !== '';
 
-        // Calculate opening balance before start_date
-        $priorLines = \App\Models\Accounting\JournalEntryLine::where('chart_of_acc_id', $chartOfAccount->id)
-            ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
-            ->where('journal_entries.date', '<', $startDate)
-            ->selectRaw('SUM(journal_entry_lines.debit) as total_debit, SUM(journal_entry_lines.credit) as total_credit')
-            ->first();
+        if ($type === 'all_dates' || (!$type && !$hasStartDate && !$hasEndDate && $request->has('start_date') && $request->has('end_date'))) {
+            $type = 'all_dates';
+            $startDate = '';
+            $endDate = '';
+            $openingBalance = 0;
 
-        $totalDebit = (float)($priorLines->total_debit ?? 0);
-        $totalCredit = (float)($priorLines->total_credit ?? 0);
+            $query = \App\Models\Accounting\JournalEntryLine::with(['journalEntry.creator', 'journalEntry.lines.account', 'journalEntry.transactionable'])
+                ->where('chart_of_acc_id', $chartOfAccount->id)
+                ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id');
+        } else {
+            $startDate = $hasStartDate ? $request->query('start_date') : ($request->has('start_date') && !$type ? '' : date('Y-01-01'));
+            $endDate = $hasEndDate ? $request->query('end_date') : ($request->has('end_date') && !$type ? '' : date('Y-m-d'));
+            if (!$type) {
+                $type = ($hasStartDate || $hasEndDate) ? 'custom' : 'this_year';
+            }
 
-        $isNormalDebit = in_array(strtolower($chartOfAccount->account_type), ['asset', 'expense']);
-        $openingBalance = $isNormalDebit ? ($totalDebit - $totalCredit) : ($totalCredit - $totalDebit);
+            // Calculate opening balance before start_date
+            if ($startDate) {
+                $priorLines = \App\Models\Accounting\JournalEntryLine::where('chart_of_acc_id', $chartOfAccount->id)
+                    ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+                    ->where('journal_entries.date', '<', $startDate)
+                    ->selectRaw('SUM(journal_entry_lines.debit) as total_debit, SUM(journal_entry_lines.credit) as total_credit')
+                    ->first();
 
-        $query = \App\Models\Accounting\JournalEntryLine::with(['journalEntry.creator', 'journalEntry.lines.account', 'journalEntry.transactionable'])
-             ->where('chart_of_acc_id', $chartOfAccount->id)
-             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
-             ->whereBetween('journal_entries.date', [$startDate, $endDate]);
+                $totalDebit = (float)($priorLines->total_debit ?? 0);
+                $totalCredit = (float)($priorLines->total_credit ?? 0);
+
+                $isNormalDebit = in_array(strtolower($chartOfAccount->account_type), ['asset', 'expense']);
+                $openingBalance = $isNormalDebit ? ($totalDebit - $totalCredit) : ($totalCredit - $totalDebit);
+            } else {
+                $openingBalance = 0;
+            }
+
+            $query = \App\Models\Accounting\JournalEntryLine::with(['journalEntry.creator', 'journalEntry.lines.account', 'journalEntry.transactionable'])
+                ->where('chart_of_acc_id', $chartOfAccount->id)
+                ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id');
+
+            if ($startDate && $endDate) {
+                $query->whereBetween('journal_entries.date', [$startDate, $endDate]);
+            } elseif ($startDate) {
+                $query->where('journal_entries.date', '>=', $startDate);
+            } elseif ($endDate) {
+                $query->where('journal_entries.date', '<=', $endDate);
+            }
+        }
 
         $lines = $query->orderBy('journal_entries.date', 'asc')
-             ->orderBy('journal_entries.reference', 'asc')
-             ->orderBy('journal_entry_lines.id', 'asc')
-             ->select('journal_entry_lines.*')
-             ->get();
+            ->orderBy('journal_entries.reference', 'asc')
+            ->orderBy('journal_entry_lines.id', 'asc')
+            ->select('journal_entry_lines.*')
+            ->get();
 
         $accounts = ChartOfAcc::orderBy('account_code')->get();
 
@@ -246,7 +275,8 @@ class ChartOfAccController extends Controller
             'opening_balance' => $openingBalance,
             'filters' => [
                 'start_date' => $startDate,
-                'end_date' => $endDate
+                'end_date' => $endDate,
+                'type' => $type,
             ]
         ]);
     }

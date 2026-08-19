@@ -20,22 +20,38 @@ class ProfitAndLossController extends Controller
     public function profitAndLoss(Request $request)
     {
         $displayBy = $request->get('display_by', 'total');
-        $start = $request->has('start_date') ? $request->get('start_date') : date('Y-01-01');
-        $end = $request->has('end_date') ? $request->get('end_date') : date('Y-m-d');
+        $type = $request->get('type');
+        $hasStart = $request->has('start_date') && $request->get('start_date') !== null && $request->get('start_date') !== '';
+        $hasEnd = $request->has('end_date') && $request->get('end_date') !== null && $request->get('end_date') !== '';
+
+        if ($type === 'all_dates' || (!$type && !$hasStart && !$hasEnd && $request->has('start_date') && $request->has('end_date'))) {
+            $start = '';
+            $end = '';
+            $type = 'all_dates';
+        } else {
+            $start = $request->has('start_date') ? $request->get('start_date') : date('Y-01-01');
+            $end = $request->has('end_date') ? $request->get('end_date') : date('Y-m-d');
+            if (!$type) {
+                $type = ($hasStart || $hasEnd) ? 'custom' : 'this_year';
+            }
+        }
 
         $sql = 'select journal_entry_lines.chart_of_acc_id, ';
         if ($displayBy === 'month') {
-            // SQLite uses strftime('%Y-%m', date) but typically MySQL uses DATE_FORMAT. 
-            // Assuming MySQL since Laravel default DB is often MySQL or PostgreSQL. 
-            // Better yet, just use DATE_FORMAT(journal_entries.date, "%Y-%m") as month
             $sql .= 'DATE_FORMAT(journal_entries.date, "%Y-%m") as month, ';
         }
         $sql .= 'sum(journal_entry_lines.debit) as total_debit, sum(journal_entry_lines.credit) as total_credit from journal_entry_lines join journal_entries on journal_entry_lines.journal_entry_id = journal_entries.id';
         
         $bindings = [];
-        if ($start && $end) {
+        if ($type !== 'all_dates' && $start && $end) {
             $sql .= ' where journal_entries.date between ? and ?';
             $bindings = [$start, $end];
+        } elseif ($type !== 'all_dates' && $start) {
+            $sql .= ' where journal_entries.date >= ?';
+            $bindings = [$start];
+        } elseif ($type !== 'all_dates' && $end) {
+            $sql .= ' where journal_entries.date <= ?';
+            $bindings = [$end];
         }
 
         $sql .= ' group by journal_entry_lines.chart_of_acc_id';
@@ -49,8 +65,10 @@ class ProfitAndLossController extends Controller
 
         $months = [];
         if ($displayBy === 'month') {
-            $period = new \DateTime($start);
-            $endDt = new \DateTime($end);
+            $calcStart = $start ?: (\App\Models\Accounting\JournalEntryLine::join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')->min('journal_entries.date') ?: date('Y-01-01'));
+            $calcEnd = $end ?: (\App\Models\Accounting\JournalEntryLine::join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')->max('journal_entries.date') ?: date('Y-m-d'));
+            $period = new \DateTime($calcStart);
+            $endDt = new \DateTime($calcEnd);
             while ($period <= $endDt) {
                 $months[] = $period->format('Y-m');
                 $period->modify('+1 month');
@@ -66,7 +84,7 @@ class ProfitAndLossController extends Controller
                 'end_date' => $end,
                 'display_by' => $displayBy,
                 'months' => $months,
-                'type' => $request->get('type'),
+                'type' => $type,
             ],
         ]);
     }

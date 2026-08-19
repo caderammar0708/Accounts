@@ -20,8 +20,21 @@ class BalanceSheetController extends Controller
     public function balanceSheet(Request $request)
     {
         $displayBy = $request->get('display_by', 'total');
-        $start = $request->has('start_date') ? $request->get('start_date') : date('Y-01-01');
-        $end = $request->has('end_date') ? $request->get('end_date') : date('Y-12-31');
+        $type = $request->get('type');
+        $hasStart = $request->has('start_date') && $request->get('start_date') !== null && $request->get('start_date') !== '';
+        $hasEnd = $request->has('end_date') && $request->get('end_date') !== null && $request->get('end_date') !== '';
+
+        if ($type === 'all_dates' || (!$type && !$hasStart && !$hasEnd && $request->has('start_date') && $request->has('end_date'))) {
+            $start = '';
+            $end = '';
+            $type = 'all_dates';
+        } else {
+            $start = $request->has('start_date') ? $request->get('start_date') : date('Y-01-01');
+            $end = $request->has('end_date') ? $request->get('end_date') : date('Y-12-31');
+            if (!$type) {
+                $type = ($hasStart || $hasEnd) ? 'custom' : 'this_year';
+            }
+        }
 
         $sql = 'select journal_entry_lines.chart_of_acc_id, ';
         if ($displayBy === 'month') {
@@ -30,9 +43,15 @@ class BalanceSheetController extends Controller
         $sql .= 'sum(journal_entry_lines.debit) as total_debit, sum(journal_entry_lines.credit) as total_credit from journal_entry_lines join journal_entries on journal_entry_lines.journal_entry_id = journal_entries.id';
         
         $bindings = [];
-        if ($start && $end) {
+        if ($type !== 'all_dates' && $start && $end) {
             $sql .= ' where journal_entries.date between ? and ?';
             $bindings = [$start, $end];
+        } elseif ($type !== 'all_dates' && $start) {
+            $sql .= ' where journal_entries.date >= ?';
+            $bindings = [$start];
+        } elseif ($type !== 'all_dates' && $end) {
+            $sql .= ' where journal_entries.date <= ?';
+            $bindings = [$end];
         }
 
         $sql .= ' group by journal_entry_lines.chart_of_acc_id';
@@ -46,8 +65,10 @@ class BalanceSheetController extends Controller
 
         $months = [];
         if ($displayBy === 'month') {
-            $period = new \DateTime($start);
-            $endDt = new \DateTime($end);
+            $calcStart = $start ?: (\App\Models\Accounting\JournalEntryLine::join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')->min('journal_entries.date') ?: date('Y-01-01'));
+            $calcEnd = $end ?: (\App\Models\Accounting\JournalEntryLine::join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')->max('journal_entries.date') ?: date('Y-12-31'));
+            $period = new \DateTime($calcStart);
+            $endDt = new \DateTime($calcEnd);
             while ($period <= $endDt) {
                 $months[] = $period->format('Y-m');
                 $period->modify('+1 month');
@@ -63,7 +84,7 @@ class BalanceSheetController extends Controller
                 'end_date' => $end,
                 'display_by' => $displayBy,
                 'months' => $months,
-                'type' => $request->get('type'),
+                'type' => $type,
             ],
         ]);
     }
