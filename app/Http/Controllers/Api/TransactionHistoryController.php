@@ -13,32 +13,37 @@ class TransactionHistoryController extends Controller
     {
         $limit = max(1, (int) $request->query('limit', 5));
 
-        return response()->json($this->buildRecords($transactionType, $limit));
+        return response()->json($this->buildRecords($transactionType, $limit, false));
     }
 
     public function page(string $transactionType)
     {
         return Inertia::render('Transaction/TransactionHistoryPage', [
             'transactionType' => $this->normalizeType($transactionType),
-            'records' => $this->buildRecords($transactionType, 100),
+            'records' => $this->buildRecords($transactionType, 100, true),
         ]);
     }
 
-    private function buildRecords(string $transactionType, int $limit = 5): array
+    private function buildRecords(string $transactionType, int $limit = 5, bool $isPage = false): array
     {
         $normalizedType = $this->normalizeType($transactionType);
 
-        return JournalEntry::query()
+        $query = JournalEntry::query()
             ->where('transaction_type', $normalizedType)
             ->when($normalizedType === 'credit_invoice', function ($query) {
                 $query->whereHasMorph('transactionable', [\App\Models\Accounting\CreditInvoice::class], function ($q) {
                     $q->whereNull('source_type');
                 });
             })
-            ->with(['payee', 'transactionable'])
-            ->orderByDesc('date')
-            ->orderByDesc('created_at')
-            ->limit($limit)
+            ->with(['payee', 'transactionable']);
+
+        if ($isPage) {
+            $query->orderByDesc('date')->orderByDesc('created_at');
+        } else {
+            $query->orderByDesc('updated_at');
+        }
+
+        return $query->limit($limit)
             ->get()
             ->map(function (JournalEntry $entry) use ($normalizedType) {
                 $memo = $entry->description

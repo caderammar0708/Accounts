@@ -4,6 +4,8 @@ import {
     Transition,
     TransitionChild,
 } from '@headlessui/react';
+import { useEffect } from 'react';
+import { router } from '@inertiajs/react';
 
 export default function Modal({
     children,
@@ -17,6 +19,27 @@ export default function Modal({
             onClose();
         }
     };
+
+    useEffect(() => {
+        const removeListener = router.on('start', () => {
+            if (show) {
+                close();
+            }
+        });
+
+        const handlePopState = () => {
+            if (show) {
+                close();
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            removeListener();
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, [show, closeable, onClose]);
+
 
     const maxWidthClass = {
         sm: 'sm:max-w-sm',

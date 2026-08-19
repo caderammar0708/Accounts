@@ -378,6 +378,7 @@ Route::middleware('auth')->group(function () {
 
 // SSO Routes
 use App\Http\Controllers\Auth\SsoController;
+Route::middleware('auth')->get('/sso/companies', [SsoController::class, 'getCompanies'])->name('sso.companies');
 Route::middleware('auth')->post('/sso/switch', [SsoController::class, 'switchCompany'])->name('sso.switch');
 Route::get('/sso/callback', [SsoController::class, 'callback'])->name('sso.callback');
 

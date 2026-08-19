@@ -184,7 +184,7 @@ export default function RecentTransactionHistory({ historyType = 'invoice', dirt
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            router.visit(route('history.index', { transactionType: normalizedType }));
+                                            router.visit(route('history.index', { transactionType: normalizedType }), { replace: true });
                                             setOpen(false);
                                         }}
                                         className="text-[10px] font-black uppercase tracking-[0.25em] text-primary-600 hover:text-primary-700"

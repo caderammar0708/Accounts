@@ -12,6 +12,7 @@ import InventoryItemSidePanel from '@/Components/InventoryItemSidePanel';
 import Sidebar from './Partials/Sidebar';
 import Modal from '@/Components/Modal';
 import axios from 'axios';
+import SwitchCompanyModal from '@/Components/SwitchCompanyModal';
 
 export default function AuthenticatedLayout({ header, children, hideSidebar = false }) {
     const page = usePage();
@@ -39,6 +40,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
     const [isSidebarVisible, setIsSidebarVisible] = useState(true);
     const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
     const [quickAddType, setQuickAddType] = useState(null);
+    const [isSwitchCompanyModalOpen, setIsSwitchCompanyModalOpen] = useState(false);
     const [locations, setLocations] = useState([]);
 
     useEffect(() => {
@@ -278,6 +280,13 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                                     <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5 truncate">{user.email}</p>
                                 </div>
                                 <Dropdown.Link href={route('profile.edit')} className="text-slate-600 hover:text-slate-900 hover:bg-slate-50 px-4 py-2.5 text-sm transition-colors">My Profile</Dropdown.Link>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSwitchCompanyModalOpen(true)}
+                                    className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+                                >
+                                    Switch Company
+                                </button>
                                 <Dropdown.Link href={route('logout')} method="post" as="button" className="w-full text-left text-red-600 hover:bg-red-50 px-4 py-2.5 text-sm transition-colors border-t border-slate-50">Log Out</Dropdown.Link>
                             </Dropdown.Content>
                         </Dropdown>
@@ -314,6 +323,11 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                 isOpen={quickAddType === 'item'}
                 onClose={() => setQuickAddType(null)}
                 onSuccess={() => setQuickAddType(null)}
+            />
+
+            <SwitchCompanyModal
+                isOpen={isSwitchCompanyModalOpen}
+                onClose={() => setIsSwitchCompanyModalOpen(false)}
             />
 
             <ToastNotification />
