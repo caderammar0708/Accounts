@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 
 export default function Process({ reconciliation, lines }) {
+    const { auth } = usePage().props;
+    const currencyPrefix = auth?.company?.home_currency_prefix || 'LKR';
     const [filter, setFilter] = useState('all'); // 'all', 'payments', 'deposits'
     
     const handleToggleClear = (line) => {
@@ -54,7 +56,7 @@ export default function Process({ reconciliation, lines }) {
                             disabled={!isBalanced}
                             className={`font-bold py-2 px-6 rounded transition-colors ${
                                 isBalanced 
-                                ? 'bg-[#00713D] hover:bg-[#005a30] text-white' 
+                                ? 'bg-[#00713D] hover:bg-[#005a30] text-white shadow-sm' 
                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             }`}
                         >
@@ -79,20 +81,20 @@ export default function Process({ reconciliation, lines }) {
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center divide-x divide-gray-100">
                             <div>
                                 <p className="text-sm text-gray-500">Opening Balance</p>
-                                <p className="text-lg font-bold text-gray-800">Rs {formatCurrency(reconciliation.opening_balance)}</p>
+                                <p className="text-lg font-bold text-gray-800 font-mono">{currencyPrefix} {formatCurrency(reconciliation.opening_balance)}</p>
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Statement Ending</p>
-                                <p className="text-lg font-bold text-gray-800">Rs {formatCurrency(reconciliation.ending_balance)}</p>
+                                <p className="text-lg font-bold text-gray-800 font-mono">{currencyPrefix} {formatCurrency(reconciliation.ending_balance)}</p>
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Cleared Balance</p>
-                                <p className="text-lg font-bold text-indigo-600">Rs {formatCurrency(reconciliation.cleared_balance)}</p>
+                                <p className="text-lg font-bold text-[#00713D] font-mono">{currencyPrefix} {formatCurrency(reconciliation.cleared_balance)}</p>
                             </div>
                             <div className="md:col-span-2 bg-gray-50 rounded-lg p-2 flex flex-col justify-center border border-gray-100">
                                 <p className="text-sm text-gray-500 font-medium">Difference</p>
-                                <p className={`text-2xl font-black ${isBalanced ? 'text-green-600' : 'text-red-600'}`}>
-                                    Rs {formatCurrency(difference)}
+                                <p className={`text-2xl font-black font-mono ${isBalanced ? 'text-green-600' : 'text-red-600'}`}>
+                                    {currencyPrefix} {formatCurrency(difference)}
                                 </p>
                             </div>
                         </div>
@@ -100,11 +102,11 @@ export default function Process({ reconciliation, lines }) {
                         <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-100 text-center">
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Total Payments</p>
-                                <p className="text-lg font-bold text-red-600">Rs {formatCurrency(totalPayments)}</p>
+                                <p className="text-lg font-bold text-red-600 font-mono">{currencyPrefix} {formatCurrency(totalPayments)}</p>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Total Deposits</p>
-                                <p className="text-lg font-bold text-green-600">Rs {formatCurrency(totalDeposits)}</p>
+                                <p className="text-lg font-bold text-green-600 font-mono">{currencyPrefix} {formatCurrency(totalDeposits)}</p>
                             </div>
                         </div>
                     </div>
