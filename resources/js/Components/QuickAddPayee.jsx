@@ -2,15 +2,25 @@ import { useState, useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
 import SlideOver from './SlideOver';
 import CommonInput from './CommonInput';
+import SearchableSelect from './SearchableSelect';
 import CommonButton from './CommonButton';
+import axios from 'axios';
 
 export default function QuickAddPayee({ isOpen, onClose, onSuccess, initialType = 'customer', hideEmployeeTab = false }) {
     const [type, setType] = useState(initialType);
+    const [designationOptions, setDesignationOptions] = useState([]);
+
+    const fetchDesignations = () => {
+        axios.get(route('api.designations'))
+            .then(res => setDesignationOptions(res.data || []))
+            .catch(err => console.error("Error fetching designations", err));
+    };
 
     useEffect(() => {
         if (isOpen) {
             setType(initialType);
             reset();
+            fetchDesignations();
         }
     }, [isOpen, initialType]);
 
@@ -148,10 +158,13 @@ export default function QuickAddPayee({ isOpen, onClose, onSuccess, initialType 
                 {type === 'employee' && (
                     <>
                         <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <CommonInput
+                            <SearchableSelect
                                 label="Designation"
+                                placeholder="Select or type designation..."
                                 value={data.designation}
-                                onChange={(e) => setData("designation", e.target.value)}
+                                onChange={(val) => setData("designation", val)}
+                                options={designationOptions}
+                                allowCustom={true}
                                 error={errors.designation}
                             />
                             <CommonInput

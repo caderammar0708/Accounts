@@ -236,7 +236,7 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
                 if (actionType === 'close') {
                     if (typeof onClose === 'function') {
                         onClose();
-                    } 
+                    }
                 }
 
                 if (actionType === 'new') {
@@ -541,4 +541,5 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
             />
         </TransactionLayout>
     );
+}
 }

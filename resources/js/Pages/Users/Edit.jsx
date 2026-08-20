@@ -2,12 +2,18 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useForm, Head, Link } from '@inertiajs/react';
 import CommonInput from '@/Components/CommonInput';
 import CommonButton from '@/Components/CommonButton';
+import SearchableSelect from '@/Components/SearchableSelect';
 
-export default function Edit({ userToEdit }) {
+export default function Edit({ userToEdit, roles = [] }) {
+    const roleOptions = roles.map(r => ({
+        value: r.name,
+        label: r.name,
+    }));
+
     const { data, setData, put, processing, errors } = useForm({
         name: userToEdit?.name || '',
         email: userToEdit?.email || '',
-        role: userToEdit?.role || 'admin',
+        role: userToEdit?.role || roles[0]?.name || 'Admin',
         phone: userToEdit?.phone || '',
     });
 
@@ -56,6 +62,19 @@ export default function Edit({ userToEdit }) {
                                 </div>
 
                                 <div className="col-span-2">
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                        Assigned Role <span className="text-red-500">*</span>
+                                    </label>
+                                    <SearchableSelect
+                                        options={roleOptions}
+                                        value={data.role}
+                                        onChange={(val) => setData('role', val)}
+                                        placeholder="Select user role..."
+                                        error={errors.role}
+                                    />
+                                </div>
+
+                                <div className="col-span-2">
                                     <CommonInput
                                         label="Phone Number (Optional)"
                                         placeholder="+94 7X XXX XXXX"
@@ -67,7 +86,7 @@ export default function Edit({ userToEdit }) {
                             </div>
 
                             <div className="text-sm text-slate-500 leading-relaxed">
-                                Update the user's details and access level.
+                                Update the user's personal details and assigned role.
                             </div>
                             <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
                                 <Link href={route('users.index')}>
@@ -81,7 +100,7 @@ export default function Edit({ userToEdit }) {
                                     className="px-10 bg-slate-900 hover:bg-slate-800"
                                     disabled={processing}
                                 >
-                                    {processing ? 'Processing...' : 'Create User Account'}
+                                    {processing ? 'Saving...' : 'Save Changes'}
                                 </CommonButton>
                             </div>
                         </form>

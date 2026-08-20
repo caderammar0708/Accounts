@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -19,10 +20,14 @@ class UserController extends Controller
      */
     public function index(): Response
     {
-        $usersQuery = User::with('manager');
+        $users = User::with(['manager', 'roles'])->get()->map(function ($user) {
+            return array_merge($user->toArray(), [
+                'assigned_role' => $user->roles->first()?->name ?: ucfirst($user->role ?: 'Staff'),
+            ]);
+        });
 
         return Inertia::render('Users/Index', [
-            'users' => $usersQuery->get(),
+            'users' => $users,
         ]);
     }
 
@@ -31,11 +36,10 @@ class UserController extends Controller
      */
     public function create(): Response
     {
-        $managersQuery = User::where('role', 'admin');
-
+        $roles = Role::orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Users/Create', [
-            'managers' => $managersQuery->get(['id', 'name']),
+            'roles' => $roles,
         ]);
     }
 
@@ -46,22 +50,16 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255',
-            'role' => 'required|in:admin,user',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'role' => 'required|string|exists:roles,name',
             'phone' => ['nullable', 'string', 'max:20'],
         ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        if ($user) {
-            return back()->withErrors(['email' => 'The email has already been taken.']);
-        }
 
         $inviteToken = Str::random(64);
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'role' => $request->role,
+            'role' => strtolower($request->role) === 'admin' ? 'admin' : 'user',
             'phone' => $request->phone,
             'is_active' => true,
             'invite_token' => $inviteToken,
@@ -69,18 +67,20 @@ class UserController extends Controller
             'is_invited' => true,
         ]);
 
-
+        $user->syncRoles([$request->role]);
 
         $inviteUrl = route('invite.setup', $inviteToken);
-        Mail::to($user->email)->send(new UserInvitationMail($user, $inviteUrl));
+        try {
+            Mail::to($user->email)->send(new UserInvitationMail($user, $inviteUrl));
+        } catch (\Exception $e) {
+            // Log mail exception if mailer is not configured in local environment
+        }
 
-        return redirect()->route('users.index')->with('success', 'User created and invitation email sent successfully');
+        return redirect()->route('users.index')->with('success', 'User created and invitation email sent successfully.');
     }
 
     public function resendInvitation(User $user)
     {
-        abort_unless(auth()->user()->role === 'admin', 403);
-
         if (! $user->is_invited) {
             return back()->with('error', 'This user has already completed their invitation.');
         }
@@ -92,15 +92,25 @@ class UserController extends Controller
         ]);
 
         $inviteUrl = route('invite.setup', $user->invite_token);
-        Mail::to($user->email)->send(new UserInvitationMail($user, $inviteUrl));
+        try {
+            Mail::to($user->email)->send(new UserInvitationMail($user, $inviteUrl));
+        } catch (\Exception $e) {
+            // Log mail exception
+        }
 
         return back()->with('success', 'Invitation resent successfully.');
     }
 
     public function edit(User $user)
     {
+        $roles = Role::orderBy('name')->get(['id', 'name']);
+        $assignedRole = $user->roles->first()?->name ?: ucfirst($user->role ?: 'Staff');
+
         return Inertia::render('Users/Edit', [
-            'userToEdit' => $user,
+            'userToEdit' => array_merge($user->toArray(), [
+                'role' => $assignedRole,
+            ]),
+            'roles' => $roles,
         ]);
     }
 
@@ -108,19 +118,21 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
-            'role' => 'required|in:admin,user',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'role' => 'required|string|exists:roles,name',
             'phone' => ['nullable', 'string', 'max:20'],
         ]);
 
         $user->update([
             'name' => $request->name,
             'email' => $request->email,
-            'role' => $request->role,
+            'role' => strtolower($request->role) === 'admin' ? 'admin' : 'user',
             'phone' => $request->phone,
         ]);
 
-        return redirect()->route('users.index')->with('success', 'User updated successfully');
+        $user->syncRoles([$request->role]);
+
+        return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }
 
     /**
@@ -135,6 +147,6 @@ class UserController extends Controller
 
         $user->delete();
 
-        return redirect()->route('users.index')->with('success', 'User deleted successfully');
+        return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }
 }

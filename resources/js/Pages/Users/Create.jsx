@@ -2,12 +2,20 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useForm, Head, Link } from '@inertiajs/react';
 import CommonInput from '@/Components/CommonInput';
 import CommonButton from '@/Components/CommonButton';
+import SearchableSelect from '@/Components/SearchableSelect';
 
-export default function Create({ managers }) {
+export default function Create({ roles = [] }) {
+    const roleOptions = roles.map(r => ({
+        value: r.name,
+        label: r.name,
+    }));
+
+    const defaultRole = roles.find(r => r.name === 'Staff')?.name || roles[0]?.name || 'Admin';
+
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
-        role: 'admin',
+        role: defaultRole,
         phone: '',
     });
 
@@ -56,6 +64,19 @@ export default function Create({ managers }) {
                                 </div>
 
                                 <div className="col-span-2">
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                        Assigned Role <span className="text-red-500">*</span>
+                                    </label>
+                                    <SearchableSelect
+                                        options={roleOptions}
+                                        value={data.role}
+                                        onChange={(val) => setData('role', val)}
+                                        placeholder="Select user role..."
+                                        error={errors.role}
+                                    />
+                                </div>
+
+                                <div className="col-span-2">
                                     <CommonInput
                                         label="Phone Number (Optional)"
                                         placeholder="+94 7X XXX XXXX"
@@ -67,7 +88,7 @@ export default function Create({ managers }) {
                             </div>
 
                             <div className="text-sm text-slate-500 leading-relaxed">
-                                When you create this account, the user will receive an invitation email with a secure password setup link.
+                                When you create this account, the user will receive an invitation email with a secure password setup link and permissions matching their assigned role.
                             </div>
                             <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
                                 <Link href={route('users.index')}>

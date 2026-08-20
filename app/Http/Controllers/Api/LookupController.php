@@ -59,6 +59,35 @@ class LookupController extends Controller
     }
 
     /**
+     * Fetch distinct designations used across employees
+     */
+    public function designations(Request $request)
+    {
+        $search = $request->query('search');
+
+        $query = Employee::query()
+            ->whereNotNull('designation')
+            ->where('designation', '!=', '')
+            ->select('designation')
+            ->distinct();
+
+        if ($search) {
+            $query->where('designation', 'like', "%{$search}%");
+        }
+
+        $designations = $query->orderBy('designation')
+            ->pluck('designation')
+            ->map(function ($d) {
+                return [
+                    'value' => $d,
+                    'label' => $d,
+                ];
+            });
+
+        return response()->json($designations);
+    }
+
+    /**
      * Endpoint to fetch accounts from Chart of Accounts
      */
     public function accounts(Request $request)

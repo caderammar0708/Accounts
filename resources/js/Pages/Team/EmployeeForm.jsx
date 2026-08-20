@@ -1,9 +1,24 @@
 import { useForm, Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import CommonInput from "@/Components/CommonInput";
+import SearchableSelect from "@/Components/SearchableSelect";
 import CommonButton from "@/Components/CommonButton";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 export default function EmployeeForm() {
+    const [designationOptions, setDesignationOptions] = useState([]);
+
+    const fetchDesignations = () => {
+        axios.get(route('api.designations'))
+            .then(res => setDesignationOptions(res.data || []))
+            .catch(err => console.error("Error fetching designations", err));
+    };
+
+    useEffect(() => {
+        fetchDesignations();
+    }, []);
+
     const { data, setData, post, processing, errors } = useForm({
         name: "",
         email: "",
@@ -48,13 +63,15 @@ export default function EmployeeForm() {
                             error={errors.email}
                             placeholder="john@example.com"
                         />
-                        <CommonInput 
+                        <SearchableSelect 
                             label="Designation" 
+                            placeholder="Select or type a designation..."
                             value={data.designation} 
-                            onChange={e => setData('designation', e.target.value)} 
+                            onChange={(val) => setData('designation', val)} 
+                            options={designationOptions}
+                            allowCustom={true}
                             required
                             error={errors.designation}
-                            placeholder="e.g. Software Engineer"
                         />
                         <div className="grid grid-cols-2 gap-6">
                             <CommonInput

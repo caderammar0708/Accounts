@@ -205,7 +205,7 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
         setPendingAction(action);
 
         const currentId = savedEntryId || invoiceReturn?.id;
-        
+
         transform((data) => ({
             ...data,
             action: action,
@@ -244,7 +244,7 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
                 if (action === 'close') {
                     if (typeof onClose === 'function') {
                         onClose();
-                    } 
+                    }
                 }
 
                 if (action === 'new') {

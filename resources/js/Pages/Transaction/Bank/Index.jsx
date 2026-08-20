@@ -7,7 +7,7 @@ import CommonButton from '@/Components/CommonButton';
 export default function Index({ uncategorized, moved, closed, accounts, bankAccounts }) {
     const [activeTab, setActiveTab] = useState('uncategorized');
     const [filter, setFilter] = useState('all'); // 'all', 'payments', 'deposits'
-    
+
     // File upload
     const { data: uploadData, setData: setUploadData, post: postUpload, processing: uploading, errors: uploadErrors } = useForm({
         file: null,
@@ -42,7 +42,7 @@ export default function Index({ uncategorized, moved, closed, accounts, bankAcco
     const handleMove = (line) => {
         const accountId = selectedAccounts[line.id];
         const bankAccountId = line.import?.bank_account_id || selectedBankAccounts[line.id];
-        
+
         if (!accountId || !bankAccountId) {
             alert('Please select a Category Account before moving (ensure the import has a bank account).');
             return;
@@ -85,66 +85,65 @@ export default function Index({ uncategorized, moved, closed, accounts, bankAcco
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex justify-between items-center w-full">
-                    <h2 className="font-semibold text-xl text-gray-800 leading-tight">Bank Statements</h2>
-                    <CommonButton
-                        href={route('import.index')}
-                        variant="primary"
-                        size="sm"
-                        className="bg-[#00713D] hover:bg-[#005a30] text-white flex items-center gap-1.5"
-                    >
-                        <span className="material-symbols-outlined text-[18px]">upload_file</span>
-                        Import Bank Statement
-                    </CommonButton>
-                </div>
+                <h2 className="font-bold text-lg text-slate-800 tracking-tight">Bank Statements</h2>
             }
         >
             <Head title="Bank Statements" />
 
             <div className="py-8">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    <div className="flex justify-end mb-4">
+                        <CommonButton
+                            href={route('import.index')}
+                            variant="primary"
+                            size="sm"
+                            className="bg-[#00713D] hover:bg-[#005a30] text-white flex items-center gap-1.5 shadow-sm"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                            Import Bank Statement
+                        </CommonButton>
+                    </div>
 
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        
+
                         <div className="border-b border-gray-200">
                             <nav className="-mb-px flex" aria-label="Tabs">
                                 {['uncategorized', 'moved', 'closed'].map((tab) => (
-                                        <button
-                                            key={tab}
-                                            onClick={() => { setActiveTab(tab); setFilter('all'); }}
-                                            className={`${
-                                                activeTab === tab
-                                                    ? 'border-[#00713D] text-[#00713D]'
-                                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    <button
+                                        key={tab}
+                                        onClick={() => { setActiveTab(tab); setFilter('all'); }}
+                                        className={`${activeTab === tab
+                                                ? 'border-[#00713D] text-[#00713D]'
+                                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                             } w-1/3 py-4 px-1 text-center border-b-2 font-bold text-sm capitalize transition-colors`}
-                                        >
-                                            {tab} ({
-                                                tab === 'uncategorized' ? uncategorized.length :
+                                    >
+                                        {tab} ({
+                                            tab === 'uncategorized' ? uncategorized.length :
                                                 tab === 'moved' ? moved.length :
-                                                closed.length
-                                            })
+                                                    closed.length
+                                        })
                                     </button>
                                 ))}
                             </nav>
                         </div>
 
                         <div className="p-6 bg-white border-b border-gray-200">
-                            
+
                             <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                                 <div className="flex bg-white rounded-md shadow-sm border border-gray-200 p-1">
-                                    <button 
+                                    <button
                                         onClick={() => setFilter('all')}
                                         className={`px-4 py-1.5 text-sm rounded-md font-medium transition-colors ${filter === 'all' ? 'bg-[#00713D] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                                     >
                                         All
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setFilter('payments')}
                                         className={`px-4 py-1.5 text-sm rounded-md font-medium transition-colors ${filter === 'payments' ? 'bg-red-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                                     >
                                         Payments
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setFilter('deposits')}
                                         className={`px-4 py-1.5 text-sm rounded-md font-medium transition-colors ${filter === 'deposits' ? 'bg-green-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                                     >
@@ -162,7 +161,7 @@ export default function Index({ uncategorized, moved, closed, accounts, bankAcco
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {/* UNCATEGORIZED TAB */}
                             {activeTab === 'uncategorized' && (
                                 <table className="min-w-full divide-y divide-gray-200">
@@ -188,11 +187,11 @@ export default function Index({ uncategorized, moved, closed, accounts, bankAcco
                                                 <td className={`px-6 py-2 whitespace-nowrap text-xs font-bold ${line.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                     {line.amount > 0 ? '+' : ''}{line.amount}
                                                 </td>
-                                                <td className="px-6 py-2 whitespace-nowrap" style={{minWidth: '220px'}}>
+                                                <td className="px-6 py-2 whitespace-nowrap" style={{ minWidth: '220px' }}>
                                                     <SearchableSelect
                                                         options={accountOptions}
                                                         value={selectedAccounts[line.id] || ""}
-                                                        onChange={(val) => setSelectedAccounts({...selectedAccounts, [line.id]: val})}
+                                                        onChange={(val) => setSelectedAccounts({ ...selectedAccounts, [line.id]: val })}
                                                         placeholder="Select Category..."
                                                     />
                                                 </td>

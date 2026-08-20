@@ -9,10 +9,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Models\Tenant;
 use App\Models\Company;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, \Illuminate\Database\Eloquent\Concerns\HasUuids;
+    use HasFactory, Notifiable, \Illuminate\Database\Eloquent\Concerns\HasUuids, HasRoles;
 
     public function employee()
     {

@@ -23,7 +23,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
     const defaultCurrencyCode = homeCurrencyObj?.code || homeCurrencyStr || company?.home_currency_prefix || '';
 
     const [currencies, setCurrencies] = useState([]);
-    
+
     useEffect(() => {
         if (auth?.currency?.multi_enabled) {
             axios.get(route('api.currencies'))
@@ -686,7 +686,7 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                         <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Total {isForeignCurrency ? `(${homeCurrencyCode})` : ''}</span>
                         <span className="text-lg font-black text-slate-900 flex items-center gap-1">
                             <span className="text-xs font-bold text-slate-400">{homeCurrencyPrefix}</span>
-                            {isForeignCurrency 
+                            {isForeignCurrency
                                 ? parseFloat(String(totalAmount * (data.exchange_rate || 1)).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })
                                 : parseFloat(String(totalAmount || 0).replace(/,/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 })
                             }

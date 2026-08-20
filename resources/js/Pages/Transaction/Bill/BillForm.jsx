@@ -380,7 +380,7 @@ export default function BillForm({
                 if (action === 'close') {
                     if (typeof onClose === 'function') {
                         onClose();
-                    } 
+                    }
                 }
 
                 if (action === 'new') {
@@ -744,4 +744,5 @@ export default function BillForm({
             />
         </TransactionLayout>
     );
+}
 }

@@ -13,6 +13,7 @@ import Sidebar from './Partials/Sidebar';
 import Modal from '@/Components/Modal';
 import axios from 'axios';
 import SwitchCompanyModal from '@/Components/SwitchCompanyModal';
+import { can } from '@/Utils/permissions';
 
 export default function AuthenticatedLayout({ header, children, hideSidebar = false }) {
     const page = usePage();
@@ -55,29 +56,29 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
     const isServiceStation = page.props.auth.business_type === 'Service Station';
 
     const navigation = [
-        { name: 'Dashboard', href: route('dashboard'), icon: 'dashboard' },
-        ...(page.props.auth.pos_layout_enabled ? [{ name: 'POS Billing', href: route('pos.index'), icon: 'pos', isPos: true }] : []),
+        { name: 'Dashboard', href: route('dashboard'), icon: 'dashboard', permission: 'dashboard.view' },
+        ...(page.props.auth.pos_layout_enabled ? [{ name: 'POS Billing', href: route('pos.index'), icon: 'pos', isPos: true, permission: 'sales-invoices.create' }] : []),
         {
             name: 'Contacts',
             href: route('customers.index'),
             icon: 'users',
+            permission: ['customers.view', 'suppliers.view', 'employees.view'],
             activePattern: ['customers.*', 'suppliers.*', 'employees.*'],
             activeRoutes: ['customers.*', 'suppliers.*', 'employees.*']
         },
-        ...(isServiceStation ? [{ name: 'Vehicles', href: route('vehicles.index'), icon: 'vehicle' }] : []),
-        ...(isServiceStation ? [{ name: 'Jobs', href: route('job-cards.index'), icon: 'job', isJob: true }] : []),
-        ...(isServiceStation ? [{ name: 'Warranties', href: route('warranties.index'), icon: 'warranty', isWarranty: true }] : []),
-        ...(isFuelStation ? [{ name: 'Shifts', href: route('shifts.index'), icon: 'team' }] : []),
-        { name: 'Products & Services', href: route('items.index'), icon: 'inventory' },
+        ...(isServiceStation ? [{ name: 'Vehicles', href: route('vehicles.index'), icon: 'vehicle', permission: 'warranties.view' }] : []),
+        ...(isServiceStation ? [{ name: 'Jobs', href: route('job-cards.index'), icon: 'job', isJob: true, permission: 'warranties.view' }] : []),
+        ...(isServiceStation ? [{ name: 'Warranties', href: route('warranties.index'), icon: 'warranty', isWarranty: true, permission: 'warranties.view' }] : []),
+        ...(isFuelStation ? [{ name: 'Shifts', href: route('shifts.index'), icon: 'team', permission: 'shifts.view' }] : []),
+        { name: 'Products & Services', href: route('items.index'), icon: 'inventory', permission: 'items.view' },
         ...(isFuelStation ? [
-            { name: 'Pump Setup', href: route('tanks.index'), icon: 'pump', activeRoutes: ['tanks.*', 'pumps.*'] },
+            { name: 'Pump Setup', href: route('tanks.index'), icon: 'pump', permission: 'shifts.view', activeRoutes: ['tanks.*', 'pumps.*'] },
         ] : []),
-        { name: 'Chart of Accounts', href: route('chart-of-account.index'), icon: 'accounting' },
-        { name: 'Bank', href: route('bank.index'), icon: 'bank' },
-        { name: 'Bank Reconciliation', href: route('bank-reconciliation.index'), icon: 'reconciliation' },
-        { name: 'Reports', href: route('reports.index'), adminOnly: true, icon: 'reports' },
-        ...(page.props.auth.location ? [{ name: 'Locations', href: route('locations.index'), adminOnly: true, icon: 'locations' }] : []),
-        { name: 'Import Tools', href: route('import.index'), icon: 'import_tools', activeRoutes: ['import.*'] },
+        { name: 'Chart of Accounts', href: route('chart-of-account.index'), icon: 'accounting', permission: 'chart-of-accounts.view' },
+        { name: 'Bank Reconciliation', href: route('bank-reconciliation.index'), icon: 'reconciliation', permission: 'bank-reconciliation.view' },
+        { name: 'Reports', href: route('reports.index'), icon: 'reports', permission: 'reports.view' },
+        ...(page.props.auth.location ? [{ name: 'Locations', href: route('locations.index'), icon: 'locations', permission: 'locations.view' }] : []),
+        { name: 'Import Tools', href: route('import.index'), icon: 'import_tools', permission: 'import.view', activeRoutes: ['import.*'] },
     ];
 
     return (
@@ -203,7 +204,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                         </button>
 
                         {/* Settings */}
-                        {user.role === 'admin' && (
+                        {(user?.is_admin || can(user, ['settings.company', 'settings.print', 'import.view', 'users.view', 'roles.view'])) && (
                             <Dropdown>
                                 <Dropdown.Trigger>
                                     <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors relative">
@@ -211,10 +212,21 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                                     </button>
                                 </Dropdown.Trigger>
                                 <Dropdown.Content align="right" width="48" contentClasses="py-1 bg-white ring-1 ring-black ring-opacity-5 rounded-xl shadow-xl overflow-hidden mt-2">
-                                    <Dropdown.Link href={route('settings.company')}>Company Settings</Dropdown.Link>
-                                    <Dropdown.Link href={route('settings.print')}>Print Settings</Dropdown.Link>
-                                    <Dropdown.Link href={route('import.index')}>Import Tools</Dropdown.Link>
-                                    <Dropdown.Link href={route('users.index')}>User Management</Dropdown.Link>
+                                    {(user?.is_admin || can(user, 'settings.company')) && (
+                                        <Dropdown.Link href={route('settings.company')}>Company Settings</Dropdown.Link>
+                                    )}
+                                    {(user?.is_admin || can(user, 'settings.print')) && (
+                                        <Dropdown.Link href={route('settings.print')}>Print Settings</Dropdown.Link>
+                                    )}
+                                    {(user?.is_admin || can(user, 'import.view')) && (
+                                        <Dropdown.Link href={route('import.index')}>Import Tools</Dropdown.Link>
+                                    )}
+                                    {(user?.is_admin || can(user, 'users.view')) && (
+                                        <Dropdown.Link href={route('users.index')}>User Management</Dropdown.Link>
+                                    )}
+                                    {(user?.is_admin || can(user, 'roles.view')) && (
+                                        <Dropdown.Link href={route('roles.index')}>Roles & Permissions</Dropdown.Link>
+                                    )}
                                 </Dropdown.Content>
                             </Dropdown>
                         )}

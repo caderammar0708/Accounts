@@ -63,20 +63,25 @@ class HandleInertiaRequests extends Middleware
         return parent::version($request);
     }
 
-    /**
-     * Define the props that are shared by default.
-     *
-     * @return array<string, mixed>
-     */
     public function share(Request $request): array
     {
         $companySetting = class_exists(\App\Models\CompanySetting::class) ? \App\Models\CompanySetting::current() : null;
         $userCompany = $request->user()?->currentCompany();
 
+        $user = $request->user();
+        $userData = null;
+        if ($user) {
+            $userData = array_merge($user->toArray(), [
+                'roles' => $user->getRoleNames()->toArray(),
+                'permissions' => $user->getAllPermissions()->pluck('name')->toArray(),
+                'is_admin' => $user->hasRole('Admin') || strtolower($user->role ?? '') === 'admin',
+            ]);
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user'    => $request->user(),
+                'user'    => $userData,
                 'company' => $userCompany,
                 'financial_year_start_month' => $companySetting?->fin_year_start ?? 'January',
                 'business_type'           => $companySetting?->business_type ?? 'Normal',

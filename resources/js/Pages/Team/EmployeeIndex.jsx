@@ -1,16 +1,29 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import CommonButton from '@/Components/CommonButton';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SlideOver from '@/Components/SlideOver';
 import CommonInput from '@/Components/CommonInput';
+import SearchableSelect from '@/Components/SearchableSelect';
 import ContactsTabs from '@/Components/ContactsTabs';
+import axios from 'axios';
 
 export default function EmployeeIndex({ employees = [] }) {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [designationOptions, setDesignationOptions] = useState([]);
+
+    const fetchDesignations = () => {
+        axios.get(route('api.designations'))
+            .then(res => setDesignationOptions(res.data || []))
+            .catch(err => console.error("Error fetching designations", err));
+    };
+
+    useEffect(() => {
+        fetchDesignations();
+    }, []);
 
     const { data, setData, post, patch, delete: destroy, processing, errors, reset, clearErrors } = useForm({
         name: '',
@@ -28,6 +41,7 @@ export default function EmployeeIndex({ employees = [] }) {
         setSelectedId(null);
         reset();
         clearErrors();
+        fetchDesignations();
         setIsCreateOpen(true);
     };
 
@@ -60,6 +74,7 @@ export default function EmployeeIndex({ employees = [] }) {
                 onSuccess: () => {
                     setIsCreateOpen(false);
                     reset();
+                    fetchDesignations();
                 },
             });
         } else {
@@ -67,6 +82,7 @@ export default function EmployeeIndex({ employees = [] }) {
                 onSuccess: () => {
                     setIsCreateOpen(false);
                     reset();
+                    fetchDesignations();
                 },
             });
         }
@@ -211,10 +227,13 @@ export default function EmployeeIndex({ employees = [] }) {
                         required
                         error={errors.email}
                     />
-                    <CommonInput
+                    <SearchableSelect
                         label="Designation"
+                        placeholder="Select or type designation..."
                         value={data.designation}
-                        onChange={e => setData('designation', e.target.value)}
+                        onChange={(val) => setData('designation', val)}
+                        options={designationOptions}
+                        allowCustom={true}
                         required
                         error={errors.designation}
                     />

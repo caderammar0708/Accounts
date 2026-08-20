@@ -52,9 +52,9 @@ const SearchableSelect = forwardRef(function SearchableSelect({
         : options.filter(opt => (opt.label || "").toLowerCase().includes(search.toLowerCase()));
 
     if (allowCustom && search.trim() !== "") {
-        const exactMatch = filteredOptions.some(opt => String(opt.label).toLowerCase() === search.trim().toLowerCase());
+        const exactMatch = filteredOptions.some(opt => String(opt.value || opt.label).toLowerCase() === search.trim().toLowerCase());
         if (!exactMatch) {
-            filteredOptions = [{ value: search.trim(), label: search.trim() }, ...filteredOptions];
+            filteredOptions = [{ value: search.trim(), label: search.trim(), isNew: true }, ...filteredOptions];
         }
     }
 
@@ -69,7 +69,9 @@ const SearchableSelect = forwardRef(function SearchableSelect({
             const selected = options.find(opt => String(opt.value) === String(value));
             if (selected) {
                 setSelectedLabel(selected.label);
-            } else if (!value) {
+            } else if (value) {
+                setSelectedLabel(String(value));
+            } else {
                 setSelectedLabel("");
             }
         }
@@ -121,7 +123,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                 const rect = containerRef.current.getBoundingClientRect();
                 const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
                 const dropdownHeight = dropdownRef.current?.offsetHeight || 250;
-                
+
                 const spaceBelow = viewportHeight - rect.bottom;
                 const spaceAbove = rect.top;
 
@@ -317,7 +319,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                 }}
                 className={`${getBaseClasses()} ${className}`}
             >
-                <div 
+                <div
                     className="flex-1 px-2 truncate flex items-center h-full select-text cursor-text"
                     onClick={(e) => {
                         const sel = window.getSelection();
@@ -326,7 +328,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                         }
                     }}
                 >
-                    <span 
+                    <span
                         className={`select-text cursor-text ${selectedOption ? "text-slate-800" : "text-slate-400"}`}
                         onMouseDown={(e) => {
                             e.stopPropagation();
@@ -336,7 +338,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                     </span>
                 </div>
                 {!hideChevron && (
-                    <div 
+                    <div
                         onClick={(e) => {
                             e.stopPropagation();
                             setIsOpen(!isOpen);
@@ -385,8 +387,8 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                             onClick={(e) => e.stopPropagation()}
                         />
                     </div>
-                    <div 
-                        style={{ maxHeight: `${dropdownPos.maxListHeight || 192}px` }} 
+                    <div
+                        style={{ maxHeight: `${dropdownPos.maxListHeight || 192}px` }}
                         className="overflow-y-auto custom-scrollbar"
                     >
                         {onAddNew && (
@@ -441,6 +443,11 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                                             <span className={`inline-flex h-3.5 w-3.5 rounded-sm border ${selectedValues.some(val => String(val) === String(opt.value)) ? 'bg-primary-600 border-primary-600' : 'border-slate-300'}`} />
                                         )}
                                         <span>{opt.label}</span>
+                                        {opt.isNew && (
+                                            <span className="text-[10px] text-[#00713D] bg-green-50 border border-green-200 px-1.5 py-0.5 rounded font-bold ml-1">
+                                                + Add "{opt.value}"
+                                            </span>
+                                        )}
                                     </div>
                                     {opt.type && (
                                         <span className="text-2xs text-slate-400 italic font-medium ml-4">

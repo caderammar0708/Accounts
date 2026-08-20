@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage, router } from '@inertiajs/react';
 import Modal from '@/Components/Modal';
 import SearchableSelect from '@/Components/SearchableSelect';
 import CommonButton from '@/Components/CommonButton';
@@ -132,34 +132,28 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
         {
             key: 'bank',
             title: 'Bank Data',
+            description: 'Connect bank accounts, import transactions, review feeds and match bank statements.',
             badgeCount: stats.bank_transactions,
-            description: 'Import bank statement CSV transactions to categorize payments and deposits.',
             color: 'bg-[#00713D]',
             icon: (
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
                 </svg>
             ),
-            templateUrl: route('import.template', 'bank'),
-            uploadRoute: route('import.bank'),
-            isBank: true,
-            columns: [
-                { name: 'Date', required: true, desc: 'Transaction date (e.g. 29/01/2026 or 2026-01-29)' },
-                { name: 'Description', required: true, desc: 'Statement narrative / memo / payee name' },
-                { name: 'Reference No', required: false, desc: 'Check / transaction reference number' },
-                { name: 'Debit', required: false, desc: 'Money out / withdrawal (fill only Debit or Credit)' },
-                { name: 'Credit', required: false, desc: 'Money in / deposit (fill only Debit or Credit)' },
-                { name: 'Balance', required: false, desc: 'Account statement balance after transaction' },
-            ]
+            directUrl: route('bank.index'),
+            isDirect: true,
         },
     ];
 
     const { data, setData, post, processing, reset, errors: formErrors } = useForm({
         file: null,
-        bank_account_id: '',
     });
 
     const handleCardClick = (card) => {
+        if (card.isDirect && card.directUrl) {
+            router.visit(card.directUrl);
+            return;
+        }
         setSelectedCard(card);
         reset();
     };
@@ -187,11 +181,6 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
         e.preventDefault();
         if (!data.file) {
             alert('Please choose a file to upload.');
-            return;
-        }
-
-        if (selectedCard?.isBank && !data.bank_account_id) {
-            alert('Please select a Bank Account before importing.');
             return;
         }
 
@@ -355,23 +344,6 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
                             </a>
                         </div>
 
-                        {/* Bank Specific Input */}
-                        {selectedCard.isBank && (
-                            <div className="mb-6">
-                                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                    Target Bank Account <span className="text-red-500">*</span>
-                                </label>
-                                <SearchableSelect
-                                    placeholder="Select Bank Account..."
-                                    options={bankAccountOptions}
-                                    value={data.bank_account_id}
-                                    onChange={(val) => setData('bank_account_id', val)}
-                                    error={formErrors.bank_account_id}
-                                />
-                                <p className="text-2xs text-slate-400 mt-1">Select the chart of account matching this bank statement</p>
-                            </div>
-                        )}
-
                         {/* Step 2: Upload File Area */}
                         <div className="mb-6">
                             <span className="text-2xs font-black text-slate-400 uppercase tracking-widest block mb-2">Step 2: Upload Completed File</span>
@@ -380,9 +352,8 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
                                 onDragLeave={() => setDragOver(false)}
                                 onDrop={handleDrop}
                                 onClick={() => fileInputRef.current?.click()}
-                                className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-200 ${
-                                    dragOver ? 'border-[#00713D] bg-green-50/50' : 'border-slate-300 hover:border-[#00713D] hover:bg-slate-50/80 bg-white'
-                                }`}
+                                className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-200 ${dragOver ? 'border-[#00713D] bg-green-50/50' : 'border-slate-300 hover:border-[#00713D] hover:bg-slate-50/80 bg-white'
+                                    }`}
                             >
                                 <input
                                     type="file"

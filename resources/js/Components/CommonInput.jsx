@@ -127,15 +127,16 @@ export default forwardRef(function CommonInput(
     };
 
     const variantClasses = {
-        boxed: "border border-slate-300 bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 shadow-sm",
-        table: "border-none bg-transparent focus:bg-green-50/30 focus:ring-0 rounded-none h-8 px-2 py-0 text-xs",
-        underlined: "border-b border-slate-300 bg-transparent focus:border-green-500 focus:ring-0 rounded-none px-0"
+        boxed: "border border-slate-300 bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 shadow-sm disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed disabled:border-slate-200",
+        table: "border-none bg-transparent focus:bg-green-50/30 focus:ring-0 rounded-none h-8 px-2 py-0 text-xs disabled:opacity-50",
+        underlined: "border-b border-slate-300 bg-transparent focus:border-green-500 focus:ring-0 rounded-none px-0 disabled:border-slate-200 disabled:text-slate-500"
     };
 
     const baseInputClasses = `w-full text-slate-900 transition-all placeholder:text-slate-400 ${variant !== 'table' ? (type === 'textarea' ? 'text-xs px-2 rounded-sm' : sizeClasses[size]) : ''} ${variantClasses[variant]}`;
     const errorClasses = error ? "border-red-300 focus:border-red-500 focus:ring-red-500/10" : "";
 
     const showPicker = () => {
+        if (props.disabled || props.readOnly) return;
         if (type === 'date' && datePickerRef.current) {
             datePickerRef.current.setOpen(true);
             return;
@@ -174,10 +175,14 @@ export default forwardRef(function CommonInput(
             );
         }
         if (type === 'date') {
+            const isDisabled = props.disabled || props.readOnly;
             return (
                 <div
-                    className={`absolute ${size === 'sm' || variant === 'table' ? 'right-1.5' : 'right-3'} top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-green-500 transition-colors z-10`}
+                    className={`absolute ${size === 'sm' || variant === 'table' ? 'right-1.5' : 'right-3'} top-1/2 -translate-y-1/2 ${
+                        isDisabled ? 'text-slate-300 cursor-not-allowed pointer-events-none' : 'cursor-pointer text-slate-400 hover:text-green-500'
+                    } transition-colors z-10`}
                     onClick={(e) => {
+                        if (isDisabled) return;
                         e.stopPropagation();
                         showPicker();
                     }}

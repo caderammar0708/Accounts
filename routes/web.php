@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\POSController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Garage\JobCardController;
 
 // Accounting Controllers
@@ -62,9 +63,11 @@ Route::middleware('auth')->group(function () {
         Route::delete('/', 'destroy')->name('destroy');
     });
 
-     // Users
+     // Users & Roles
     Route::resource('users', UserController::class);
     Route::post('/users/{user}/resend-invite', [UserController::class, 'resendInvitation'])->name('users.resend-invite');
+    Route::resource('roles', RoleController::class);
+    Route::post('/roles/{role}/permissions', [RoleController::class, 'syncPermissions'])->name('roles.sync-permissions');
 
     // Settings
     Route::prefix('settings')->group(function () {
@@ -104,7 +107,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/suppliers', 'importSuppliers')->name('suppliers');
         Route::post('/employees', 'importEmployees')->name('employees');
         Route::post('/chart-of-accounts', 'importChartOfAccounts')->name('chart-of-accounts');
-        Route::post('/bank', 'importBank')->name('bank');
     });
 
     // Inventory

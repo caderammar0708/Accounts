@@ -23,6 +23,7 @@ export default function LineItemsTable({
     hideSummaryBlock = false,
 }) {
     const [draggedIndex, setDraggedIndex] = useState(null);
+    const [dragAllowedRow, setDragAllowedRow] = useState(null);
     const inputRefs = useRef({});
 
     const onDragStart = (e, index) => {
@@ -191,16 +192,25 @@ export default function LineItemsTable({
                         {items.map((item, index) => (
                             <tr
                                 key={item.id ?? index}
-                                draggable
+                                draggable={dragAllowedRow === index}
                                 onDragStart={(e) => onDragStart(e, index)}
                                 onDragOver={(e) => onDragOver(e, index)}
-                                onDragEnd={onDragEnd}
+                                onDragEnd={() => {
+                                    onDragEnd();
+                                    setDragAllowedRow(null);
+                                }}
                                 className={`group hover:bg-slate-50/50 transition-all ${draggedIndex === index ? 'opacity-40 bg-primary-50' : ''}`}
                             >
                                 {/* Drag Handle */}
                                 <td className="px-0.5 py-0.5 align-middle w-8 border-r border-slate-100">
                                     <div className="flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <div className="cursor-grab active:cursor-grabbing p-1 text-slate-300 hover:text-slate-600 transition-colors">
+                                        <div 
+                                            className="cursor-grab active:cursor-grabbing p-1 text-slate-300 hover:text-slate-600 transition-colors select-none"
+                                            onMouseDown={() => setDragAllowedRow(index)}
+                                            onMouseUp={() => setDragAllowedRow(null)}
+                                            onTouchStart={() => setDragAllowedRow(index)}
+                                            onTouchEnd={() => setDragAllowedRow(null)}
+                                        >
                                             <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M7 2a2 2 0 100 4 2 2 0 000-4zm3 0a2 2 0 100 4 2 2 0 000-4zm3 0a2 2 0 100 4 2 2 0 000-4zM7 9a2 2 0 100 4 2 2 0 000-4zm3 0a2 2 0 100 4 2 2 0 000-4zm3 0a2 2 0 100 4 2 2 0 000-4zm-6 7a2 2 0 100 4 2 2 0 000-4zm3 0a2 2 0 100 4 2 2 0 000-4zm3 0a2 2 0 100 4 2 2 0 000-4z" />
                                             </svg>

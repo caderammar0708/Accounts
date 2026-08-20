@@ -41,26 +41,8 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
         };
     };
 
-    // ── sessionStorage helpers ────────────────────────────────────────────────
-    const SESSION_KEY = 'reportDateFilter';
-
-    const saveToSession = (type, start, end) => {
-        try {
-            sessionStorage.setItem(SESSION_KEY, JSON.stringify({ type, start_date: start, end_date: end }));
-        } catch (_) {}
-    };
-
-    const loadFromSession = () => {
-        try {
-            const raw = sessionStorage.getItem(SESSION_KEY);
-            return raw ? JSON.parse(raw) : null;
-        } catch (_) {
-            return null;
-        }
-    };
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const handleApply = (type, customStart, customEnd) => {
+    // Helper to calculate date range for any preset type
+    const calculateDateRange = (type, customStart = '', customEnd = '') => {
         let start = '';
         let end = '';
         const today = new Date();
@@ -76,19 +58,26 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                 start = formatDate(today);
                 end = formatDate(today);
                 break;
-            case 'this_week':
-                const firstDayOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
-                const lastDayOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 6));
-                start = formatDate(firstDayOfWeek);
-                end = formatDate(lastDayOfWeek);
+            case 'this_week': {
+                const d1 = new Date(today);
+                d1.setDate(today.getDate() - today.getDay());
+                const d2 = new Date(d1);
+                d2.setDate(d1.getDate() + 6);
+                start = formatDate(d1);
+                end = formatDate(d2);
                 break;
-            case 'last_week':
-                const lastWeekToday = new Date(new Date().setDate(new Date().getDate() - 7));
-                const firstDayOfLastWeek = new Date(lastWeekToday.setDate(lastWeekToday.getDate() - lastWeekToday.getDay()));
-                const lastDayOfLastWeek = new Date(lastWeekToday.setDate(lastWeekToday.getDate() - lastWeekToday.getDay() + 6));
-                start = formatDate(firstDayOfLastWeek);
-                end = formatDate(lastDayOfLastWeek);
+            }
+            case 'last_week': {
+                const lastWeek = new Date(today);
+                lastWeek.setDate(today.getDate() - 7);
+                const d1 = new Date(lastWeek);
+                d1.setDate(lastWeek.getDate() - lastWeek.getDay());
+                const d2 = new Date(d1);
+                d2.setDate(d1.getDate() + 6);
+                start = formatDate(d1);
+                end = formatDate(d2);
                 break;
+            }
             case 'this_month':
                 start = formatDate(new Date(y, m, 1));
                 end = formatDate(new Date(y, m + 1, 0));
@@ -97,30 +86,34 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                 start = formatDate(new Date(y, m - 1, 1));
                 end = formatDate(new Date(y, m, 0));
                 break;
-            case 'this_quarter':
+            case 'this_quarter': {
                 const q = Math.floor(m / 3);
                 start = formatDate(new Date(y, q * 3, 1));
                 end = formatDate(new Date(y, q * 3 + 3, 0));
                 break;
-            case 'last_quarter':
+            }
+            case 'last_quarter': {
                 const lq = Math.floor(m / 3) - 1;
                 const lqy = lq < 0 ? y - 1 : y;
                 const lqm = lq < 0 ? 3 : lq;
                 start = formatDate(new Date(lqy, lqm * 3, 1));
                 end = formatDate(new Date(lqy, lqm * 3 + 3, 0));
                 break;
-            case 'this_half_year':
+            }
+            case 'this_half_year': {
                 const hy = Math.floor(m / 6);
                 start = formatDate(new Date(y, hy * 6, 1));
                 end = formatDate(new Date(y, hy * 6 + 6, 0));
                 break;
-            case 'last_half_year':
+            }
+            case 'last_half_year': {
                 const lhy = Math.floor(m / 6) - 1;
                 const lhyy = lhy < 0 ? y - 1 : y;
                 const lhym = lhy < 0 ? 1 : lhy;
                 start = formatDate(new Date(lhyy, lhym * 6, 1));
                 end = formatDate(new Date(lhyy, lhym * 6 + 6, 0));
                 break;
+            }
             case 'this_year':
                 start = formatDate(new Date(y, 0, 1));
                 end = formatDate(new Date(y, 11, 31));
@@ -163,7 +156,34 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                 end = customEnd || endDate || customRange.end;
                 break;
             }
+            default:
+                break;
         }
+
+        return { start, end };
+    };
+
+    // ── sessionStorage helpers ────────────────────────────────────────────────
+    const SESSION_KEY = 'reportDateFilter';
+
+    const saveToSession = (type, start, end) => {
+        try {
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify({ type, start_date: start, end_date: end }));
+        } catch (_) {}
+    };
+
+    const loadFromSession = () => {
+        try {
+            const raw = sessionStorage.getItem(SESSION_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch (_) {
+            return null;
+        }
+    };
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const handleApply = (type, customStart, customEnd) => {
+        const { start, end } = calculateDateRange(type, customStart, customEnd);
 
         setFilterType(type);
         setStartDate(start);
@@ -177,31 +197,39 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
         }
     };
 
-    // On mount or when currentFilter changes: initialise local state. If the server provided an explicit filter
-    // type via URL params, honour it. Otherwise restore the last filter the user
-    // chose in another report (sessionStorage), so the date doesn't reset when
-    // switching between reports. Falls back to current-month if nothing is saved.
+    const handleSelectChange = (newType) => {
+        setFilterType(newType);
+        if (newType === 'custom') {
+            const fallback = getOneYearRange();
+            const start = startDate || fallback.start;
+            const end = endDate || fallback.end;
+            setStartDate(start);
+            setEndDate(end);
+        } else {
+            const { start, end } = calculateDateRange(newType);
+            setStartDate(start);
+            setEndDate(end);
+            saveToSession(newType, start, end);
+            if (onFilterChange) {
+                onFilterChange({ start_date: start, end_date: end, type: newType });
+            }
+        }
+    };
+
+    // On mount or when currentFilter changes: initialise local state
     useEffect(() => {
         if (currentFilter) {
             const hasExplicitStart = currentFilter.start_date !== undefined && currentFilter.start_date !== null && currentFilter.start_date !== '';
             const hasExplicitEnd = currentFilter.end_date !== undefined && currentFilter.end_date !== null && currentFilter.end_date !== '';
 
             if (currentFilter.type) {
-                // Server-driven filter (user navigated with query params) — honour it.
                 setFilterType(currentFilter.type);
-                if (currentFilter.type === 'all_dates') {
-                    setStartDate('');
-                    setEndDate('');
-                } else if (currentFilter.type === 'custom') {
-                    const customRange = getOneYearRange();
-                    setStartDate(currentFilter.start_date || customRange.start);
-                    setEndDate(currentFilter.end_date || customRange.end);
-                } else {
-                    const defaultRange = getCurrentMonthRange();
-                    setStartDate(currentFilter.start_date ?? defaultRange.start);
-                    setEndDate(currentFilter.end_date ?? defaultRange.end);
-                }
-                saveToSession(currentFilter.type, currentFilter.type === 'all_dates' ? '' : (currentFilter.start_date || ''), currentFilter.type === 'all_dates' ? '' : (currentFilter.end_date || ''));
+                const calculated = calculateDateRange(currentFilter.type, currentFilter.start_date, currentFilter.end_date);
+                const sDate = hasExplicitStart ? currentFilter.start_date : calculated.start;
+                const eDate = hasExplicitEnd ? currentFilter.end_date : calculated.end;
+                setStartDate(sDate);
+                setEndDate(eDate);
+                saveToSession(currentFilter.type, sDate, eDate);
                 return;
             }
 
@@ -216,8 +244,13 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
             // No explicit type from server — try to restore the previously saved filter.
             const saved = loadFromSession();
             if (saved && saved.type) {
-                // Auto-apply so the report re-fetches with the persisted dates.
-                handleApply(saved.type, saved.start_date, saved.end_date);
+                const calculated = calculateDateRange(saved.type, saved.start_date, saved.end_date);
+                setFilterType(saved.type);
+                setStartDate(calculated.start);
+                setEndDate(calculated.end);
+                if (onFilterChange) {
+                    onFilterChange({ start_date: calculated.start, end_date: calculated.end, type: saved.type });
+                }
                 return;
             }
 
@@ -240,17 +273,7 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
             <div className="w-36">
                 <select
                     value={filterType}
-                    onChange={(e) => {
-                        const newType = e.target.value;
-                        setFilterType(newType);
-                        if (newType !== 'custom') {
-                            handleApply(newType);
-                        } else {
-                            const range = getOneYearRange();
-                            setStartDate(range.start);
-                            setEndDate(range.end);
-                        }
-                    }}
+                    onChange={(e) => handleSelectChange(e.target.value)}
                     title="Date Range"
                     className="w-full h-[30px] py-0 border border-slate-300 rounded-sm text-xs focus:ring-green-500/20 focus:border-green-500 transition-colors bg-white cursor-pointer shadow-sm text-slate-900"
                 >
@@ -272,52 +295,45 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                 </select>
             </div>
 
+            {/* From Date - Always visible and editable; editing switches dropdown to Custom Date */}
+            <div className="w-28">
+                <CommonInput
+                    type="date"
+                    value={startDate}
+                    placeholder="From Date"
+                    onChange={(e) => {
+                        const newStart = e.target.value;
+                        setStartDate(newStart);
+                        setFilterType('custom');
+                    }}
+                />
+            </div>
+
+            {/* To Date - Always visible and editable; editing switches dropdown to Custom Date */}
+            <div className="w-28">
+                <CommonInput
+                    type="date"
+                    value={endDate}
+                    placeholder="To Date"
+                    onChange={(e) => {
+                        const newEnd = e.target.value;
+                        setEndDate(newEnd);
+                        setFilterType('custom');
+                    }}
+                />
+            </div>
+
+            {/* Apply button - visible when in Custom Date mode */}
             {filterType === 'custom' && (
-                <>
-                    <div className="w-28">
-                        <CommonInput
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => {
-                                const newStart = e.target.value;
-                                setStartDate(newStart);
-                                
-                                if (newStart) {
-                                    const [y, m, day] = newStart.split('-');
-                                    const d = new Date(y, m - 1, day);
-                                    
-                                    d.setFullYear(d.getFullYear() + 1);
-                                    d.setDate(d.getDate() - 1);
-                                    
-                                    const today = new Date();
-                                    today.setHours(0, 0, 0, 0);
-                                    d.setHours(0, 0, 0, 0);
-                                    
-                                    const end = d > today ? today : d;
-                                    setEndDate(formatDate(end));
-                                }
-                            }}
-                        />
-                    </div>
-                    <div className="w-28">
-                        <CommonInput
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => {
-                                setEndDate(e.target.value);
-                            }}
-                        />
-                    </div>
-                    <div>
-                        <button
-                            type="button"
-                            onClick={() => handleApply('custom', startDate, endDate)}
-                            className="h-[30px] px-3 bg-primary text-white text-xs font-semibold rounded-sm hover:bg-primary-600 focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors shadow-sm"
-                        >
-                            Apply
-                        </button>
-                    </div>
-                </>
+                <div>
+                    <button
+                        type="button"
+                        onClick={() => handleApply('custom', startDate, endDate)}
+                        className="h-[30px] px-3 bg-primary text-white text-xs font-semibold rounded-sm hover:bg-primary-600 focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors shadow-sm"
+                    >
+                        Apply
+                    </button>
+                </div>
             )}
         </div>
     );
