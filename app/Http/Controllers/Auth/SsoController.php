@@ -14,6 +14,48 @@ use Inertia\Inertia;
 class SsoController extends Controller
 {
     /**
+     * Get available SSO companies for the authenticated user
+     */
+    public function getCompanies(Request $request)
+    {
+        $user = $request->user();
+        $ssoCompanies = [];
+
+        try {
+            $authServerUrl = config('sso.auth_server_url') ?: env('SSO_AUTH_SERVER_URL', 'https://jbooks.cloud');
+            $authServerUrl = rtrim($authServerUrl, '/');
+            
+            $secret = config('sso.client_secret') ?: env('SSO_CLIENT_SECRET');
+            
+            if (!empty($secret)) {
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $secret,
+                    'Accept' => 'application/json',
+                    'Connection' => 'keep-alive',
+                ])->post($authServerUrl . '/api/sso/user-companies', [
+                    'email' => $user->email,
+                ]);
+
+                if ($response->successful()) {
+                    $ssoCompanies = $response->json('companies') ?? [];
+                    $currentHost = request()->getHost();
+                    $ssoCompanies = array_filter($ssoCompanies, function($company) use ($currentHost) {
+                        $domain = $company['domain'] ?? '';
+                        $parsedHost = parse_url((str_starts_with($domain, 'http') ? '' : 'https://') . $domain, PHP_URL_HOST);
+                        return $parsedHost !== $currentHost && $domain !== $currentHost;
+                    });
+                    $ssoCompanies = array_values($ssoCompanies);
+                } else {
+                    \Illuminate\Support\Facades\Log::error('SSO fetch failed with status ' . $response->status() . ': ' . $response->body());
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('SSO Companies Fetch Error: ' . $e->getMessage());
+        }
+
+        return response()->json(['companies' => $ssoCompanies]);
+    }
+    /**
      * Client: Switch to another company
      * User selects a company and we request a token from the auth server.
      */

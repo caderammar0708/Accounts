@@ -1,11 +1,32 @@
-import { Fragment } from 'react';
+import { Fragment, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
+import { router } from '@inertiajs/react';
 
 /**
  * A reusable Slide-Over (drawer) component using Headless UI.
  * Standardized for the QuickBooks-style creation flows.
  */
 export default function SlideOver({ isOpen, onClose, title, children }) {
+    useEffect(() => {
+        const removeListener = router.on('start', () => {
+            if (isOpen) {
+                onClose();
+            }
+        });
+
+        const handlePopState = () => {
+            if (isOpen) {
+                onClose();
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            removeListener();
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, [isOpen, onClose]);
+
     return (
         <Transition.Root show={isOpen} as={Fragment}>
             <Dialog as="div" className="relative z-50" onClose={onClose}>

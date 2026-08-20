@@ -5,8 +5,6 @@ namespace App\Models\FuelStation;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Accounting\ChartOfAcc;
 
-use App\Models\Accounting\ChartOfAcc;
-
 class PumpShiftCollection extends Model
 {
     protected $fillable = [
