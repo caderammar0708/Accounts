@@ -14,21 +14,26 @@ class Customer extends Model
     use HasUuids, BelongsToLocation;
 
     protected $fillable = [
-    'display_name',
-    'first_name',
-    'last_name',
-    'company_name',
-    'email',
-    'phone_number',
-    'nic',
-    'passport',
-    'address',
-    'vehicle_id',
-    'customer_number',
-    'tax_id',
-    'opening_balance',
-    'location_id',
-];
+        'display_name',
+        'first_name',
+        'last_name',
+        'company_name',
+        'customer_type',
+        'email',
+        'phone_number',
+        'mobile',
+        'fax',
+        'website',
+        'nic',
+        'passport',
+        'address',
+        'vehicle_id',
+        'customer_number',
+        'tax_id',
+        'opening_balance',
+        'opening_balance_date',
+        'location_id',
+    ];
 
     protected $appends = ['balance'];
 

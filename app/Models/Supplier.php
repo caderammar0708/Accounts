@@ -16,11 +16,16 @@ class Supplier extends Model
         'first_name',
         'last_name',
         'company_name',
+        'supplier_type',
         'email',
         'phone_number',
+        'mobile',
+        'fax',
+        'website',
         'tax_id',
         'address',
         'opening_balance',
+        'opening_balance_date',
         'location_id',
     ];
 

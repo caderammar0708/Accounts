@@ -277,18 +277,88 @@ export default forwardRef(function CommonInput(
                         onChange={handleInputChange}
                         className={`${baseInputClasses} ${errorClasses} py-1.5 resize-y ${className} ${inputClass}`}
                     />
-                ) : type === 'select' ? (
-                    <select
-                        {...props}
-                        value={normalizedValue}
-                        ref={inputRef}
-                        className={`${baseInputClasses} ${errorClasses} py-0 pl-2 pr-8 ${className} ${inputClass}`}
-                    >
-                        {children ? children : options.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                    </select>
-                ) : type === 'date' ? (
+                ) : type === 'select' ? (() => {
+                    let selectedLabel = '';
+                    if (options && options.length > 0) {
+                        const found = options.find(opt => {
+                            if (typeof opt === 'object' && opt !== null) {
+                                return String(opt.value) === String(normalizedValue);
+                            }
+                            return String(opt) === String(normalizedValue);
+                        });
+                        if (found) {
+                            selectedLabel = typeof found === 'object' && found !== null ? found.label : found;
+                        }
+                    }
+                    if (!selectedLabel && children) {
+                        const childArray = Array.isArray(children) ? children : [children];
+                        for (const child of childArray) {
+                            if (child && child.props && String(child.props.value) === String(normalizedValue)) {
+                                selectedLabel = child.props.children;
+                                break;
+                            }
+                        }
+                    }
+                    if (!selectedLabel && normalizedValue !== undefined && normalizedValue !== null && normalizedValue !== '') {
+                        selectedLabel = String(normalizedValue);
+                    }
+
+                    return (
+                        <div 
+                            className={`relative flex items-center ${baseInputClasses} ${errorClasses} ${className} ${inputClass} cursor-pointer group`}
+                            onClick={(e) => {
+                                const sel = window.getSelection();
+                                if (sel && sel.toString().trim().length > 0) {
+                                    return;
+                                }
+                                if (inputRef.current) {
+                                    try {
+                                        inputRef.current.showPicker?.();
+                                    } catch (_) {
+                                        inputRef.current.focus?.();
+                                    }
+                                }
+                            }}
+                        >
+                            <div 
+                                className="flex-1 truncate select-text cursor-text z-10 flex items-center h-full"
+                                onClick={(e) => {
+                                    const sel = window.getSelection();
+                                    if (sel && sel.toString().trim().length > 0) {
+                                        e.stopPropagation();
+                                    }
+                                }}
+                            >
+                                <span 
+                                    className={`select-text cursor-text ${selectedLabel ? 'text-slate-900' : 'text-slate-400'}`}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                >
+                                    {selectedLabel || props.placeholder || '\u00A0'}
+                                </span>
+                            </div>
+                            <div 
+                                className="pointer-events-none pl-1 pr-0 text-slate-400 flex items-center justify-center z-10 group-hover:text-slate-600 transition-colors"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                            <select
+                                {...props}
+                                value={normalizedValue}
+                                ref={inputRef}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-0"
+                                onChange={handleInputChange}
+                            >
+                                {children ? children : options.map(opt => {
+                                    const optVal = typeof opt === 'object' && opt !== null ? opt.value : opt;
+                                    const optLabel = typeof opt === 'object' && opt !== null ? opt.label : opt;
+                                    return <option key={optVal} value={optVal}>{optLabel}</option>;
+                                })}
+                            </select>
+                        </div>
+                    );
+                })() : type === 'date' ? (
                     <div className="relative w-full h-full group">
                         <style>{`
                             .react-datepicker__day--outside-month {

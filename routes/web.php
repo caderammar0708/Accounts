@@ -38,6 +38,7 @@ use App\Http\Controllers\Contacts\EmployeeController;
 // Settings Controllers
 use App\Http\Controllers\Settings\CompanySettingsController;
 use App\Http\Controllers\Settings\PrintSettingController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\Garage\VehicleController;
 use App\Http\Controllers\WarrantyController;
 use App\Http\Controllers\WarrantyPolicyController;
@@ -93,6 +94,17 @@ Route::middleware('auth')->group(function () {
         Route::delete('/print/{printSetting}', [PrintSettingController::class, 'destroy'])->name('print.settings.destroy');
         // Quick routes for settings-managed resources
         Route::post('/payment-methods', [\App\Http\Controllers\Settings\PaymentMethodController::class, 'store'])->name('payment-methods.store');
+    });
+
+    // Import Tools
+    Route::controller(ImportController::class)->as('import.')->prefix('import')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/template/{type}', 'downloadTemplate')->name('template');
+        Route::post('/customers', 'importCustomers')->name('customers');
+        Route::post('/suppliers', 'importSuppliers')->name('suppliers');
+        Route::post('/employees', 'importEmployees')->name('employees');
+        Route::post('/chart-of-accounts', 'importChartOfAccounts')->name('chart-of-accounts');
+        Route::post('/bank', 'importBank')->name('bank');
     });
 
     // Inventory
@@ -348,7 +360,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('shifts', \App\Http\Controllers\Inventory\PumpShiftController::class);
 
         // Warranty Module
-        Route::resource('warranties', \App\Http\Controllers\Operations\WarrantyController::class);
+        Route::resource('warranties', WarrantyController::class);
 
         // Sales
         Route::get('/sales-by-item', [\App\Http\Controllers\Accounting\Reports\SalesReportController::class, 'salesByItem'])->name('reports.sales-by-item');

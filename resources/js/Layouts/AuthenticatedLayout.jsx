@@ -75,6 +75,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
         { name: 'Bank Reconciliation', href: route('bank-reconciliation.index'), icon: 'reconciliation' },
         { name: 'Reports', href: route('reports.index'), adminOnly: true, icon: 'reports' },
         ...(page.props.auth.location ? [{ name: 'Locations', href: route('locations.index'), adminOnly: true, icon: 'locations' }] : []),
+        { name: 'Import Tools', href: route('import.index'), icon: 'import_tools', activeRoutes: ['import.*'] },
     ];
 
     return (
@@ -210,6 +211,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                                 <Dropdown.Content align="right" width="48" contentClasses="py-1 bg-white ring-1 ring-black ring-opacity-5 rounded-xl shadow-xl overflow-hidden mt-2">
                                     <Dropdown.Link href={route('settings.company')}>Company Settings</Dropdown.Link>
                                     <Dropdown.Link href={route('settings.print')}>Print Settings</Dropdown.Link>
+                                    <Dropdown.Link href={route('import.index')}>Import Tools</Dropdown.Link>
                                     <Dropdown.Link href={route('users.index')}>User Management</Dropdown.Link>
                                 </Dropdown.Content>
                             </Dropdown>

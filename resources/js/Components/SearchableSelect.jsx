@@ -27,7 +27,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
 }, ref) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
-    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+    const [dropdownPos, setDropdownPos] = useState({ top: null, bottom: null, left: 0, width: 0, placement: 'bottom', maxListHeight: 192 });
     const [activeIndex, setActiveIndex] = useState(-1);
     const [selectedLabel, setSelectedLabel] = useState("");
     const [searchResults, setSearchResults] = useState([]);
@@ -119,10 +119,24 @@ const SearchableSelect = forwardRef(function SearchableSelect({
         const updatePosition = () => {
             if (isOpen && containerRef.current) {
                 const rect = containerRef.current.getBoundingClientRect();
+                const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+                const dropdownHeight = dropdownRef.current?.offsetHeight || 250;
+                
+                const spaceBelow = viewportHeight - rect.bottom;
+                const spaceAbove = rect.top;
+
+                const shouldFlip = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+                const placement = shouldFlip ? 'top' : 'bottom';
+                const availableSpace = placement === 'top' ? spaceAbove : spaceBelow;
+                const maxListHeight = Math.min(192, Math.max(100, availableSpace - 60));
+
                 setDropdownPos({
-                    top: rect.bottom,
+                    top: placement === 'bottom' ? rect.bottom : null,
+                    bottom: placement === 'top' ? (viewportHeight - rect.top) : null,
                     left: rect.left,
-                    width: rect.width
+                    width: rect.width,
+                    placement,
+                    maxListHeight
                 });
             }
         };
@@ -141,7 +155,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
             window.removeEventListener('scroll', handleScroll, { passive: true, capture: true });
             window.removeEventListener('resize', updatePosition);
         };
-    }, [isOpen]);
+    }, [isOpen, search, displayOptions.length]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -294,16 +308,41 @@ const SearchableSelect = forwardRef(function SearchableSelect({
             )}
 
             <div
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={(e) => {
+                    const sel = window.getSelection();
+                    if (sel && sel.toString().trim().length > 0) {
+                        return;
+                    }
+                    setIsOpen(!isOpen);
+                }}
                 className={`${getBaseClasses()} ${className}`}
             >
-                <div className="flex-1 px-2 truncate flex items-center h-full">
-                    <span className={`${selectedOption ? "text-slate-800" : "text-slate-400"}`}>
+                <div 
+                    className="flex-1 px-2 truncate flex items-center h-full select-text cursor-text"
+                    onClick={(e) => {
+                        const sel = window.getSelection();
+                        if (sel && sel.toString().trim().length > 0) {
+                            e.stopPropagation();
+                        }
+                    }}
+                >
+                    <span 
+                        className={`select-text cursor-text ${selectedOption ? "text-slate-800" : "text-slate-400"}`}
+                        onMouseDown={(e) => {
+                            e.stopPropagation();
+                        }}
+                    >
                         {displayLabel}
                     </span>
                 </div>
                 {!hideChevron && (
-                    <div className={`h-full w-6 flex items-center justify-center transition-colors ${variant === 'table' ? '' : 'border-l border-slate-300 bg-slate-50 group-hover:bg-slate-100'}`}>
+                    <div 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsOpen(!isOpen);
+                        }}
+                        className={`h-full w-6 flex items-center justify-center transition-colors cursor-pointer ${variant === 'table' ? '' : 'border-l border-slate-300 bg-slate-50 group-hover:bg-slate-100'}`}
+                    >
                         <svg className={`h-3 w-3 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                         </svg>
@@ -322,12 +361,14 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                     ref={dropdownRef}
                     style={{
                         position: 'fixed',
-                        top: dropdownPos.top,
+                        ...(dropdownPos.placement === 'top'
+                            ? { bottom: dropdownPos.bottom }
+                            : { top: dropdownPos.top }),
                         left: dropdownPos.left,
                         width: dropdownPos.width,
                         zIndex: 100000
                     }}
-                    className="mt-1 bg-white border border-slate-300 rounded-sm shadow-xl overflow-hidden"
+                    className={`${dropdownPos.placement === 'top' ? 'mb-1' : 'mt-1'} bg-white border border-slate-300 rounded-sm shadow-xl overflow-hidden`}
                 >
                     <div className="p-1.5 border-b border-slate-100 bg-slate-50">
                         <input
@@ -344,7 +385,10 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                             onClick={(e) => e.stopPropagation()}
                         />
                     </div>
-                    <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                    <div 
+                        style={{ maxHeight: `${dropdownPos.maxListHeight || 192}px` }} 
+                        className="overflow-y-auto custom-scrollbar"
+                    >
                         {onAddNew && (
                             <div
                                 onMouseDown={(e) => e.preventDefault()}

@@ -85,55 +85,24 @@ export default function Index({ uncategorized, moved, closed, accounts, bankAcco
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center w-full">
                     <h2 className="font-semibold text-xl text-gray-800 leading-tight">Bank Statements</h2>
+                    <CommonButton
+                        href={route('import.index')}
+                        variant="primary"
+                        size="sm"
+                        className="bg-[#00713D] hover:bg-[#005a30] text-white flex items-center gap-1.5"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                        Import Bank Statement
+                    </CommonButton>
                 </div>
             }
         >
             <Head title="Bank Statements" />
 
-            <div className="py-12">
+            <div className="py-8">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {uploadErrors.file && <div className="text-red-500 mb-4">{uploadErrors.file}</div>}
-
-                    {/* IMPORT SECTION */}
-                    <div className="bg-white p-6 shadow-sm sm:rounded-lg mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div className="flex-1 w-full sm:w-auto">
-                            <h3 className="text-lg font-bold text-gray-800 mb-2">Import Bank Statement</h3>
-                            <form onSubmit={handleUpload} className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                                <div className="w-full sm:w-64">
-                                    <SearchableSelect
-                                        options={bankAccountOptions}
-                                        value={uploadData.bank_account_id}
-                                        onChange={(val) => setUploadData('bank_account_id', val)}
-                                        placeholder="Select Bank Account..."
-                                    />
-                                </div>
-                                <input 
-                                    type="file" 
-                                    onChange={e => setUploadData('file', e.target.files[0])} 
-                                    className="border border-gray-300 rounded p-1.5 w-full sm:w-auto text-sm"
-                                    accept=".csv"
-                                />
-                                <CommonButton 
-                                    type="submit" 
-                                    disabled={uploading || !uploadData.file || !uploadData.bank_account_id}
-                                    variant="primary"
-                                    className="whitespace-nowrap"
-                                >
-                                    {uploading ? 'Uploading...' : 'Import CSV'}
-                                </CommonButton>
-                            </form>
-                        </div>
-                        <div className="flex-shrink-0">
-                            <CommonButton 
-                                href={route('bank.template')} 
-                                variant="outlined"
-                            >
-                                Download Template
-                            </CommonButton>
-                        </div>
-                    </div>
 
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         
