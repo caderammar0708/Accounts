@@ -39,6 +39,7 @@ class User extends Authenticatable
         'invite_expires_at',
         'is_invited',
         'location_id',
+        'mobile_access',
     ];
 
     public function location()
