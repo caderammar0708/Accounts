@@ -10,6 +10,12 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+// Mobile App Authentication (v1)
+Route::prefix('v1')->group(function () {
+    Route::post('/login-sso', [\App\Http\Controllers\Api\MobileAuthController::class, 'loginSso']);
+    Route::get('/check-access', [\App\Http\Controllers\Api\MobileAuthController::class, 'checkAccess'])->middleware('auth:sanctum');
+});
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/exchange-rate', [\App\Http\Controllers\Api\ExchangeRateController::class, 'getRate'])->name('api.exchange-rate');
     Route::get('/payees', [LookupController::class, 'payees'])->name('api.payees');
