@@ -32,7 +32,10 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
     };
 
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
+    const [payeeInitialName, setPayeeInitialName] = useState('');
+    const [payeeModalRowIndex, setPayeeModalRowIndex] = useState(null);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [accountInitialName, setAccountInitialName] = useState('');
     const [accountModalTarget, setAccountModalTarget] = useState(null);
     const [accountModalRowIndex, setAccountModalRowIndex] = useState(null);
     const [isDirty, setIsDirty] = useState(false);
@@ -61,9 +64,10 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
         axios.get(route('api.payment-methods')).then(res => setPaymentMethodOptions(res.data));
     };
 
-    const openAccountModal = (target, rowIndex = null) => {
+    const openAccountModal = (target, rowIndex = null, search = '') => {
         setAccountModalTarget(target);
         setAccountModalRowIndex(rowIndex);
+        setAccountInitialName(search || '');
         setIsAccountModalOpen(true);
     };
 
@@ -83,8 +87,12 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
     }, []);
 
     const COLUMNS = [
-        { key: "receivedFrom", label: "Received From", placeholder: "Select payee", options: payeeOptions, type: 'select', onAddNew: () => setIsPayeeModalOpen(true) },
-        { key: "account", label: "Account", placeholder: "Select account", options: accountOptions, type: 'select', onAddNew: (index) => openAccountModal('item', index) },
+        { key: "receivedFrom", label: "Received From", placeholder: "Select payee", options: payeeOptions, type: 'select', onAddNew: (index, search) => {
+            setPayeeInitialName(search || '');
+            setPayeeModalRowIndex(index);
+            setIsPayeeModalOpen(true);
+        } },
+        { key: "account", label: "Account", placeholder: "Select account", options: accountOptions, type: 'select', onAddNew: (index, search) => openAccountModal('item', index, search) },
         { key: "description", label: "Description", placeholder: "Enter description" },
         { key: "paymentMethod", label: "Payment Method", placeholder: "Select method", options: paymentMethodOptions, type: 'select' },
         { key: "refNo", label: "Ref no.", placeholder: "Reference" },
@@ -269,7 +277,7 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                                     setIsDirty(true); 
                                 }}
                                 onSearch={fetchDepositAccounts}
-                                onAddNew={() => openAccountModal('depositTo')}
+                                onAddNew={(search) => openAccountModal('depositTo', null, search)}
                                 size="sm"
                                 error={errors.depositTo}
                             />
@@ -371,15 +379,27 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
 
             <QuickAddPayee
                 isOpen={isPayeeModalOpen}
-                onClose={() => setIsPayeeModalOpen(false)}
+                onClose={() => {
+                    setIsPayeeModalOpen(false);
+                    setPayeeInitialName('');
+                    setPayeeModalRowIndex(null);
+                }}
+                initialName={payeeInitialName}
                 onSuccess={(newPayee) => {
-                    fetchPayees();
                     if (newPayee) {
-                        const updated = [...data.items];
-                        if (updated.length > 0) {
-                            updated[0].receivedFrom = newPayee.value;
-                            setData('items', updated);
+                        setPayeeOptions(prev => {
+                            const exists = prev.some(p => p.value === newPayee.value);
+                            return exists ? prev : [newPayee, ...prev];
+                        });
+                        fetchPayees();
+                        if (payeeModalRowIndex !== null && payeeModalRowIndex !== undefined) {
+                            const updated = [...data.items];
+                            if (updated[payeeModalRowIndex]) {
+                                updated[payeeModalRowIndex].receivedFrom = newPayee.value;
+                                setData('items', updated);
+                            }
                         }
+                        setIsDirty(true);
                     }
                 }}
                 initialType="customer"
@@ -389,16 +409,27 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                 isOpen={isAccountModalOpen}
                 onClose={() => {
                     setIsAccountModalOpen(false);
+                    setAccountInitialName('');
                     setAccountModalTarget(null);
                     setAccountModalRowIndex(null);
                 }}
+                initialName={accountInitialName}
                 onSuccess={(newAccount) => {
-                    fetchAccounts();
                     if (!newAccount) {
                         setAccountModalTarget(null);
                         setAccountModalRowIndex(null);
                         return;
                     }
+                    setAccountOptions(prev => {
+                        const exists = prev.some(a => a.value === newAccount.value);
+                        return exists ? prev : [newAccount, ...prev];
+                    });
+                    setDepositAccountOptions(prev => {
+                        const exists = prev.some(a => a.value === newAccount.value);
+                        return exists ? prev : [newAccount, ...prev];
+                    });
+                    fetchAccounts();
+                    fetchDepositAccounts();
 
                     if (accountModalTarget === 'depositTo') {
                         setData('depositTo', newAccount.value);
@@ -406,7 +437,7 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                     if (accountModalTarget === 'cashBackAccount') {
                         setData('cashBackAccount', newAccount.value);
                     }
-                    if (accountModalTarget === 'item' && accountModalRowIndex !== null) {
+                    if (accountModalTarget === 'item' && accountModalRowIndex !== null && accountModalRowIndex !== undefined) {
                         const updated = [...data.items];
                         if (updated[accountModalRowIndex]) {
                             updated[accountModalRowIndex].account = newAccount.value;
@@ -414,6 +445,7 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                         }
                     }
 
+                    setIsDirty(true);
                     setAccountModalTarget(null);
                     setAccountModalRowIndex(null);
                 }}

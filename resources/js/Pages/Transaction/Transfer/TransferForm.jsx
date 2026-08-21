@@ -19,7 +19,9 @@ export default function TransferForm({ transfer = null }) {
 
     const [accountOptions, setAccountOptions] = useState([]);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [accountInitialName, setAccountInitialName] = useState('');
     const [accountModalType, setAccountModalType] = useState('asset');
+    const [accountModalTarget, setAccountModalTarget] = useState('transfer_from');
     const [isDirty, setIsDirty] = useState(false);
     const [savedEntryId, setSavedEntryId] = useState(transfer?.id || null);
     const [currentAction, setCurrentAction] = useState('save');
@@ -172,8 +174,10 @@ export default function TransferForm({ transfer = null }) {
                                 placeholder="Select Source Account"
                                 size="sm"
                                 error={errors.transfer_from}
-                                onAddNew={() => {
+                                onAddNew={(search) => {
                                     setAccountModalType('asset');
+                                    setAccountModalTarget('transfer_from');
+                                    setAccountInitialName(search || '');
                                     setIsAccountModalOpen(true);
                                 }}
                             />
@@ -196,8 +200,10 @@ export default function TransferForm({ transfer = null }) {
                                 placeholder="Select Destination Account"
                                 size="sm"
                                 error={errors.transfer_to}
-                                onAddNew={() => {
+                                onAddNew={(search) => {
                                     setAccountModalType('asset');
+                                    setAccountModalTarget('transfer_to');
+                                    setAccountInitialName(search || '');
                                     setIsAccountModalOpen(true);
                                 }}
                             />
@@ -273,12 +279,25 @@ export default function TransferForm({ transfer = null }) {
 
             <QuickAddAccount
                 isOpen={isAccountModalOpen}
-                onClose={() => setIsAccountModalOpen(false)}
-                type={accountModalType}
+                onClose={() => {
+                    setIsAccountModalOpen(false);
+                    setAccountInitialName('');
+                }}
+                initialName={accountInitialName}
+                defaultType={accountModalType}
                 onSuccess={(newAcc) => {
                     if (newAcc) {
+                        setAccountOptions(prev => {
+                            const exists = prev.some(a => a.value === newAcc.value);
+                            return exists ? prev : [newAcc, ...prev];
+                        });
                         fetchAccounts();
-                        setData(accountModalType === 'asset' ? 'transfer_from' : 'transfer_to', newAcc.value);
+                        setData(prev => ({
+                            ...prev,
+                            [accountModalTarget]: newAcc.value,
+                            ...(accountModalTarget === 'transfer_from' ? { currency_id: newAcc.currency_id || prev.currency_id } : {})
+                        }));
+                        setIsDirty(true);
                     }
                 }}
             />

@@ -31,8 +31,11 @@ export default function ChequeForm({
     const [customerOptions, setCustomerOptions] = useState([]);
 
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [accountInitialName, setAccountInitialName] = useState('');
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
+    const [payeeInitialName, setPayeeInitialName] = useState('');
     const [accountModalType, setAccountModalType] = useState('asset');
+    const [addingAccountRowIndex, setAddingAccountRowIndex] = useState(null);
 
     const fetchPayees = (search = "") => {
         axios.get(route('api.payees', { search })).then(res => {
@@ -259,8 +262,10 @@ export default function ChequeForm({
             options: accountOptions,
             type: "select",
             width: "280px",
-            onAddNew: () => {
+            onAddNew: (index, search) => {
                 setAccountModalType('payment');
+                setAccountInitialName(search || '');
+                setAddingAccountRowIndex(index);
                 setIsAccountModalOpen(true);
             }
         },
@@ -319,7 +324,10 @@ export default function ChequeForm({
                                 options={payeeOptions}
                                 size="sm"
                                 error={errors.payee}
-                                onAddNew={() => setIsPayeeModalOpen(true)}
+                                onAddNew={(search) => {
+                                    setPayeeInitialName(search || '');
+                                    setIsPayeeModalOpen(true);
+                                }}
                             />
                         </div>
                         <div className="w-[380px]">
@@ -332,8 +340,9 @@ export default function ChequeForm({
                                     options={accountOptions}
                                     size="sm"
                                     error={errors.account}
-                                    onAddNew={() => {
+                                    onAddNew={(search) => {
                                         setAccountModalType('asset');
+                                        setAccountInitialName(search || '');
                                         setIsAccountModalOpen(true);
                                     }}
                                 />
@@ -454,23 +463,59 @@ export default function ChequeForm({
 
             <QuickAddPayee
                 isOpen={isPayeeModalOpen}
-                onClose={() => setIsPayeeModalOpen(false)}
+                onClose={() => {
+                    setIsPayeeModalOpen(false);
+                    setPayeeInitialName('');
+                }}
+                initialName={payeeInitialName}
                 onSuccess={(newPayee) => {
                     if (newPayee) {
+                        setPayeeOptions(prev => {
+                            const exists = prev.some(p => p.value === newPayee.value);
+                            return exists ? prev : [newPayee, ...prev];
+                        });
                         fetchPayees();
                         setData("payee", newPayee.value);
+                        setIsDirty(true);
                     }
                 }}
             />
 
             <QuickAddAccount
                 isOpen={isAccountModalOpen}
-                onClose={() => setIsAccountModalOpen(false)}
-                type={accountModalType}
+                onClose={() => {
+                    setIsAccountModalOpen(false);
+                    setAccountInitialName('');
+                    setAddingAccountRowIndex(null);
+                }}
+                initialName={accountInitialName}
+                defaultType={accountModalType}
                 onSuccess={(newAcc) => {
                     if (newAcc) {
+                        setAccountOptions(prev => {
+                            const exists = prev.some(a => a.value === newAcc.value);
+                            return exists ? prev : [newAcc, ...prev];
+                        });
                         fetchAccounts();
-                        setData("account", newAcc.value);
+                        if (accountModalType === 'payment' && addingAccountRowIndex !== null && addingAccountRowIndex !== undefined) {
+                            setData(prev => {
+                                const updated = [...prev.categoryDetails];
+                                if (updated[addingAccountRowIndex]) {
+                                    updated[addingAccountRowIndex] = {
+                                        ...updated[addingAccountRowIndex],
+                                        category: newAcc.value
+                                    };
+                                }
+                                return { ...prev, categoryDetails: updated };
+                            });
+                        } else {
+                            setData(prev => ({
+                                ...prev,
+                                account: newAcc.value,
+                                currency_id: newAcc.currency_id || prev.currency_id
+                            }));
+                        }
+                        setIsDirty(true);
                     }
                 }}
             />

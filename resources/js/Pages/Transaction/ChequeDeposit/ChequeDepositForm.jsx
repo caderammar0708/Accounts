@@ -21,6 +21,7 @@ export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = 
 
     const [depositAccountOptions, setDepositAccountOptions] = useState([]);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [accountInitialName, setAccountInitialName] = useState('');
     
     // Manage local list of cheques (merging props + possible new fetches if needed)
     const [cheques, setCheques] = useState(
@@ -255,7 +256,10 @@ export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = 
                                 value={data.depositTo}
                                 onChange={(val) => { setData('depositTo', val); setIsDirty(true); }}
                                 onSearch={fetchDepositAccounts}
-                                onAddNew={() => setIsAccountModalOpen(true)}
+                                onAddNew={(search) => {
+                                    setAccountInitialName(search || '');
+                                    setIsAccountModalOpen(true);
+                                }}
                                 size="sm"
                                 error={errors.depositTo}
                             />
@@ -419,11 +423,20 @@ export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = 
 
             <QuickAddAccount
                 isOpen={isAccountModalOpen}
-                onClose={() => setIsAccountModalOpen(false)}
+                onClose={() => {
+                    setIsAccountModalOpen(false);
+                    setAccountInitialName('');
+                }}
+                initialName={accountInitialName}
                 onSuccess={(newAccount) => {
-                    fetchDepositAccounts();
                     if (newAccount) {
+                        setDepositAccountOptions(prev => {
+                            const exists = prev.some(a => a.value === newAccount.value);
+                            return exists ? prev : [newAccount, ...prev];
+                        });
+                        fetchDepositAccounts();
                         setData("depositTo", newAccount.value);
+                        setIsDirty(true);
                     }
                 }}
             />

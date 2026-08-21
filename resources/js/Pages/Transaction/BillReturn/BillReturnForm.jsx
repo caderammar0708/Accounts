@@ -26,10 +26,13 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
 
     // Modal States
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
+    const [payeeInitialName, setPayeeInitialName] = useState('');
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [accountInitialName, setAccountInitialName] = useState('');
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [accountModalType, setAccountModalType] = useState('payment');
     const [addingItemRowIndex, setAddingItemRowIndex] = useState(null);
+    const [addingAccountRowIndex, setAddingAccountRowIndex] = useState(null);
     const [isDirty, setIsDirty] = useState(false);
     const [savedEntryId, setSavedEntryId] = useState(billReturn?.id || null);
 
@@ -276,8 +279,10 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
             onSearch: fetchAccounts,
             type: "select",
             width: "320px",
-            onAddNew: () => {
+            onAddNew: (index, search) => {
                 setAccountModalType('payment');
+                setAccountInitialName(search || '');
+                setAddingAccountRowIndex(index);
                 setIsAccountModalOpen(true);
             }
         },
@@ -345,7 +350,10 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
                             placeholder="Select a supplier"
                             value={data.supplier}
                             onSearch={fetchSuppliers}
-                            onAddNew={() => setIsPayeeModalOpen(true)}
+                            onAddNew={(search) => {
+                                setPayeeInitialName(search || '');
+                                setIsPayeeModalOpen(true);
+                            }}
                             onChange={(val) => { setData('supplier', val); setIsDirty(true); }}
                             options={supplierOptions}
                             error={errors.supplier}
@@ -483,21 +491,54 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
 
             <QuickAddPayee
                 isOpen={isPayeeModalOpen}
-                onClose={() => setIsPayeeModalOpen(false)}
+                onClose={() => {
+                    setIsPayeeModalOpen(false);
+                    setPayeeInitialName('');
+                }}
+                initialName={payeeInitialName}
                 onSuccess={(newPayee) => {
-                    fetchSuppliers();
-                    if (newPayee) setData("supplier", newPayee.value);
+                    if (newPayee) {
+                        setSupplierOptions(prev => {
+                            const exists = prev.some(p => p.value === newPayee.value);
+                            return exists ? prev : [newPayee, ...prev];
+                        });
+                        fetchSuppliers();
+                        setData("supplier", newPayee.value);
+                        setIsDirty(true);
+                    }
                 }}
                 initialType="supplier"
             />
 
             <QuickAddAccount
                 isOpen={isAccountModalOpen}
-                onClose={() => setIsAccountModalOpen(false)}
-                type={accountModalType}
+                onClose={() => {
+                    setIsAccountModalOpen(false);
+                    setAccountInitialName('');
+                    setAddingAccountRowIndex(null);
+                }}
+                initialName={accountInitialName}
+                defaultType={accountModalType}
                 onSuccess={(newAcc) => {
                     if (newAcc) {
+                        setAccountOptions(prev => {
+                            const exists = prev.some(a => a.value === newAcc.value);
+                            return exists ? prev : [newAcc, ...prev];
+                        });
                         fetchAccounts();
+                        if (addingAccountRowIndex !== null && addingAccountRowIndex !== undefined) {
+                            setData(prev => {
+                                const updated = [...prev.categoryDetails];
+                                if (updated[addingAccountRowIndex]) {
+                                    updated[addingAccountRowIndex] = {
+                                        ...updated[addingAccountRowIndex],
+                                        category: newAcc.value
+                                    };
+                                }
+                                return { ...prev, categoryDetails: updated };
+                            });
+                            setIsDirty(true);
+                        }
                     }
                 }}
             />
@@ -541,5 +582,4 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
             />
         </TransactionLayout>
     );
-}
 }

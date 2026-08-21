@@ -45,6 +45,8 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
     // Modal States
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [payeeInitialName, setPayeeInitialName] = useState('');
+    const [accountInitialName, setAccountInitialName] = useState('');
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [isMethodModalOpen, setIsMethodModalOpen] = useState(false);
     const [addingItemRowIndex, setAddingItemRowIndex] = useState(null);
@@ -421,7 +423,10 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                                 placeholder="Select a customer"
                                 value={data.customer}
                                 onSearch={fetchCustomers}
-                                onAddNew={() => setIsPayeeModalOpen(true)}
+                                onAddNew={(search) => {
+                                    setPayeeInitialName(search || '');
+                                    setIsPayeeModalOpen(true);
+                                }}
                                 onChange={(val) => {
                                     const customer = customerOptions.find(c => c.value === val);
                                     setData(d => ({
@@ -526,7 +531,10 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                             placeholder="Select account"
                             value={data.depositTo}
                             onSearch={fetchAccounts}
-                            onAddNew={() => setIsAccountModalOpen(true)}
+                            onAddNew={(search) => {
+                                setAccountInitialName(search || '');
+                                setIsAccountModalOpen(true);
+                            }}
                             onChange={(val) => {
                                 const selectedAcc = accountOptions.find(a => String(a.value) === String(val));
                                 setData(d => ({
@@ -697,20 +705,52 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
 
             <QuickAddPayee
                 isOpen={isPayeeModalOpen}
-                onClose={() => setIsPayeeModalOpen(false)}
+                onClose={() => {
+                    setIsPayeeModalOpen(false);
+                    setPayeeInitialName('');
+                }}
+                initialName={payeeInitialName}
                 onSuccess={(newPayee) => {
-                    fetchCustomers();
-                    if (newPayee) setData("customer", newPayee.value);
+                    if (newPayee) {
+                        setCustomerOptions(prev => {
+                            const exists = prev.some(c => c.value === newPayee.value);
+                            return exists ? prev : [newPayee, ...prev];
+                        });
+                        fetchCustomers();
+                        setData(d => ({
+                            ...d,
+                            customer: newPayee.value,
+                            email: newPayee.email || d.email,
+                            billingAddress: newPayee.billing_address || d.billingAddress,
+                            currency_id: newPayee.currency_id || d.currency_id
+                        }));
+                        setIsDirty(true);
+                    }
                 }}
                 initialType="customer"
             />
 
             <QuickAddAccount
                 isOpen={isAccountModalOpen}
-                onClose={() => setIsAccountModalOpen(false)}
+                onClose={() => {
+                    setIsAccountModalOpen(false);
+                    setAccountInitialName('');
+                }}
+                initialName={accountInitialName}
                 onSuccess={(newAccount) => {
-                    fetchAccounts();
-                    if (newAccount) setData("depositTo", newAccount.value);
+                    if (newAccount) {
+                        setAccountOptions(prev => {
+                            const exists = prev.some(a => a.value === newAccount.value);
+                            return exists ? prev : [newAccount, ...prev];
+                        });
+                        fetchAccounts();
+                        setData(d => ({
+                            ...d,
+                            depositTo: newAccount.value,
+                            currency_id: newAccount.currency_id || d.currency_id
+                        }));
+                        setIsDirty(true);
+                    }
                 }}
             />
 

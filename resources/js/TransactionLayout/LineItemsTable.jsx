@@ -238,7 +238,7 @@ export default function LineItemsTable({
                                                     placeholder={col.placeholder}
                                                     variant="table"
                                                     size="sm"
-                                                    onAddNew={col.onAddNew ? () => col.onAddNew(index) : null}
+                                                    onAddNew={col.onAddNew ? (search) => col.onAddNew(index, search) : null}
                                                     onSearch={col.onSearch}
                                                     hideChevron={col.hideChevron}
                                                     tabIndex={col.tabIndex ?? 0}

@@ -78,7 +78,17 @@ class CustomerController extends Controller
 
         $customer = Customer::create($validatedData);
 
-        return redirect()->route('customers.index')->with('success', 'Customer created successfully.');
+        return redirect()->back()->with([
+            'success' => 'Customer created successfully.',
+            'new_customer' => [
+                'value' => $customer->id,
+                'label' => $customer->display_name,
+                'type' => 'Customer',
+                'email' => $customer->email,
+                'billing_address' => $customer->address,
+                'currency_id' => $customer->currency_id ?? null,
+            ]
+        ]);
     }
 
     public function update(Request $request, Customer $customer)
