@@ -1132,7 +1132,7 @@ class ReportController extends Controller
                 'bill_items.quantity',
                 'bill_items.rate',
                 'bill_items.amount',
-                'bills.bill_number as reference',
+                'bills.bill_no as reference',
                 'bills.bill_date as date',
                 'items.id as item_id',
                 'items.name as item_name',

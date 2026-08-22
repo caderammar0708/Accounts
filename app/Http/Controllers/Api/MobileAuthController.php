@@ -39,10 +39,14 @@ class MobileAuthController extends Controller
                 }
 
                 $token = $user->createToken('mobile-app-token')->plainTextToken;
+                
+                $company = \App\Models\Company::with('homeCurrency')->first();
+                $currencySymbol = $company && $company->homeCurrency ? $company->homeCurrency->symbol : '$';
 
                 return response()->json([
                     'token' => $token,
-                    'user' => $user
+                    'user' => $user,
+                    'currency_symbol' => $currencySymbol
                 ]);
             } else {
                 return response()->json(['error' => 'User not found in this domain.'], 404);
