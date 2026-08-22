@@ -42,6 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/outstanding-cheques', [LookupController::class, 'outstandingCheques'])->name('api.outstanding-cheques');
 
     Route::prefix('reports')->group(function () {
+        Route::get('/dashboard-summary', [ReportsController::class, 'dashboardSummary'])->name('api.reports.dashboard-summary');
         Route::get('/customer-balance-detail', [\App\Http\Controllers\Api\ReportsDetailController::class, 'customerBalanceDetail'])->name('api.reports.customer-balance-detail');
         Route::get('/supplier-balance-detail', [\App\Http\Controllers\Api\ReportsDetailController::class, 'supplierBalanceDetail'])->name('api.reports.supplier-balance-detail');
         Route::get('/inventory-detail-all', [\App\Http\Controllers\Api\ReportsDetailController::class, 'inventoryDetailAll'])->name('api.reports.inventory-detail-all');

@@ -24,6 +24,40 @@ class ReportsController extends Controller
         $this->reportDataService = $reportDataService;
     }
 
+    public function dashboardSummary(Request $request)
+    {
+        $plRequest = new IlluminateHttpRequest();
+        $plRequest->merge(['type' => 'this_year']);
+        $plData = $this->reportDataService->profitAndLossData($plRequest);
+        
+        $totalIncome = $this->calculateTotal(data_get($plData, 'reportData.income', []));
+        $totalCogs = $this->calculateTotal(data_get($plData, 'reportData.cogs', []));
+        $totalExpense = $this->calculateTotal(data_get($plData, 'reportData.expense', []));
+        
+        $netIncome = $totalIncome - $totalCogs - $totalExpense;
+
+        $bsRequest = new IlluminateHttpRequest();
+        $bsRequest->merge(['type' => 'this_year']);
+        $bsData = $this->reportDataService->balanceSheetData($bsRequest);
+        
+        $totalAssets = $this->calculateTotal(data_get($bsData, 'reportData.asset', []));
+
+        return response()->json([
+            'net_income' => $netIncome,
+            'total_assets' => $totalAssets,
+        ]);
+    }
+
+    private function calculateTotal($items) {
+        $total = 0;
+        foreach ($items as $item) {
+            if (is_array($item)) {
+                $total += (float) ($item['total_balance'] ?? 0);
+            }
+        }
+        return $total;
+    }
+
         public function profitAndLoss(Request $request)
     {
         $reportData = $this->reportDataService->profitAndLossData($request);
