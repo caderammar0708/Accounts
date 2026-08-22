@@ -31,14 +31,24 @@ export default function QuickAddPayee({ isOpen, onClose, onSuccess, initialType 
         email: "",
         phone_number: "",
         company_name: "",
+        mobile: "",
+        fax: "",
+        website: "",
+        opening_balance_date: "",
         // Employee specific
         designation: "",
+        department: "",
+        employment_type: "",
+        phone: "",
         salary: "",
         join_date: new Date().toISOString().split('T')[0],
         employee_id: "EMP-" + Math.floor(1000 + Math.random() * 9000),
         // Customer specific
         first_name: "",
         last_name: "",
+        customer_type: "",
+        // Supplier specific
+        supplier_type: "",
     });
 
     const handleTypeChange = (newType) => {
@@ -146,13 +156,37 @@ export default function QuickAddPayee({ isOpen, onClose, onSuccess, initialType 
                 )}
 
                 {(type === 'customer' || type === 'supplier') && (
-                    <CommonInput
-                        label="Company Name"
-                        value={data.company_name}
-                        onChange={(e) => setData("company_name", e.target.value)}
-                        error={errors.company_name}
-                        className="animate-in fade-in slide-in-from-top-2 duration-300"
-                    />
+                    <>
+                        <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <CommonInput
+                                label="Company Name"
+                                value={data.company_name}
+                                onChange={(e) => setData("company_name", e.target.value)}
+                                error={errors.company_name}
+                            />
+                            <CommonInput
+                                label={type === 'customer' ? "Customer Type" : "Supplier Type"}
+                                value={type === 'customer' ? data.customer_type : data.supplier_type}
+                                onChange={(e) => setData(type === 'customer' ? "customer_type" : "supplier_type", e.target.value)}
+                                error={type === 'customer' ? errors.customer_type : errors.supplier_type}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <CommonInput
+                                label="Website"
+                                value={data.website}
+                                onChange={(e) => setData("website", e.target.value)}
+                                error={errors.website}
+                            />
+                            <CommonInput
+                                label="Opening Bal. Date"
+                                type="date"
+                                value={data.opening_balance_date}
+                                onChange={(e) => setData("opening_balance_date", e.target.value)}
+                                error={errors.opening_balance_date}
+                            />
+                        </div>
+                    </>
                 )}
 
                 {type === 'employee' && (
@@ -166,6 +200,20 @@ export default function QuickAddPayee({ isOpen, onClose, onSuccess, initialType 
                                 options={designationOptions}
                                 allowCustom={true}
                                 error={errors.designation}
+                            />
+                            <CommonInput
+                                label="Department"
+                                value={data.department}
+                                onChange={(e) => setData("department", e.target.value)}
+                                error={errors.department}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <CommonInput
+                                label="Employment Type"
+                                value={data.employment_type}
+                                onChange={(e) => setData("employment_type", e.target.value)}
+                                error={errors.employment_type}
                             />
                             <CommonInput
                                 label="Employee ID"
@@ -201,12 +249,26 @@ export default function QuickAddPayee({ isOpen, onClose, onSuccess, initialType 
                         onChange={(e) => setData("email", e.target.value)}
                         error={errors.email}
                     />
-                    {type !== 'employee' && (
+                    <CommonInput
+                        label="Mobile"
+                        value={data.mobile}
+                        onChange={(e) => setData("mobile", e.target.value)}
+                        error={errors.mobile}
+                    />
+                </div>
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <CommonInput
+                        label={type === 'employee' ? "Phone" : "Phone"}
+                        value={type === 'employee' ? data.phone : data.phone_number}
+                        onChange={(e) => setData(type === 'employee' ? "phone" : "phone_number", e.target.value)}
+                        error={type === 'employee' ? errors.phone : errors.phone_number}
+                    />
+                    {(type === 'customer' || type === 'supplier') && (
                         <CommonInput
-                            label="Phone"
-                            value={data.phone_number}
-                            onChange={(e) => setData("phone_number", e.target.value)}
-                            error={errors.phone_number}
+                            label="Fax"
+                            value={data.fax}
+                            onChange={(e) => setData("fax", e.target.value)}
+                            error={errors.fax}
                         />
                     )}
                 </div>

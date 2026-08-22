@@ -22,7 +22,11 @@ export default function EmployeeForm() {
     const { data, setData, post, processing, errors } = useForm({
         name: "",
         email: "",
+        phone: "",
+        mobile: "",
+        department: "",
         designation: "",
+        employment_type: "",
         salary: "",
         salary_type: "Fixed",
         hours_per_day: "",
@@ -63,17 +67,48 @@ export default function EmployeeForm() {
                             error={errors.email}
                             placeholder="john@example.com"
                         />
-                        <SearchableSelect 
-                            label="Designation" 
-                            placeholder="Select or type a designation..."
-                            value={data.designation} 
-                            onChange={(val) => setData('designation', val)} 
-                            options={designationOptions}
-                            allowCustom={true}
-                            required
-                            error={errors.designation}
-                        />
                         <div className="grid grid-cols-2 gap-6">
+                            <CommonInput 
+                                label="Phone" 
+                                type="text"
+                                value={data.phone} 
+                                onChange={e => setData('phone', e.target.value)} 
+                                error={errors.phone}
+                            />
+                            <CommonInput 
+                                label="Mobile" 
+                                type="text"
+                                value={data.mobile} 
+                                onChange={e => setData('mobile', e.target.value)} 
+                                error={errors.mobile}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                            <CommonInput 
+                                label="Department" 
+                                value={data.department} 
+                                onChange={e => setData('department', e.target.value)} 
+                                error={errors.department}
+                            />
+                            <SearchableSelect 
+                                label="Designation" 
+                                placeholder="Select or type a designation..."
+                                value={data.designation} 
+                                onChange={(val) => setData('designation', val)} 
+                                options={designationOptions}
+                                allowCustom={true}
+                                required
+                                error={errors.designation}
+                            />
+                        </div>
+                        <div className="grid grid-cols-3 gap-6">
+                            <CommonInput
+                                label="Employment Type"
+                                value={data.employment_type}
+                                onChange={e => setData('employment_type', e.target.value)}
+                                error={errors.employment_type}
+                                placeholder="Full-time, Part-time, etc."
+                            />
                             <CommonInput
                                 type="select"
                                 label="Salary Type"

@@ -37,27 +37,16 @@ class BalanceSheetController extends Controller
         }
 
         $sql = 'select journal_entry_lines.chart_of_acc_id, ';
-        if ($displayBy === 'month') {
-            $sql .= 'DATE_FORMAT(journal_entries.date, "%Y-%m") as month, ';
-        }
+        $sql .= 'DATE_FORMAT(journal_entries.date, "%Y-%m") as month, ';
         $sql .= 'sum(journal_entry_lines.debit) as total_debit, sum(journal_entry_lines.credit) as total_credit from journal_entry_lines join journal_entries on journal_entry_lines.journal_entry_id = journal_entries.id';
         
         $bindings = [];
-        if ($type !== 'all_dates' && $start && $end) {
-            $sql .= ' where journal_entries.date between ? and ?';
-            $bindings = [$start, $end];
-        } elseif ($type !== 'all_dates' && $start) {
-            $sql .= ' where journal_entries.date >= ?';
-            $bindings = [$start];
-        } elseif ($type !== 'all_dates' && $end) {
+        if ($type !== 'all_dates' && $end) {
             $sql .= ' where journal_entries.date <= ?';
             $bindings = [$end];
         }
 
-        $sql .= ' group by journal_entry_lines.chart_of_acc_id';
-        if ($displayBy === 'month') {
-            $sql .= ', month';
-        }
+        $sql .= ' group by journal_entry_lines.chart_of_acc_id, month';
 
         $lines = collect(DB::select($sql, $bindings));
 
@@ -75,7 +64,7 @@ class BalanceSheetController extends Controller
             }
         }
 
-        $tree = $this->treeBuilder->buildBalanceSheetTree($types, $lines, $displayBy, $months);
+        $tree = $this->treeBuilder->buildBalanceSheetTree($types, $lines, $displayBy, $months, $start);
 
         return Inertia::render('Reports/BalanceSheet', [
             'reportData' => $tree,

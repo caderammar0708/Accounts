@@ -6,10 +6,15 @@ export default function SupplierForm() {
     const { data, setData, post, processing, errors } = useForm({
         display_name: "",
         company_name: "",
+        supplier_type: "",
         email: "",
         phone_number: "",
+        mobile: "",
+        fax: "",
+        website: "",
         address: "",
         opening_balance: "",
+        opening_balance_date: "",
     });
 
     const submit = (e) => {
@@ -39,7 +44,7 @@ export default function SupplierForm() {
                                 {errors.display_name && <p className="text-red-500 text-xs mt-1 font-bold">{errors.display_name}</p>}
                             </div>
 
-                            <div className="col-span-2">
+                            <div className="col-span-1">
                                 <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Company Name</label>
                                 <input
                                     type="text"
@@ -49,7 +54,17 @@ export default function SupplierForm() {
                                 />
                             </div>
 
-                            <div>
+                            <div className="col-span-1">
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Supplier Type</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#00713D] focus:border-[#00713D] outline-none transition-all"
+                                    value={data.supplier_type}
+                                    onChange={(e) => setData("supplier_type", e.target.value)}
+                                />
+                            </div>
+
+                            <div className="col-span-1">
                                 <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Email</label>
                                 <input
                                     type="email"
@@ -59,14 +74,44 @@ export default function SupplierForm() {
                                 />
                             </div>
 
-                            <div>
-                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Phone</label>
+                            <div className="col-span-1">
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Website</label>
                                 <input
                                     type="text"
                                     className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#00713D] focus:border-[#00713D] outline-none transition-all"
-                                    value={data.phone_number}
-                                    onChange={(e) => setData("phone_number", e.target.value)}
+                                    value={data.website}
+                                    onChange={(e) => setData("website", e.target.value)}
                                 />
+                            </div>
+
+                            <div className="col-span-2 grid grid-cols-3 gap-6">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Phone</label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#00713D] focus:border-[#00713D] outline-none transition-all"
+                                        value={data.phone_number}
+                                        onChange={(e) => setData("phone_number", e.target.value)}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Mobile</label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#00713D] focus:border-[#00713D] outline-none transition-all"
+                                        value={data.mobile}
+                                        onChange={(e) => setData("mobile", e.target.value)}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Fax</label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#00713D] focus:border-[#00713D] outline-none transition-all"
+                                        value={data.fax}
+                                        onChange={(e) => setData("fax", e.target.value)}
+                                    />
+                                </div>
                             </div>
 
                             <div className="col-span-2">
@@ -79,7 +124,7 @@ export default function SupplierForm() {
                                 ></textarea>
                             </div>
 
-                            <div className="col-span-2">
+                            <div className="col-span-1">
                                 <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Opening Balance</label>
                                 <input
                                     type="number"
@@ -89,6 +134,17 @@ export default function SupplierForm() {
                                     onChange={(e) => setData("opening_balance", e.target.value)}
                                 />
                                 {errors.opening_balance && <p className="text-red-500 text-xs mt-1 font-bold">{errors.opening_balance}</p>}
+                            </div>
+
+                            <div className="col-span-1">
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Opening Balance Date</label>
+                                <input
+                                    type="date"
+                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#00713D] focus:border-[#00713D] outline-none transition-all"
+                                    value={data.opening_balance_date}
+                                    onChange={(e) => setData("opening_balance_date", e.target.value)}
+                                />
+                                {errors.opening_balance_date && <p className="text-red-500 text-xs mt-1 font-bold">{errors.opening_balance_date}</p>}
                             </div>
                         </div>
 
