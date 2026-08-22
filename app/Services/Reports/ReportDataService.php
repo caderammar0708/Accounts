@@ -20,186 +20,140 @@ class ReportDataService
         $this->treeBuilder = $treeBuilder;
     }
 
-    public function profitAndLossData($startDate, $endDate, $displayBy = 'total')
+        public function profitAndLossData(\Illuminate\Http\Request $request)
     {
-        if (!$startDate && !$endDate) {
-            $startDate = now()->startOfMonth()->toDateString();
-            $endDate = now()->endOfMonth()->toDateString();
-        }
+        $displayBy = $request->get('display_by', 'total');
+        $type = $request->get('type');
+        $hasStart = $request->has('start_date') && $request->get('start_date') !== null && $request->get('start_date') !== '';
+        $hasEnd = $request->has('end_date') && $request->get('end_date') !== null && $request->get('end_date') !== '';
 
-        $query = JournalEntryLine::query()
-            ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
-            ->select(
-                'journal_entry_lines.chart_of_acc_id',
-                DB::raw('SUM(journal_entry_lines.debit) as total_debit'),
-                DB::raw('SUM(journal_entry_lines.credit) as total_credit')
-            );
-
-        if ($startDate) {
-            $query->where('journal_entries.date', '>=', $startDate);
-        }
-        if ($endDate) {
-            $query->where('journal_entries.date', '<=', $endDate);
-        }
-
-        if ($displayBy === 'month') {
-            $query->addSelect(DB::raw('DATE_FORMAT(journal_entries.date, "%Y-%m") as month'))
-                  ->groupBy('journal_entry_lines.chart_of_acc_id', 'month');
+        if ($type === 'all_dates' || (!$type && !$hasStart && !$hasEnd && $request->has('start_date') && $request->has('end_date'))) {
+            $start = '';
+            $end = '';
+            $type = 'all_dates';
         } else {
-            $query->groupBy('journal_entry_lines.chart_of_acc_id');
-        }
-
-        $lines = $query->get();
-
-        $months = [];
-        if ($displayBy === 'month') {
-            $actualStart = $startDate ? Carbon::parse($startDate) : ($lines->min('month') ? Carbon::createFromFormat('Y-m', $lines->min('month')) : now());
-            $actualEnd = $endDate ? Carbon::parse($endDate) : ($lines->max('month') ? Carbon::createFromFormat('Y-m', $lines->max('month')) : now());
-
-            $start = $actualStart->copy()->startOfMonth();
-            $end = $actualEnd->copy()->startOfMonth();
-            while ($start->lte($end)) {
-                $months[] = $start->format('Y-m');
-                $start->addMonth();
+            $start = $request->has('start_date') && $request->get('start_date') !== '' ? $request->get('start_date') : date('Y-01-01');
+            $end = $request->has('end_date') && $request->get('end_date') !== '' ? $request->get('end_date') : date('Y-m-d');
+            if (!$type) {
+                $type = ($hasStart || $hasEnd) ? 'custom' : 'this_year';
             }
         }
 
-        $reportData = $this->treeBuilder->buildPnLTree(['income', 'expense'], $lines, $displayBy, $months);
+        $sql = 'select journal_entry_lines.chart_of_acc_id, ';
+        if ($displayBy === 'month') {
+            $sql .= 'DATE_FORMAT(journal_entries.date, "%Y-%m") as month, ';
+        }
+        $sql .= 'sum(journal_entry_lines.debit) as total_debit, sum(journal_entry_lines.credit) as total_credit from journal_entry_lines join journal_entries on journal_entry_lines.journal_entry_id = journal_entries.id';
+        
+        $bindings = [];
+        if ($type !== 'all_dates' && $start && $end) {
+            $sql .= ' where journal_entries.date between ? and ?';
+            $bindings = [$start, $end];
+        } elseif ($type !== 'all_dates' && $start) {
+            $sql .= ' where journal_entries.date >= ?';
+            $bindings = [$start];
+        } elseif ($type !== 'all_dates' && $end) {
+            $sql .= ' where journal_entries.date <= ?';
+            $bindings = [$end];
+        }
+
+        $sql .= ' group by journal_entry_lines.chart_of_acc_id';
+        if ($displayBy === 'month') {
+            $sql .= ', month';
+        }
+
+        $lines = collect(\Illuminate\Support\Facades\DB::select($sql, $bindings));
+
+        $types = ['Income', 'Expense'];
+
+        $months = [];
+        if ($displayBy === 'month') {
+            $calcStart = $start ?: (\App\Models\Accounting\JournalEntryLine::join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')->min('journal_entries.date') ?: date('Y-01-01'));
+            $calcEnd = $end ?: (\App\Models\Accounting\JournalEntryLine::join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')->max('journal_entries.date') ?: date('Y-m-d'));
+            $period = new \DateTime($calcStart);
+            $endDt = new \DateTime($calcEnd);
+            while ($period <= $endDt) {
+                $months[] = $period->format('Y-m');
+                $period->modify('+1 month');
+            }
+        }
+
+        $tree = $this->treeBuilder->buildPnLTree($types, $lines, $displayBy, $months);
 
         return [
-            'reportData' => $reportData,
+            'reportData' => $tree,
             'filters' => [
-                'start_date' => $startDate,
-                'end_date' => $endDate,
+                'start_date' => $start,
+                'end_date' => $end,
                 'display_by' => $displayBy,
                 'months' => $months,
+                'type' => $type,
             ],
         ];
     }
 
-    public function balanceSheetData($startDate, $endDate, $displayBy = 'total')
+    public function balanceSheetData(\Illuminate\Http\Request $request)
     {
-        if (!$startDate && !$endDate) {
-            $startDate = now()->startOfMonth()->toDateString();
-            $endDate = now()->endOfMonth()->toDateString();
-        }
+        $displayBy = $request->get('display_by', 'total');
+        $type = $request->get('type');
+        $hasStart = $request->has('start_date') && $request->get('start_date') !== null && $request->get('start_date') !== '';
+        $hasEnd = $request->has('end_date') && $request->get('end_date') !== null && $request->get('end_date') !== '';
 
-        $query = JournalEntryLine::query()
-            ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
-            ->select(
-                'journal_entry_lines.chart_of_acc_id',
-                DB::raw('SUM(journal_entry_lines.debit) as total_debit'),
-                DB::raw('SUM(journal_entry_lines.credit) as total_credit')
-            );
-
-        if ($startDate) {
-            $query->where('journal_entries.date', '>=', $startDate);
-        }
-        if ($endDate) {
-            $query->where('journal_entries.date', '<=', $endDate);
-        }
-
-        if ($displayBy === 'month') {
-            $query->addSelect(DB::raw('DATE_FORMAT(journal_entries.date, "%Y-%m") as month'))
-                  ->groupBy('journal_entry_lines.chart_of_acc_id', 'month');
+        if ($type === 'all_dates' || (!$type && !$hasStart && !$hasEnd && $request->has('start_date') && $request->has('end_date'))) {
+            $start = '';
+            $end = '';
+            $type = 'all_dates';
         } else {
-            $query->groupBy('journal_entry_lines.chart_of_acc_id');
+            $start = $request->has('start_date') && $request->get('start_date') !== '' ? $request->get('start_date') : date('Y-01-01');
+            $end = $request->has('end_date') && $request->get('end_date') !== '' ? $request->get('end_date') : date('Y-12-31');
+            if (!$type) {
+                $type = ($hasStart || $hasEnd) ? 'custom' : 'this_year';
+            }
         }
 
-        $lines = $query->get();
+        $sql = 'select journal_entry_lines.chart_of_acc_id, ';
+        $sql .= 'DATE_FORMAT(journal_entries.date, "%Y-%m") as month, ';
+        $sql .= 'sum(journal_entry_lines.debit) as total_debit, sum(journal_entry_lines.credit) as total_credit from journal_entry_lines join journal_entries on journal_entry_lines.journal_entry_id = journal_entries.id';
+        
+        $bindings = [];
+        if ($type !== 'all_dates' && $end) {
+            $sql .= ' where journal_entries.date <= ?';
+            $bindings = [$end];
+        }
+
+        $sql .= ' group by journal_entry_lines.chart_of_acc_id, month';
+
+        $lines = collect(\Illuminate\Support\Facades\DB::select($sql, $bindings));
+
+        $types = ['Asset', 'Liability', 'Equity'];
 
         $months = [];
         if ($displayBy === 'month') {
-            $actualStart = $startDate ? Carbon::parse($startDate) : ($lines->min('month') ? Carbon::createFromFormat('Y-m', $lines->min('month')) : now());
-            $actualEnd = $endDate ? Carbon::parse($endDate) : ($lines->max('month') ? Carbon::createFromFormat('Y-m', $lines->max('month')) : now());
-
-            $start = $actualStart->copy()->startOfMonth();
-            $end = $actualEnd->copy()->startOfMonth();
-            while ($start->lte($end)) {
-                $months[] = $start->format('Y-m');
-                $start->addMonth();
+            $calcStart = $start ?: (\App\Models\Accounting\JournalEntryLine::join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')->min('journal_entries.date') ?: date('Y-01-01'));
+            $calcEnd = $end ?: (\App\Models\Accounting\JournalEntryLine::join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')->max('journal_entries.date') ?: date('Y-12-31'));
+            $period = new \DateTime($calcStart);
+            $endDt = new \DateTime($calcEnd);
+            while ($period <= $endDt) {
+                $months[] = $period->format('Y-m');
+                $period->modify('+1 month');
             }
         }
 
-        $reportData = $this->treeBuilder->buildBalanceSheetTree(['asset', 'liability', 'equity'], $lines, $displayBy, $months);
-
-        $fiscalYearStart = Carbon::parse($endDate)->startOfYear()->toDateString();
-
-        $priorNetIncomeResult = JournalEntryLine::query()
-            ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
-            ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
-            ->where('journal_entries.date', '<', $fiscalYearStart)
-            ->whereIn('chart_of_accs.account_type', ['income', 'expense'])
-            ->select(
-                DB::raw('SUM(CASE WHEN chart_of_accs.account_type = "income" THEN journal_entry_lines.credit - journal_entry_lines.debit ELSE journal_entry_lines.credit - journal_entry_lines.debit END) as retained_earnings')
-            )->first();
-
-        $retainedEarningsAmount = $priorNetIncomeResult ? (float) $priorNetIncomeResult->retained_earnings : 0;
-
-        $currentNetIncomeResult = JournalEntryLine::query()
-            ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
-            ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
-            ->whereBetween('journal_entries.date', [$fiscalYearStart, $endDate])
-            ->whereIn('chart_of_accs.account_type', ['income', 'expense'])
-            ->select(
-                DB::raw('SUM(CASE WHEN chart_of_accs.account_type = "income" THEN journal_entry_lines.credit - journal_entry_lines.debit ELSE journal_entry_lines.credit - journal_entry_lines.debit END) as net_income')
-            )->first();
-
-        $netIncomeAmount = $currentNetIncomeResult ? (float) $currentNetIncomeResult->net_income : 0;
-
-        $equity = $reportData->get('equity', collect());
-
-        if ($retainedEarningsAmount != 0) {
-            $existingReIdx = $equity->search(function ($item) {
-                return strtolower($item['name']) === 'retained earnings';
-            });
-
-            if ($existingReIdx !== false) {
-                $item = $equity->get($existingReIdx);
-                $item['balance'] += $retainedEarningsAmount;
-                $item['total_balance'] += $retainedEarningsAmount;
-                $equity->put($existingReIdx, $item);
-            } else {
-                $equity->push([
-                    'id' => 'retained_earnings_computed',
-                    'name' => 'Retained Earnings',
-                    'account_type' => 'equity',
-                    'sub_type' => '',
-                    'parent_id' => null,
-                    'balance' => $retainedEarningsAmount,
-                    'total_balance' => $retainedEarningsAmount,
-                    'children' => []
-                ]);
-            }
-        }
-
-        if ($netIncomeAmount != 0) {
-            $equity->push([
-                'id' => 'net_income_computed',
-                'name' => 'Net Income',
-                'account_type' => 'equity',
-                'sub_type' => '',
-                'parent_id' => null,
-                'balance' => $netIncomeAmount,
-                'total_balance' => $netIncomeAmount,
-                'children' => []
-            ]);
-        }
-
-        $reportData->put('equity', $equity);
+        $tree = $this->treeBuilder->buildBalanceSheetTree($types, $lines, $displayBy, $months, $start);
 
         return [
-            'reportData' => $reportData,
+            'reportData' => $tree,
             'filters' => [
-                'start_date' => $startDate,
-                'end_date' => $endDate,
+                'start_date' => $start,
+                'end_date' => $end,
                 'display_by' => $displayBy,
                 'months' => $months,
+                'type' => $type,
             ],
         ];
     }
 
-    public function customerBalanceData($endDate = null)
+public function customerBalanceData($endDate = null)
     {
         $endDate = $endDate !== null && $endDate !== '' ? $endDate : now()->toDateString();
 
