@@ -32,6 +32,7 @@ export default function CreditInvoiceForm({
 
     // Modal States
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
+    const [payeeInitialName, setPayeeInitialName] = useState('');
     const [isTermModalOpen, setIsTermModalOpen] = useState(false);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [addingItemRowIndex, setAddingItemRowIndex] = useState(null);
@@ -447,7 +448,10 @@ export default function CreditInvoiceForm({
                                 onSearch={fetchPayees}
                                 size="sm"
                                 error={errors.customer}
-                                onAddNew={() => setIsPayeeModalOpen(true)}
+                                onAddNew={(search) => {
+                                    setPayeeInitialName(search || '');
+                                    setIsPayeeModalOpen(true);
+                                }}
                             />
                         </div>
                         <div className="w-[320px]">
@@ -688,9 +692,17 @@ export default function CreditInvoiceForm({
 
             <QuickAddPayee
                 isOpen={isPayeeModalOpen}
-                onClose={() => setIsPayeeModalOpen(false)}
+                onClose={() => {
+                    setIsPayeeModalOpen(false);
+                    setPayeeInitialName('');
+                }}
+                initialName={payeeInitialName}
                 onSuccess={(newPayee) => {
                     if (newPayee) {
+                        setCustomerOptions(prev => {
+                            const exists = prev.some(c => c.value === newPayee.value);
+                            return exists ? prev : [newPayee, ...prev];
+                        });
                         fetchPayees();
                         handleCustomerChange(newPayee.value);
                     }

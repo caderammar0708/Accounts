@@ -30,8 +30,10 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
 
     // Modal States
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
+    const [payeeInitialName, setPayeeInitialName] = useState('');
     const [isMethodModalOpen, setIsMethodModalOpen] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [accountInitialName, setAccountInitialName] = useState('');
 
     const [isDirty, setIsDirty] = useState(false);
     const [savedEntryId, setSavedEntryId] = useState(payment?.id || null);
@@ -451,7 +453,10 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                                 options={customerOptions}
                                 value={data.customer}
                                 onSearch={fetchCustomers}
-                                onAddNew={() => setIsPayeeModalOpen(true)}
+                                onAddNew={(search) => {
+                                    setPayeeInitialName(search || '');
+                                    setIsPayeeModalOpen(true);
+                                }}
                                 onChange={handleCustomerChange}
                                 placeholder="Choose a customer"
                                 size="sm"
@@ -550,7 +555,10 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                             label="Deposit To"
                             options={accountOptions}
                             onSearch={fetchAccounts}
-                            onAddNew={() => setIsAccountModalOpen(true)}
+                            onAddNew={(search) => {
+                                setAccountInitialName(search || '');
+                                setIsAccountModalOpen(true);
+                            }}
                             value={data.depositTo}
                             onChange={(val) => { 
                                 setData(prev => ({
@@ -771,11 +779,19 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
 
             <QuickAddPayee
                 isOpen={isPayeeModalOpen}
-                onClose={() => setIsPayeeModalOpen(false)}
+                onClose={() => {
+                    setIsPayeeModalOpen(false);
+                    setPayeeInitialName('');
+                }}
+                initialName={payeeInitialName}
                 onSuccess={(newPayee) => {
                     if (newPayee) {
+                        setCustomerOptions(prev => {
+                            const exists = prev.some(c => c.value === newPayee.value);
+                            return exists ? prev : [newPayee, ...prev];
+                        });
                         fetchCustomers();
-                        setData("customer", newPayee.value);
+                        handleCustomerChange(newPayee.value);
                     }
                 }}
                 initialType="customer"
@@ -783,11 +799,24 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
 
             <QuickAddAccount
                 isOpen={isAccountModalOpen}
-                onClose={() => setIsAccountModalOpen(false)}
+                onClose={() => {
+                    setIsAccountModalOpen(false);
+                    setAccountInitialName('');
+                }}
+                initialName={accountInitialName}
                 onSuccess={(newAccount) => {
-                    fetchAccounts();
                     if (newAccount) {
-                        setData("depositTo", newAccount.value);
+                        setAccountOptions(prev => {
+                            const exists = prev.some(a => a.value === newAccount.value);
+                            return exists ? prev : [newAccount, ...prev];
+                        });
+                        fetchAccounts();
+                        setData(prev => ({
+                            ...prev,
+                            depositTo: newAccount.value,
+                            currency_id: newAccount.currency_id || prev.currency_id
+                        }));
+                        setIsDirty(true);
                     }
                 }}
             />

@@ -30,8 +30,10 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
 
     // Modal States
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
+    const [payeeInitialName, setPayeeInitialName] = useState('');
     const [isMethodModalOpen, setIsMethodModalOpen] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [accountInitialName, setAccountInitialName] = useState('');
     const actionRef = useRef('save');
     const [isDirty, setIsDirty] = useState(false);
 
@@ -429,7 +431,10 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
                                 options={supplierOptions}
                                 value={data.supplier}
                                 onSearch={fetchSuppliers}
-                                onAddNew={() => setIsPayeeModalOpen(true)}
+                                onAddNew={(search) => {
+                                    setPayeeInitialName(search || '');
+                                    setIsPayeeModalOpen(true);
+                                }}
                                 onChange={handleSupplierChange}
                                 placeholder="Choose a supplier"
                                 size="sm"
@@ -525,7 +530,10 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
                             label="Payment Account"
                             options={accountOptions}
                             onSearch={fetchAccounts}
-                            onAddNew={() => setIsAccountModalOpen(true)}
+                            onAddNew={(search) => {
+                                setAccountInitialName(search || '');
+                                setIsAccountModalOpen(true);
+                            }}
                             value={data.paymentAccount}
                             onChange={(val) => { setData("paymentAccount", val); setIsDirty(true); }}
                             placeholder="Select Account"
@@ -720,11 +728,19 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
 
             <QuickAddPayee
                 isOpen={isPayeeModalOpen}
-                onClose={() => setIsPayeeModalOpen(false)}
+                onClose={() => {
+                    setIsPayeeModalOpen(false);
+                    setPayeeInitialName('');
+                }}
+                initialName={payeeInitialName}
                 onSuccess={(newPayee) => {
                     if (newPayee) {
+                        setSupplierOptions(prev => {
+                            const exists = prev.some(p => p.value === newPayee.value);
+                            return exists ? prev : [newPayee, ...prev];
+                        });
                         fetchSuppliers();
-                        setData("supplier", newPayee.value);
+                        handleSupplierChange(newPayee.value);
                     }
                 }}
                 initialType="supplier"
@@ -732,11 +748,24 @@ export default function PayBill({ paymentMethods = [], payment = null }) {
 
             <QuickAddAccount
                 isOpen={isAccountModalOpen}
-                onClose={() => setIsAccountModalOpen(false)}
+                onClose={() => {
+                    setIsAccountModalOpen(false);
+                    setAccountInitialName('');
+                }}
+                initialName={accountInitialName}
                 onSuccess={(newAccount) => {
-                    fetchAccounts();
                     if (newAccount) {
-                        setData("paymentAccount", newAccount.value);
+                        setAccountOptions(prev => {
+                            const exists = prev.some(a => a.value === newAccount.value);
+                            return exists ? prev : [newAccount, ...prev];
+                        });
+                        fetchAccounts();
+                        setData(prev => ({
+                            ...prev,
+                            paymentAccount: newAccount.value,
+                            currency_id: newAccount.currency_id || prev.currency_id
+                        }));
+                        setIsDirty(true);
                     }
                 }}
             />

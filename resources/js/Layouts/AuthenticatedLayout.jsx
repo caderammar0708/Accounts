@@ -75,10 +75,10 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
             { name: 'Pump Setup', href: route('tanks.index'), icon: 'pump', permission: 'shifts.view', activeRoutes: ['tanks.*', 'pumps.*'] },
         ] : []),
         { name: 'Chart of Accounts', href: route('chart-of-account.index'), icon: 'accounting', permission: 'chart-of-accounts.view' },
-        { name: 'Bank Reconciliation', href: route('bank-reconciliation.index'), icon: 'reconciliation', permission: 'bank-reconciliation.view' },
         { name: 'Reports', href: route('reports.index'), icon: 'reports', permission: 'reports.view' },
         ...(page.props.auth.location ? [{ name: 'Locations', href: route('locations.index'), icon: 'locations', permission: 'locations.view' }] : []),
         { name: 'Import Tools', href: route('import.index'), icon: 'import_tools', permission: 'import.view', activeRoutes: ['import.*'] },
+        { name: 'Bank Reconciliation', href: route('bank-reconciliation.index'), icon: 'reconciliation', permission: 'bank-reconciliation.view' },
     ];
 
     return (

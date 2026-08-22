@@ -63,6 +63,7 @@ export default function ItemForm({
     const [localAllItems, setLocalAllItems] = useState(initialAllItems);
     const [isLoadingOptions, setIsLoadingOptions] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [accountInitialName, setAccountInitialName] = useState('');
     const [accountModalType, setAccountModalType] = useState('asset');
     const [showHistoricalConfirm, setShowHistoricalConfirm] = useState(false);
 
@@ -182,21 +183,33 @@ export default function ItemForm({
     }, []);
 
     const handleAccountSuccess = (newAcc, type) => {
+        if (newAcc) {
+            const accOption = {
+                id: newAcc.value || newAcc.id,
+                account_code: newAcc.account_code || (newAcc.label ? newAcc.label.split(' - ')[0] : ''),
+                name: newAcc.name || (newAcc.label ? (newAcc.label.split(' - ')[1] || newAcc.label) : ''),
+                value: newAcc.value || newAcc.id,
+                label: newAcc.label || `${newAcc.account_code || ''} - ${newAcc.name || ''}`
+            };
+
+            if (type === 'asset') {
+                setLocalInventoryAccounts(prev => [accOption, ...prev.filter(a => String(a.id || a.value) !== String(accOption.id))]);
+                setData('inventory_account_id', accOption.id);
+            } else if (type === 'income') {
+                setLocalIncomeAccounts(prev => [accOption, ...prev.filter(a => String(a.id || a.value) !== String(accOption.id))]);
+                setData('income_account_id', accOption.id);
+            } else if (type === 'expense') {
+                setLocalExpenseAccounts(prev => [accOption, ...prev.filter(a => String(a.id || a.value) !== String(accOption.id))]);
+                setData('expense_account_id', accOption.id);
+            }
+        }
+
         router.reload({
             only: ['inventoryAccounts', 'incomeAccounts', 'expenseAccounts'],
             onSuccess: (page) => {
-                setLocalInventoryAccounts(page.props.inventoryAccounts || []);
-                setLocalIncomeAccounts(page.props.incomeAccounts || []);
-                setLocalExpenseAccounts(page.props.expenseAccounts || []);
-                if (newAcc && newAcc.value) {
-                    if (type === 'asset') {
-                        setData('inventory_account_id', newAcc.value);
-                    } else if (type === 'income') {
-                        setData('income_account_id', newAcc.value);
-                    } else if (type === 'expense') {
-                        setData('expense_account_id', newAcc.value);
-                    }
-                }
+                if (page.props.inventoryAccounts) setLocalInventoryAccounts(page.props.inventoryAccounts);
+                if (page.props.incomeAccounts) setLocalIncomeAccounts(page.props.incomeAccounts);
+                if (page.props.expenseAccounts) setLocalExpenseAccounts(page.props.expenseAccounts);
             }
         });
     };
@@ -512,8 +525,9 @@ export default function ItemForm({
                                     value={data.inventory_account_id}
                                     onChange={val => setData('inventory_account_id', val)}
                                     placeholder="Link to Inventory Asset"
-                                    onAddNew={() => {
+                                    onAddNew={(search) => {
                                         setAccountModalType('asset');
+                                        setAccountInitialName(search || '');
                                         setIsAccountModalOpen(true);
                                     }}
                                 />
@@ -552,8 +566,9 @@ export default function ItemForm({
                                     value={data.income_account_id}
                                     onChange={val => setData('income_account_id', val)}
                                     placeholder="Link to Income Account"
-                                    onAddNew={() => {
+                                    onAddNew={(search) => {
                                         setAccountModalType('income');
+                                        setAccountInitialName(search || '');
                                         setIsAccountModalOpen(true);
                                     }}
                                 />
@@ -584,8 +599,9 @@ export default function ItemForm({
                                     value={data.expense_account_id}
                                     onChange={val => setData('expense_account_id', val)}
                                     placeholder="Link to Expense Account"
-                                    onAddNew={() => {
+                                    onAddNew={(search) => {
                                         setAccountModalType('expense');
+                                        setAccountInitialName(search || '');
                                         setIsAccountModalOpen(true);
                                     }}
                                 />
@@ -730,7 +746,11 @@ export default function ItemForm({
             {isAccountModalOpen && (
                 <QuickAddAccount
                     isOpen={isAccountModalOpen}
-                    onClose={() => setIsAccountModalOpen(false)}
+                    onClose={() => {
+                        setIsAccountModalOpen(false);
+                        setAccountInitialName('');
+                    }}
+                    initialName={accountInitialName}
                     defaultType={accountModalType}
                     onSuccess={(newAcc) => handleAccountSuccess(newAcc, accountModalType)}
                 />

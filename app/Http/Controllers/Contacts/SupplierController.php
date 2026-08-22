@@ -59,7 +59,10 @@ class SupplierController extends Controller
             'new_supplier' => [
                 'value' => $supplier->id,
                 'label' => $supplier->display_name,
-                'type' => 'Supplier'
+                'type' => 'Supplier',
+                'email' => $supplier->email,
+                'billing_address' => $supplier->address,
+                'currency_id' => $supplier->currency_id ?? null,
             ]
         ]);
     }

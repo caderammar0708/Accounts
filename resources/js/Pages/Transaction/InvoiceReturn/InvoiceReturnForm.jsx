@@ -24,6 +24,7 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
 
     // Modal States
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
+    const [payeeInitialName, setPayeeInitialName] = useState('');
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [addingItemRowIndex, setAddingItemRowIndex] = useState(null);
 
@@ -319,7 +320,10 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
                                 placeholder="Select a customer"
                                 value={data.customer}
                                 onSearch={fetchCustomers}
-                                onAddNew={() => setIsPayeeModalOpen(true)}
+                                onAddNew={(search) => {
+                                    setPayeeInitialName(search || '');
+                                    setIsPayeeModalOpen(true);
+                                }}
                                 onChange={(val) => {
                                     const customer = customerOptions.find(c => c.value === val);
                                     setData(d => ({
@@ -461,10 +465,26 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
 
             <QuickAddPayee
                 isOpen={isPayeeModalOpen}
-                onClose={() => setIsPayeeModalOpen(false)}
+                onClose={() => {
+                    setIsPayeeModalOpen(false);
+                    setPayeeInitialName('');
+                }}
+                initialName={payeeInitialName}
                 onSuccess={(newPayee) => {
-                    fetchCustomers();
-                    if (newPayee) setData("customer", newPayee.value);
+                    if (newPayee) {
+                        setCustomerOptions(prev => {
+                            const exists = prev.some(c => c.value === newPayee.value);
+                            return exists ? prev : [newPayee, ...prev];
+                        });
+                        fetchCustomers();
+                        setData(d => ({
+                            ...d,
+                            customer: newPayee.value,
+                            email: newPayee.email || d.email,
+                            billingAddress: newPayee.billing_address || d.billingAddress
+                        }));
+                        setIsDirty(true);
+                    }
                 }}
                 initialType="customer"
             />

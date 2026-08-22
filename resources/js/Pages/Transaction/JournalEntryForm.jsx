@@ -27,7 +27,11 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
 
     // Modal States
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
+    const [payeeInitialName, setPayeeInitialName] = useState('');
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [accountInitialName, setAccountInitialName] = useState('');
+    const [addingAccountRowIndex, setAddingAccountRowIndex] = useState(null);
+    const [addingPayeeRowIndex, setAddingPayeeRowIndex] = useState(null);
 
     const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock();
     const [booksPin, setBooksPin] = useState("");
@@ -82,7 +86,11 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
             label: "Account",
             type: "select",
             options: accountOptions,
-            onAddNew: () => setIsAccountModalOpen(true),
+            onAddNew: (index, search) => {
+                setAccountInitialName(search || '');
+                setAddingAccountRowIndex(index);
+                setIsAccountModalOpen(true);
+            },
             placeholder: "Select account",
             className: "w-[30%]"
         },
@@ -94,7 +102,11 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
             label: "Name",
             type: "select",
             options: payeeOptions,
-            onAddNew: () => setIsPayeeModalOpen(true),
+            onAddNew: (index, search) => {
+                setPayeeInitialName(search || '');
+                setAddingPayeeRowIndex(index);
+                setIsPayeeModalOpen(true);
+            },
             placeholder: "Select name",
             className: "w-[20%]",
             tabIndex: 0,
@@ -496,14 +508,66 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
 
             <QuickAddPayee
                 isOpen={isPayeeModalOpen}
-                onClose={() => setIsPayeeModalOpen(false)}
-                onSuccess={(newPayee) => fetchPayees()}
+                onClose={() => {
+                    setIsPayeeModalOpen(false);
+                    setPayeeInitialName('');
+                    setAddingPayeeRowIndex(null);
+                }}
+                initialName={payeeInitialName}
+                onSuccess={(newPayee) => {
+                    if (newPayee) {
+                        setPayeeOptions(prev => {
+                            const exists = prev.some(p => p.value === newPayee.value);
+                            return exists ? prev : [newPayee, ...prev];
+                        });
+                        fetchPayees();
+                        if (addingPayeeRowIndex !== null && addingPayeeRowIndex !== undefined) {
+                            setLines(prev => {
+                                const updated = [...prev];
+                                if (updated[addingPayeeRowIndex]) {
+                                    updated[addingPayeeRowIndex] = {
+                                        ...updated[addingPayeeRowIndex],
+                                        payee_id: newPayee.value
+                                    };
+                                }
+                                return updated;
+                            });
+                            setIsDirty(true);
+                        }
+                    }
+                }}
             />
 
             <QuickAddAccount
                 isOpen={isAccountModalOpen}
-                onClose={() => setIsAccountModalOpen(false)}
-                onSuccess={(newAcc) => fetchAccounts()}
+                onClose={() => {
+                    setIsAccountModalOpen(false);
+                    setAccountInitialName('');
+                    setAddingAccountRowIndex(null);
+                }}
+                initialName={accountInitialName}
+                onSuccess={(newAcc) => {
+                    if (newAcc) {
+                        setAccountOptions(prev => {
+                            const exists = prev.some(a => a.value === newAcc.value);
+                            return exists ? prev : [newAcc, ...prev];
+                        });
+                        fetchAccounts();
+                        if (addingAccountRowIndex !== null && addingAccountRowIndex !== undefined) {
+                            setLines(prev => {
+                                const updated = [...prev];
+                                if (updated[addingAccountRowIndex]) {
+                                    updated[addingAccountRowIndex] = {
+                                        ...updated[addingAccountRowIndex],
+                                        account_id: newAcc.value
+                                    };
+                                }
+                                return updated;
+                            });
+                            setIsDirty(true);
+                        }
+                    }
+                }}
             />
 
             <PinPromptModal

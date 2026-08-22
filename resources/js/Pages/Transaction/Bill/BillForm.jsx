@@ -39,10 +39,13 @@ export default function BillForm({
     // Modal States
     const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [payeeInitialName, setPayeeInitialName] = useState('');
+    const [accountInitialName, setAccountInitialName] = useState('');
     const [isTermModalOpen, setIsTermModalOpen] = useState(false);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [accountModalType, setAccountModalType] = useState('payment');
     const [addingItemRowIndex, setAddingItemRowIndex] = useState(null);
+    const [addingAccountRowIndex, setAddingAccountRowIndex] = useState(null);
     const actionRef = useRef('save');
     const [payeeOptions, setPayeeOptions] = useState([]);
     const [accountOptions, setAccountOptions] = useState([]);
@@ -420,8 +423,10 @@ export default function BillForm({
             onSearch: fetchAccounts,
             type: "select",
             width: "280px",
-            onAddNew: () => {
+            onAddNew: (index, search) => {
                 setAccountModalType('payment');
+                setAccountInitialName(search || '');
+                setAddingAccountRowIndex(index);
                 setIsAccountModalOpen(true);
             }
         },
@@ -496,7 +501,10 @@ export default function BillForm({
                                 onSearch={fetchPayees}
                                 size="sm"
                                 error={errors.supplier}
-                                onAddNew={() => setIsPayeeModalOpen(true)}
+                                onAddNew={(search) => {
+                                    setPayeeInitialName(search || '');
+                                    setIsPayeeModalOpen(true);
+                                }}
                             />
                         </div>
                     </div>
@@ -681,11 +689,26 @@ export default function BillForm({
 
             <QuickAddPayee
                 isOpen={isPayeeModalOpen}
-                onClose={() => setIsPayeeModalOpen(false)}
+                onClose={() => {
+                    setIsPayeeModalOpen(false);
+                    setPayeeInitialName('');
+                }}
+                initialName={payeeInitialName}
                 onSuccess={(newPayee) => {
                     if (newPayee) {
+                        setPayeeOptions(prev => {
+                            const exists = prev.some(p => p.value === newPayee.value);
+                            return exists ? prev : [newPayee, ...prev];
+                        });
                         fetchPayees();
-                        setData("supplier", newPayee.value);
+                        setData(prev => ({
+                            ...prev,
+                            supplier: newPayee.value,
+                            email: newPayee.email || prev.email,
+                            mailingAddress: newPayee.billing_address || prev.mailingAddress,
+                            currency_id: newPayee.currency_id || prev.currency_id
+                        }));
+                        setIsDirty(true);
                     }
                 }}
                 initialType="supplier"
@@ -693,14 +716,33 @@ export default function BillForm({
 
             <QuickAddAccount
                 isOpen={isAccountModalOpen}
-                onClose={() => setIsAccountModalOpen(false)}
-                type={accountModalType}
+                onClose={() => {
+                    setIsAccountModalOpen(false);
+                    setAccountInitialName('');
+                    setAddingAccountRowIndex(null);
+                }}
+                initialName={accountInitialName}
+                defaultType={accountModalType}
                 onSuccess={(newAcc) => {
                     if (newAcc) {
-                        fetchAccounts().then(() => {
-                            // Automatically select the new account in the last active row if needed,
-                            // or just reload options so user can choose it.
+                        setAccountOptions(prev => {
+                            const exists = prev.some(a => a.value === newAcc.value);
+                            return exists ? prev : [newAcc, ...prev];
                         });
+                        fetchAccounts();
+                        if (addingAccountRowIndex !== null && addingAccountRowIndex !== undefined) {
+                            setData(prev => {
+                                const updated = [...prev.categoryDetails];
+                                if (updated[addingAccountRowIndex]) {
+                                    updated[addingAccountRowIndex] = {
+                                        ...updated[addingAccountRowIndex],
+                                        category: newAcc.value
+                                    };
+                                }
+                                return { ...prev, categoryDetails: updated };
+                            });
+                            setIsDirty(true);
+                        }
                     }
                 }}
             />
@@ -745,4 +787,4 @@ export default function BillForm({
         </TransactionLayout>
     );
 }
-}
+

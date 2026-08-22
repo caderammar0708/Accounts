@@ -395,7 +395,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                             <div
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => {
-                                    onAddNew();
+                                    onAddNew(search);
                                     setIsOpen(false);
                                     restoreFocus();
                                 }}

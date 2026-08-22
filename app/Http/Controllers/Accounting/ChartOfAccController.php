@@ -138,7 +138,9 @@ class ChartOfAccController extends Controller
             'success' => 'Chart of account created successfully.',
             'new_account' => [
                 'value' => $account->id,
-                'label' => "{$account->account_code} - {$account->name}"
+                'label' => "{$account->account_code} - {$account->name}",
+                'account_type' => $account->account_type,
+                'currency_id' => $account->currency_id,
             ]
         ]);
     }

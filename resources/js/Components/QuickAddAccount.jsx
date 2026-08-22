@@ -31,7 +31,7 @@ const Toggle = ({ checked, onChange, label, description, disabled }) => (
     </label>
 );
 
-export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultType = 'asset', account = null, initialParentAccount = null, currencies = [], multiCurrencyEnabled, homeCurrencyId }) {
+export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultType = 'asset', account = null, initialParentAccount = null, currencies = [], multiCurrencyEnabled, homeCurrencyId, initialName = '' }) {
     const isEdit = !!account;
     const { auth } = usePage().props;
     const company = auth?.company;
@@ -91,6 +91,7 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
                 const accType = initialParentAccount ? initialParentAccount.account_type : defaultType;
                 setData(prev => ({
                     ...prev,
+                    name: initialName || '',
                     account_type: accType,
                     sub_type: initialParentAccount ? initialParentAccount.sub_type : (getDetailTypeOptions(accType)?.[0]?.value || ''),
                     opening_balance: '0.00',
@@ -103,7 +104,7 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
             }
             clearErrors();
         }
-    }, [isOpen, account, initialParentAccount]);
+    }, [isOpen, account, initialParentAccount, initialName]);
 
     const validateAccountName = (value) => {
         const normalized = String(value || '').trim().toLowerCase();

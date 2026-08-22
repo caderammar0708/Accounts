@@ -6,7 +6,7 @@ import SearchableSelect from './SearchableSelect';
 import CommonButton from './CommonButton';
 import axios from 'axios';
 
-export default function QuickAddPayee({ isOpen, onClose, onSuccess, initialType = 'customer', hideEmployeeTab = false }) {
+export default function QuickAddPayee({ isOpen, onClose, onSuccess, initialType = 'customer', hideEmployeeTab = false, initialName = '' }) {
     const [type, setType] = useState(initialType);
     const [designationOptions, setDesignationOptions] = useState([]);
 
@@ -20,9 +20,16 @@ export default function QuickAddPayee({ isOpen, onClose, onSuccess, initialType 
         if (isOpen) {
             setType(initialType);
             reset();
+            if (initialName) {
+                setData(prev => ({
+                    ...prev,
+                    display_name: initialName,
+                    name: initialName,
+                }));
+            }
             fetchDesignations();
         }
-    }, [isOpen, initialType]);
+    }, [isOpen, initialType, initialName]);
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         // Common fields
