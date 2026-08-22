@@ -26,7 +26,7 @@ class ReportsController extends Controller
 
     public function dashboardSummary(Request $request)
     {
-        $plRequest = new IlluminateHttpRequest();
+        $plRequest = new Request();
         $plRequest->merge(['type' => 'this_year']);
         $plData = $this->reportDataService->profitAndLossData($plRequest);
         
@@ -36,7 +36,7 @@ class ReportsController extends Controller
         
         $netIncome = $totalIncome - $totalCogs - $totalExpense;
 
-        $bsRequest = new IlluminateHttpRequest();
+        $bsRequest = new Request();
         $bsRequest->merge(['type' => 'this_year']);
         $bsData = $this->reportDataService->balanceSheetData($bsRequest);
         
