@@ -62,7 +62,7 @@ class TransactionHistoryController extends Controller
                     
                 $refNo = $entry->reference 
                     ?: $entry->transactionable?->reference_number
-                    ?: $entry->transactionable?->invoice_number
+                    ?: $entry->transactionable?->invoice_no
                     ?: $entry->transactionable?->bill_no
                     ?: $entry->transactionable?->receipt_number
                     ?: '—';

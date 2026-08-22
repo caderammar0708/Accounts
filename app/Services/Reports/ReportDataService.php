@@ -375,7 +375,7 @@ public function customerBalanceData($endDate = null)
                 'credit_invoice_items.quantity',
                 'credit_invoice_items.rate',
                 'credit_invoice_items.amount',
-                'credit_invoices.invoice_number as reference',
+                'credit_invoices.invoice_no as reference',
                 'credit_invoices.invoice_date as date',
                 'items.id as item_id',
                 'items.name as item_name',
