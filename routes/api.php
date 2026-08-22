@@ -42,6 +42,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/outstanding-cheques', [LookupController::class, 'outstandingCheques'])->name('api.outstanding-cheques');
 
     Route::prefix('reports')->group(function () {
+        Route::get('/customer-balance-detail', [\App\Http\Controllers\Api\ReportsDetailController::class, 'customerBalanceDetail'])->name('api.reports.customer-balance-detail');
+        Route::get('/supplier-balance-detail', [\App\Http\Controllers\Api\ReportsDetailController::class, 'supplierBalanceDetail'])->name('api.reports.supplier-balance-detail');
+        Route::get('/inventory-detail-all', [\App\Http\Controllers\Api\ReportsDetailController::class, 'inventoryDetailAll'])->name('api.reports.inventory-detail-all');
         Route::get('/profit-and-loss', [ReportsController::class, 'profitAndLoss'])->name('api.reports.profit-loss');
         Route::get('/balance-sheet', [ReportsController::class, 'balanceSheet'])->name('api.reports.balance-sheet');
         Route::get('/customer-balance', [ReportsController::class, 'customerBalance'])->name('api.reports.customer-balance');
@@ -63,3 +66,4 @@ Route::post('/sso/validate-token', [SsoController::class, 'validateToken']);
 use App\Http\Controllers\Api\HubSyncController;
 Route::get('/hub/export', [HubSyncController::class, 'export']);
 Route::post('/hub/import-user', [HubSyncController::class, 'importUser']);
+
