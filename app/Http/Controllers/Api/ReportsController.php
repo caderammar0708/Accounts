@@ -26,7 +26,7 @@ class ReportsController extends Controller
 
     public function profitAndLoss(Request $request)
     {
-        $reportData = $this->reportDataService->profitAndLoss(
+        $reportData = $this->reportDataService->profitAndLossData(
             $request->query('start_date'),
             $request->query('end_date'),
             $request->query('display_by', 'total')
@@ -37,7 +37,7 @@ class ReportsController extends Controller
 
     public function balanceSheet(Request $request)
     {
-        $reportData = $this->reportDataService->balanceSheet(
+        $reportData = $this->reportDataService->balanceSheetData(
             $request->query('start_date'),
             $request->query('end_date'),
             $request->query('display_by', 'total')
@@ -48,18 +48,18 @@ class ReportsController extends Controller
 
     public function customerBalance(Request $request)
     {
-        return CustomerBalanceResource::collection($this->reportDataService->customerBalance());
+        return CustomerBalanceResource::collection($this->reportDataService->customerBalanceData());
     }
 
     public function supplierBalance(Request $request)
     {
-        return SupplierBalanceResource::collection($this->reportDataService->supplierBalance());
+        return SupplierBalanceResource::collection($this->reportDataService->supplierBalanceData());
     }
 
     public function inventorySummary(Request $request)
     {
         return InventorySummaryResource::collection(
-            $this->reportDataService->inventorySummary(
+            $this->reportDataService->inventorySummaryData(
                 $request->query('start_date'),
                 $request->query('end_date')
             )
@@ -68,21 +68,22 @@ class ReportsController extends Controller
 
     public function salesByItem(Request $request)
     {
-        return SalesByItemResource::collection($this->reportDataService->salesByItem());
+        return SalesByItemResource::collection($this->reportDataService->salesByItemData());
     }
 
     public function salesByCustomer(Request $request)
     {
-        return SalesByCustomerResource::collection($this->reportDataService->salesByCustomer());
+        return SalesByCustomerResource::collection($this->reportDataService->salesByCustomerData());
     }
 
     public function purchaseByItem(Request $request)
     {
-        return PurchaseByItemResource::collection($this->reportDataService->purchaseByItem());
+        return PurchaseByItemResource::collection($this->reportDataService->purchaseByItemData());
     }
 
     public function purchaseBySupplier(Request $request)
     {
-        return PurchaseBySupplierResource::collection($this->reportDataService->purchaseBySupplier());
+        return PurchaseBySupplierResource::collection($this->reportDataService->purchaseBySupplierData());
     }
 }
+
