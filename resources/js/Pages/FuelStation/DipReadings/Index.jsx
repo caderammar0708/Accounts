@@ -69,13 +69,14 @@ export default function Index({ auth, dipReadings, tanks, filters }) {
                                     </select>
                                 </div>
                                 
-                                <button
+                                <CommonButton
                                     onClick={() => setIsSlideOverOpen(true)}
-                                    className="bg-primary hover:bg-primary-600 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors"
+                                    size="sm"
+                                    className="gap-1.5"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
                                     New Dip Reading
-                                </button>
+                                </CommonButton>
                             </div>
 
                             <div className="overflow-x-auto border rounded-xl">
@@ -125,12 +126,14 @@ export default function Index({ auth, dipReadings, tanks, filters }) {
                                                         {reading.creator?.name}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                                                        <button 
+                                                        <CommonButton 
                                                             onClick={() => handleDelete(reading.id)}
-                                                            className="text-red-500 hover:text-red-700 font-medium text-xs"
+                                                            variant="ghost"
+                                                            size="xs"
+                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
                                                         >
                                                             Delete
-                                                        </button>
+                                                        </CommonButton>
                                                     </td>
                                                 </tr>
                                             ))
@@ -220,13 +223,12 @@ export default function Index({ auth, dipReadings, tanks, filters }) {
                         </div>
 
                         <div className="flex justify-end gap-3 pt-6 border-t">
-                            <button
-                                type="button"
+                            <CommonButton
                                 onClick={() => setIsSlideOverOpen(false)}
-                                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50"
+                                variant="secondary"
                             >
                                 Cancel
-                            </button>
+                            </CommonButton>
                             <CommonButton
                                 type="submit"
                                 disabled={processing}
