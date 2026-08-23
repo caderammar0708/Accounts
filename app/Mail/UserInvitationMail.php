@@ -33,7 +33,8 @@ class UserInvitationMail extends Mailable
     {
         $name = e($this->user->name);
         $role = e(ucfirst($this->user->role));
-        $appName = e(config('app.name'));
+        $company = \App\Models\Company::first();
+        $appName = $company ? e($company->company_name) : e(config('app.name'));
         $inviteUrl = e($this->inviteUrl);
         $inviterName = $this->inviter ? e($this->inviter->name) : 'an administrator';
 
@@ -59,7 +60,7 @@ class UserInvitationMail extends Mailable
                         <td style="padding:32px 40px 24px;">
                             <p style="margin:0 0 18px;font-size:16px;line-height:1.8;color:#374151;">Hi {$name},</p>
                             <p style="margin:0 0 18px;font-size:16px;line-height:1.8;color:#374151;">
-                                You have been invited by <strong>{$inviterName}</strong> to join <strong>{$appName}</strong> as a User.
+                                You have been invited by <strong>{$inviterName}</strong> to join <strong>{$appName}</strong> as a <strong>{$role}</strong>.
                             </p>
                             <p style="margin:0 0 28px;font-size:16px;line-height:1.8;color:#374151;">
                                 Click the button below to set your password and activate your account. This link will expire in 48 hours.
