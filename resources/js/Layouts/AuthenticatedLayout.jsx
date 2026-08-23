@@ -178,21 +178,21 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
 
                         {/* POS Billing Shortcut */}
                         {page.props.auth.pos_layout_enabled && (
-                            <Link href={route('pos.index')} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors relative" title="POS Billing">
+                            <Link href={route('pos.index')} className="p-2 text-slate-400 hover:text-primary hover:bg-primary-50 rounded-full transition-colors relative" title="POS Billing">
                                 <span className="material-symbols-outlined text-[20px] leading-none block">point_of_sale</span>
                             </Link>
                         )}
 
                         {/* warranties Billing Shortcut */}
                         {isServiceStation && (
-                            <Link href={route('warranties.index')} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors relative" title="warranties Billing">
+                            <Link href={route('warranties.index')} className="p-2 text-slate-400 hover:text-primary hover:bg-primary-50 rounded-full transition-colors relative" title="warranties Billing">
                                 <span className="material-symbols-outlined text-[20px] leading-none block">shield</span>
                             </Link>
                         )}
 
                         {/* job Shortcut */}
                         {isServiceStation && (
-                            <Link href={route('job-cards.index')} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors relative" title="Job Registrations">
+                            <Link href={route('job-cards.index')} className="p-2 text-slate-400 hover:text-primary hover:bg-primary-50 rounded-full transition-colors relative" title="Job Registrations">
                                 <span className="material-symbols-outlined text-[20px] leading-none block">work</span>
                             </Link>
                         )}

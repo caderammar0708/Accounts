@@ -28,8 +28,7 @@ class TankDipReadingController extends Controller
         
         $dipReadings = $query->paginate(15)->withQueryString();
         
-        $tanks = Tank::when($companyId, fn($q) => $q->where('company_id', $companyId))
-            ->orderBy('name')
+        $tanks = Tank::orderBy('name')
             ->get(['id', 'name', 'current_stock', 'capacity']);
             
         return Inertia::render('FuelStation/DipReadings/Index', [

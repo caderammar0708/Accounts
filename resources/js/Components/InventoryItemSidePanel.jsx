@@ -499,7 +499,7 @@ export default function InventoryItemSidePanel({
                                         <button
                                             type="button"
                                             onClick={() => setData('sku', 'ITM-' + Math.floor(100000 + Math.random() * 900000))}
-                                            className="text-[10px] text-blue-600 hover:text-blue-800"
+                                            className="text-[10px] text-primary hover:text-primary-700"
                                         >
                                             Generate
                                         </button>

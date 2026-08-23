@@ -21,16 +21,16 @@ export default function PrintBarcodeModal({ isOpen, onClose, onConfirm, item }) 
                 </div>
                 
                 <form onSubmit={handleSubmit} className="p-4 space-y-4">
-                    <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
-                        <div className="font-bold text-sm text-blue-900">{item.name}</div>
-                        <div className="text-xs text-blue-700 mt-1">SKU: {item.sku || 'No SKU! Cannot print barcode.'}</div>
+                    <div className="bg-primary-50 border border-primary-100 p-3 rounded-lg">
+                        <div className="font-bold text-sm text-primary-800">{item.name}</div>
+                        <div className="text-xs text-primary-600 mt-1">SKU: {item.sku || 'No SKU! Cannot print barcode.'}</div>
                     </div>
 
                     <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">Number of Copies</label>
                         <input
                             type="number"
-                            className="w-full text-sm py-2 px-3 border-slate-300 rounded shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full text-sm py-2 px-3 border-slate-300 rounded shadow-sm focus:border-primary focus:ring-blue-500"
                             value={count}
                             onChange={(e) => setCount(Math.max(1, parseInt(e.target.value) || 1))}
                             min="1"

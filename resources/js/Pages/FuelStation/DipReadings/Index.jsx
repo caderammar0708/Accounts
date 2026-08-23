@@ -53,12 +53,12 @@ export default function Index({ auth, dipReadings, tanks, filters }) {
                             <div className="flex justify-between items-center mb-6">
                                 <div className="flex gap-4 items-center">
                                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                        <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                                        <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
                                         Tank Reconciliations
                                     </h3>
                                     
                                     <select 
-                                        className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm"
+                                        className="border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm text-sm py-1.5 pl-3 pr-8"
                                         value={filters?.tank_id || ''}
                                         onChange={handleFilterChange}
                                     >
@@ -71,7 +71,7 @@ export default function Index({ auth, dipReadings, tanks, filters }) {
                                 
                                 <button
                                     onClick={() => setIsSlideOverOpen(true)}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                                    className="bg-primary hover:bg-primary-600 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
                                     New Dip Reading
@@ -145,7 +145,7 @@ export default function Index({ auth, dipReadings, tanks, filters }) {
             <SlideOver 
                 title="New Dip Reading" 
                 isOpen={isSlideOverOpen} 
-                setIsOpen={setIsSlideOverOpen}
+                onClose={() => setIsSlideOverOpen(false)}
                 size="md"
             >
                 <div className="p-6">
@@ -230,7 +230,7 @@ export default function Index({ auth, dipReadings, tanks, filters }) {
                             <CommonButton
                                 type="submit"
                                 disabled={processing}
-                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                                className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-600"
                             >
                                 {processing ? 'Saving...' : 'Save Dip Reading'}
                             </CommonButton>

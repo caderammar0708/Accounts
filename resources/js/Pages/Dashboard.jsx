@@ -26,7 +26,7 @@ export default function Dashboard({ auth, metrics, trendData, lowStockItems, rec
                                 <p className="text-[9px] font-semibold uppercase tracking-[0.35em] text-slate-500 mb-1">Today's Jobs</p>
                                 <p className="text-2xl font-black text-slate-900 leading-tight">{metrics.todays_jobs}</p>
                             </div>
-                            <div className="h-10 w-10 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+                            <div className="h-10 w-10 rounded-2xl bg-primary-50 flex items-center justify-center text-primary">
                                 <span className="material-symbols-outlined text-sm">build</span>
                             </div>
                         </div>
@@ -153,13 +153,13 @@ export default function Dashboard({ auth, metrics, trendData, lowStockItems, rec
                         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                             <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
                                 <h3 className="font-bold text-slate-800">Recent Job Registrations</h3>
-                                <Link href={route('job-cards.index')} className="text-sm text-blue-600 hover:text-blue-800">View All</Link>
+                                <Link href={route('job-cards.index')} className="text-sm text-primary hover:text-primary-700">View All</Link>
                             </div>
                             <div className="divide-y divide-slate-100">
                                 {recentJobs.length > 0 ? recentJobs.map(job => (
                                     <div key={job.id} className="p-4 flex items-center justify-between hover:bg-slate-50">
                                         <div>
-                                            <Link href={route('job-cards.show', job.id)} className="font-bold text-slate-900 hover:text-blue-600">#{job.job_card_number}</Link>
+                                            <Link href={route('job-cards.show', job.id)} className="font-bold text-slate-900 hover:text-primary">#{job.job_card_number}</Link>
                                             <p className="text-sm text-slate-500">{job.customer?.display_name} - {job.device?.model}</p>
                                         </div>
                                         <div className="text-right">

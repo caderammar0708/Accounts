@@ -408,7 +408,7 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
                                 ▶
                             </span>
                             <span className="font-semibold text-slate-700 text-sm">Category details</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold uppercase tracking-wider">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 font-bold uppercase tracking-wider">
                                 {data.items.filter(item => item.category).length} lines
                             </span>
                         </div>
