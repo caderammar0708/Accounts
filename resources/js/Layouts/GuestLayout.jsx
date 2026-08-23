@@ -8,7 +8,7 @@ export default function GuestLayout({ children }) {
             <div className="hidden lg:flex lg:w-1/2 relative bg-slate-900 items-center justify-center overflow-hidden">
                 {/* Modern Mesh Gradient Background */}
                 <div className="absolute inset-0 z-0">
-                    <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] rounded-full bg-[#00713D]/20 blur-[120px]" />
+                    <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] rounded-full bg-primary/20 blur-[120px]" />
                     <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] rounded-full bg-green-600/20 blur-[120px]" />
                     <div className="absolute top-[20%] right-[20%] w-[40%] h-[40%] rounded-full bg-green-400/10 blur-[100px]" />
                 </div>

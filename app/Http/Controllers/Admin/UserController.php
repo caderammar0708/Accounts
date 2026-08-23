@@ -71,7 +71,7 @@ class UserController extends Controller
 
         $inviteUrl = route('invite.setup', $inviteToken);
         try {
-            Mail::to($user->email)->send(new UserInvitationMail($user, $inviteUrl));
+            Mail::to($user->email)->send(new UserInvitationMail($user, $inviteUrl, auth()->user()));
         } catch (\Exception $e) {
             // Log mail exception if mailer is not configured in local environment
         }
@@ -93,7 +93,7 @@ class UserController extends Controller
 
         $inviteUrl = route('invite.setup', $user->invite_token);
         try {
-            Mail::to($user->email)->send(new UserInvitationMail($user, $inviteUrl));
+            Mail::to($user->email)->send(new UserInvitationMail($user, $inviteUrl, auth()->user()));
         } catch (\Exception $e) {
             // Log mail exception
         }

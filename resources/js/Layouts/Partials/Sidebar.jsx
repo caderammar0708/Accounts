@@ -71,7 +71,7 @@ export default function Sidebar({ navigation, user, onQuickMenuOpen }) {
             <div className="px-6 py-2">
                 <button
                     onClick={onQuickMenuOpen}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-[#00713D] text-white font-bold text-[11px] rounded-lg hover:bg-[#005a30] transition-all shadow-sm group uppercase tracking-wider"
+                    className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-primary text-white font-bold text-[11px] rounded-lg hover:bg-primary-600 transition-all shadow-sm group uppercase tracking-wider"
                 >
                     <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" />

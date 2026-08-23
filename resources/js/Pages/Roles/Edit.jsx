@@ -94,7 +94,7 @@ export default function RoleEdit({ role = {}, groupedPermissions = {} }) {
                                 value={data.name}
                                 disabled={role.is_admin}
                                 onChange={e => setData('name', e.target.value)}
-                                className={`w-full text-xs font-medium border border-slate-300 rounded-xl px-3.5 py-2.5 focus:border-[#00713D] focus:ring-1 focus:ring-[#00713D] transition-colors ${
+                                className={`w-full text-xs font-medium border border-slate-300 rounded-xl px-3.5 py-2.5 focus:border-primary focus:ring-1 focus:ring-primary transition-colors ${
                                     role.is_admin ? 'bg-slate-100 cursor-not-allowed text-slate-500' : ''
                                 }`}
                             />
@@ -137,7 +137,7 @@ export default function RoleEdit({ role = {}, groupedPermissions = {} }) {
                                                         if (el) el.indeterminate = hasSomeSelected && !isGroupAllSelected;
                                                     }}
                                                     onChange={() => handleToggleGroup(perms)}
-                                                    className="w-4 h-4 text-[#00713D] rounded border-slate-300 focus:ring-[#00713D] cursor-pointer"
+                                                    className="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary cursor-pointer"
                                                 />
                                                 <label htmlFor={`group-${moduleName}`} className="text-xs font-black text-slate-800 uppercase tracking-wider cursor-pointer">
                                                     {moduleName}
@@ -157,7 +157,7 @@ export default function RoleEdit({ role = {}, groupedPermissions = {} }) {
                                                         key={p.name}
                                                         className={`flex items-start gap-2.5 p-2 rounded-xl border transition-all cursor-pointer select-none ${
                                                             checked
-                                                                ? 'border-[#00713D]/30 bg-[#00713D]/5 text-slate-900 shadow-xs'
+                                                                ? 'border-primary/30 bg-primary/5 text-slate-900 shadow-xs'
                                                                 : 'border-transparent hover:bg-slate-50 text-slate-600'
                                                         }`}
                                                     >
@@ -165,7 +165,7 @@ export default function RoleEdit({ role = {}, groupedPermissions = {} }) {
                                                             type="checkbox"
                                                             checked={checked}
                                                             onChange={() => handleTogglePermission(p.name)}
-                                                            className="w-4 h-4 mt-0.5 text-[#00713D] rounded border-slate-300 focus:ring-[#00713D] cursor-pointer shrink-0"
+                                                            className="w-4 h-4 mt-0.5 text-primary rounded border-slate-300 focus:ring-primary cursor-pointer shrink-0"
                                                         />
                                                         <div className="flex flex-col">
                                                             <span className="text-xs font-bold leading-tight">{p.label}</span>
@@ -195,7 +195,7 @@ export default function RoleEdit({ role = {}, groupedPermissions = {} }) {
                             variant="primary"
                             size="md"
                             disabled={processing || !data.name.trim()}
-                            className="bg-[#00713D] hover:bg-[#005a30] text-white shadow-sm"
+                            className="bg-primary hover:bg-primary-600 text-white shadow-sm"
                         >
                             {processing ? 'Saving...' : 'Save Changes'}
                         </CommonButton>

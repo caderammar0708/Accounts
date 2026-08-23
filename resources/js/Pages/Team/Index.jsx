@@ -57,7 +57,7 @@ export default function Index({ users }) {
                                     <tr key={user.id} className="group hover:bg-slate-50/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-xl bg-[#00713D]/10 flex items-center justify-center text-[#00713D] font-black text-xs">
+                                                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
                                                     {user.name.charAt(0)}
                                                 </div>
                                                 <div>
@@ -103,7 +103,7 @@ export default function Index({ users }) {
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Link
                                                     href={route('team.edit', user.id)}
-                                                    className="p-2 text-slate-400 hover:text-[#00713D] hover:bg-[#00713D]/5 rounded-xl transition-all"
+                                                    className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
                                                 >
                                                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />

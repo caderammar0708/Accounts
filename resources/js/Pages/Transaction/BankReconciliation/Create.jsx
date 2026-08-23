@@ -128,7 +128,7 @@ export default function Create({ accounts }) {
                                     <button
                                         type="submit"
                                         disabled={processing}
-                                        className="bg-[#00713D] hover:bg-[#005a30] text-white font-bold py-2 px-6 rounded transition-colors"
+                                        className="bg-primary hover:bg-primary-600 text-white font-bold py-2 px-6 rounded transition-colors"
                                     >
                                         Start Reconciling
                                     </button>

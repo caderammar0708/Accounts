@@ -25,7 +25,7 @@ export default function Index({ users = [] }) {
                             </CommonButton>
                         </Link>
                         <Link href={route('users.create')}>
-                            <CommonButton variant="primary" size="sm" className="bg-[#00713D] hover:bg-[#005a30] text-white flex items-center gap-1 text-xs">
+                            <CommonButton variant="primary" size="sm" className="bg-primary hover:bg-primary-600 text-white flex items-center gap-1 text-xs">
                                 <span className="material-symbols-outlined text-[16px]">add</span>
                                 Add New User
                             </CommonButton>
@@ -51,7 +51,7 @@ export default function Index({ users = [] }) {
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 placeholder="Find a user by name, email, or role..."
-                                className="pl-9 pr-4 py-1.5 border border-slate-300 rounded-md text-[11px] w-full focus:ring-2 focus:ring-[#00713D]/20 focus:border-[#00713D] transition-all"
+                                className="pl-9 pr-4 py-1.5 border border-slate-300 rounded-md text-[11px] w-full focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                             />
                         </div>
                     </div>
@@ -88,7 +88,7 @@ export default function Index({ users = [] }) {
                                             </td>
                                             <td className="px-4 py-2.5">
                                                 <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                                    isAdmin ? 'bg-[#00713D]/10 text-[#00713D] border border-[#00713D]/20' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                                    isAdmin ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-slate-100 text-slate-700 border border-slate-200'
                                                 }`}>
                                                     {roleDisplay}
                                                 </span>

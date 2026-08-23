@@ -140,7 +140,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                                         type="button"
                                         onClick={() => setIsQuickMenuOpen(true)}
                                         title="Create New"
-                                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#00713D] hover:bg-[#005a30] text-white shadow-sm hover:shadow transition-all duration-150 active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#00713D] focus:ring-offset-1 group"
+                                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary hover:bg-primary-600 text-white shadow-sm hover:shadow transition-all duration-150 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 group"
                                     >
                                         <svg className="h-4 w-4 transition-transform group-hover:rotate-90 duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
@@ -246,7 +246,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                                     <Dropdown>
                                         <Dropdown.Trigger>
                                             <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 transition-colors">
-                                                <svg className="w-3.5 h-3.5 text-[#00713D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                                 </svg>
@@ -265,7 +265,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                                                 <button
                                                     key={loc.id}
                                                     onClick={() => router.post(route('locations.switch'), { location_id: loc.id })}
-                                                    className={`w-full text-left px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${page.props.auth.location.current_id === loc.id ? 'font-bold text-[#00713D] bg-green-50/50' : 'text-slate-700'
+                                                    className={`w-full text-left px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${page.props.auth.location.current_id === loc.id ? 'font-bold text-primary bg-green-50/50' : 'text-slate-700'
                                                         }`}
                                                 >
                                                     <span>{loc.name}</span>
@@ -282,7 +282,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center justify-center p-1 rounded-full hover:bg-slate-50 transition-all duration-300">
-                                    <div className="h-8 w-8 rounded-full bg-[#00713D] flex items-center justify-center text-white text-xs font-bold ring-2 ring-green-50 shadow-sm shrink-0">
+                                    <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold ring-2 ring-green-50 shadow-sm shrink-0">
                                         {user.name[0]}
                                     </div>
                                 </button>

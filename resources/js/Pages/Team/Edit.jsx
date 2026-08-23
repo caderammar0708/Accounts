@@ -29,7 +29,7 @@ export default function Edit({ user, managers }) {
                 <div className="max-w-2xl mx-auto">
                     <div className="bg-white border border-slate-200 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] overflow-hidden">
                         <div className="px-10 pt-10 pb-6 border-b border-slate-100 bg-slate-50/30 text-center">
-                            <div className="w-16 h-16 bg-[#00713D]/10 rounded-3xl flex items-center justify-center text-[#00713D] mx-auto mb-4 font-black text-2xl">
+                            <div className="w-16 h-16 bg-primary/10 rounded-3xl flex items-center justify-center text-primary mx-auto mb-4 font-black text-2xl">
                                 {user.name.charAt(0)}
                             </div>
                             <h1 className="text-2xl font-black text-slate-900 tracking-tight italic uppercase">Edit Team Member</h1>
@@ -64,7 +64,7 @@ export default function Edit({ user, managers }) {
                                     <select
                                         value={data.role}
                                         onChange={(e) => setData('role', e.target.value)}
-                                        className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-[#00713D]/20 focus:border-[#00713D] transition-all outline-none appearance-none"
+                                        className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none appearance-none"
                                     >
                                         <option value="admin">Administrator</option>
                                         <option value="manager">Manager</option>
@@ -99,7 +99,7 @@ export default function Edit({ user, managers }) {
                                     id="is_active"
                                     checked={data.is_active}
                                     onChange={(e) => setData('is_active', e.target.checked)}
-                                    className="h-5 w-5 text-[#00713D] border-slate-300 rounded-lg focus:ring-[#00713D]/20 transition-all cursor-pointer"
+                                    className="h-5 w-5 text-primary border-slate-300 rounded-lg focus:ring-primary/20 transition-all cursor-pointer"
                                 />
                                 <label htmlFor="is_active" className="text-sm font-bold text-slate-700 cursor-pointer select-none">
                                     Account Access Enabled

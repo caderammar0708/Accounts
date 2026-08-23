@@ -19,7 +19,7 @@ export default function Index({ reconciliations }) {
                     <div className="flex justify-end mb-4">
                         <Link
                             href={route('bank-reconciliation.create')}
-                            className="inline-flex items-center justify-center px-4 py-2 bg-[#00713D] hover:bg-[#005a30] active:bg-[#004726] border border-transparent rounded-md font-bold text-xs text-white uppercase tracking-wider shadow-sm hover:shadow transition ease-in-out duration-150"
+                            className="inline-flex items-center justify-center px-4 py-2 bg-primary hover:bg-primary-600 active:bg-primary-700 border border-transparent rounded-md font-bold text-xs text-white uppercase tracking-wider shadow-sm hover:shadow transition ease-in-out duration-150"
                         >
                             New Reconciliation
                         </Link>
@@ -62,7 +62,7 @@ export default function Index({ reconciliations }) {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             {recon.status === 'draft' ? (
-                                                <Link href={route('bank-reconciliation.process', recon.id)} className="text-[#00713D] hover:text-[#005a30] font-semibold">
+                                                <Link href={route('bank-reconciliation.process', recon.id)} className="text-primary hover:text-primary-600 font-semibold">
                                                     Resume
                                                 </Link>
                                             ) : (

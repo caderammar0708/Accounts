@@ -37,13 +37,13 @@ export default function LandingLayout({ children }) {
                             )}
                             <Link
                                 href={route('login')}
-                                className="text-sm font-bold text-slate-700 hover:text-[#00713D] transition-colors"
+                                className="text-sm font-bold text-slate-700 hover:text-primary transition-colors"
                             >
                                 Log in
                             </Link>
                             <Link
                                 href={route('register')}
-                                className="px-5 py-2.5 bg-[#00713D] text-white text-sm font-bold rounded-xl hover:bg-[#005a30] transition-all hover:-translate-y-0.5 shadow-lg shadow-[#00713D]/20"
+                                className="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-600 transition-all hover:-translate-y-0.5 shadow-lg shadow-primary/20"
                             >
                                 Get Started
                             </Link>
