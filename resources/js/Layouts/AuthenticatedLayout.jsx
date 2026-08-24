@@ -52,8 +52,13 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
         }
     }, [page.props.auth.location]);
 
-    const isFuelStation = page.props.auth.business_type === 'Fuel Station';
-    const isServiceStation = page.props.auth.business_type === 'Service Station';
+    const businessType = page.props.auth.business_type || 'Normal';
+    const isFuelStation = businessType === 'Fuel Station';
+    const isServiceStation = businessType === 'Service Station';
+    const isDealership = businessType === 'Dealership';
+    const isNormal = businessType === 'Normal';
+
+    const showLocationsAndStockShifts = isDealership || (isNormal && Boolean(page.props.auth.location));
 
     const navigation = [
         { name: 'Dashboard', href: route('dashboard'), icon: 'dashboard', permission: 'dashboard.view' },
@@ -70,6 +75,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
         ...(isServiceStation ? [{ name: 'Jobs', href: route('job-cards.index'), icon: 'job', isJob: true, permission: 'warranties.view' }] : []),
         ...(isServiceStation ? [{ name: 'Warranties', href: route('warranties.index'), icon: 'warranty', isWarranty: true, permission: 'warranties.view' }] : []),
         ...(isFuelStation ? [{ name: 'Shifts', href: route('shifts.index'), icon: 'team', permission: 'shifts.view' }] : []),
+        ...(showLocationsAndStockShifts ? [{ name: 'Stock Shifts', href: route('stock-shifts.index'), icon: 'team', activeRoutes: ['stock-shifts.*'] }] : []),
         { name: 'Products & Services', href: route('items.index'), icon: 'inventory', permission: 'items.view' },
         ...(isFuelStation ? [
             { name: 'Pump Setup', href: route('tanks.index'), icon: 'pump', permission: 'shifts.view', activeRoutes: ['tanks.*', 'pumps.*'] },
@@ -77,7 +83,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
         { name: 'Chart of Accounts', href: route('chart-of-account.index'), icon: 'accounting', permission: 'chart-of-accounts.view' },
         { name: 'Bank Reconciliation', href: route('bank-reconciliation.index'), icon: 'reconciliation', permission: 'bank-reconciliation.view' },
         { name: 'Reports', href: route('reports.index'), icon: 'reports', permission: 'reports.view' },
-        ...(page.props.auth.location ? [{ name: 'Locations', href: route('locations.index'), icon: 'locations', permission: 'locations.view' }] : []),
+        ...(showLocationsAndStockShifts ? [{ name: 'Locations', href: route('locations.index'), icon: 'locations', activeRoutes: ['locations.*'] }] : []),
         { name: 'Import Tools', href: route('import.index'), icon: 'import_tools', permission: 'import.view', activeRoutes: ['import.*'] },
     ];
 

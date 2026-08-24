@@ -361,6 +361,16 @@ Route::middleware('auth')->group(function () {
         Route::get('shifts/{shift}/export-pdf', [\App\Http\Controllers\Inventory\PumpShiftController::class, 'exportPdf'])->name('shifts.export-pdf');
         Route::resource('shifts', \App\Http\Controllers\Inventory\PumpShiftController::class);
 
+        // Stock Shifts Module (Mobile Shop)
+        Route::get('stock-shifts/{stockShift}/edit-active', [\App\Http\Controllers\Inventory\StockShiftController::class, 'editActive'])->name('stock-shifts.edit-active');
+        Route::put('stock-shifts/{stockShift}/update-active', [\App\Http\Controllers\Inventory\StockShiftController::class, 'updateActive'])->name('stock-shifts.update-active');
+        Route::get('stock-shifts/{stockShift}/collections', [\App\Http\Controllers\Inventory\StockShiftController::class, 'editCollections'])->name('stock-shifts.collections.edit');
+        Route::post('stock-shifts/{stockShift}/draft', [\App\Http\Controllers\Inventory\StockShiftController::class, 'saveDraft'])->name('stock-shifts.draft');
+        Route::post('stock-shifts/{stockShift}/reopen', [\App\Http\Controllers\Inventory\StockShiftController::class, 'reopen'])->name('stock-shifts.reopen');
+        Route::get('stock-shifts/{stockShift}/export-csv', [\App\Http\Controllers\Inventory\StockShiftController::class, 'exportCsv'])->name('stock-shifts.export-csv');
+        Route::post('stock-shifts/{stockShift}/settle', [\App\Http\Controllers\Inventory\StockShiftController::class, 'settle'])->name('stock-shifts.settle');
+        Route::resource('stock-shifts', \App\Http\Controllers\Inventory\StockShiftController::class)->parameters(['stock-shifts' => 'stockShift']);
+
         // Warranty Module
         Route::resource('warranties', WarrantyController::class);
 

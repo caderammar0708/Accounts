@@ -312,6 +312,9 @@ export default forwardRef(function CommonInput(
                         <div 
                             className={`relative flex items-center ${baseInputClasses} ${errorClasses} ${className} ${inputClass} cursor-pointer group`}
                             onClick={(e) => {
+                                if (e.target === inputRef.current) {
+                                    return;
+                                }
                                 const sel = window.getSelection();
                                 if (sel && sel.toString().trim().length > 0) {
                                     return;
@@ -352,13 +355,14 @@ export default forwardRef(function CommonInput(
                                 {...props}
                                 value={normalizedValue}
                                 ref={inputRef}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-0"
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-0 text-xs text-[12px]"
+                                style={{ fontSize: '12px' }}
                                 onChange={handleInputChange}
                             >
                                 {children ? children : options.map(opt => {
                                     const optVal = typeof opt === 'object' && opt !== null ? opt.value : opt;
                                     const optLabel = typeof opt === 'object' && opt !== null ? opt.label : opt;
-                                    return <option key={optVal} value={optVal}>{optLabel}</option>;
+                                    return <option key={optVal} value={optVal} className="text-xs text-[12px]">{optLabel}</option>;
                                 })}
                             </select>
                         </div>
@@ -394,22 +398,22 @@ export default forwardRef(function CommonInput(
                                 prevMonthButtonDisabled,
                                 nextMonthButtonDisabled,
                             }) => (
-                                <div className="flex items-center justify-between px-1 py-1 gap-1 w-full">
+                                <div className="flex items-center justify-between px-0.5 py-0.5 gap-0.5 w-full">
                                     <button
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); decreaseMonth(); }}
                                         disabled={prevMonthButtonDisabled}
                                         type="button"
-                                        className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-25 disabled:pointer-events-none"
+                                        className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-25 disabled:pointer-events-none"
                                         title="Previous Month"
                                         aria-label="Previous Month"
                                     >
-                                        <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-3 h-3 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                                         </svg>
                                     </button>
 
-                                    <div className="flex items-center justify-center gap-1.5 min-w-0 flex-1">
-                                        <div className="w-[115px] flex-shrink-0">
+                                    <div className="flex items-center justify-center gap-1 min-w-0 flex-1">
+                                        <div className="w-[86px] flex-shrink-0">
                                             <SearchableSelect
                                                 value={date.getMonth()}
                                                 onChange={(val) => changeMonth(Number(val))}
@@ -429,10 +433,11 @@ export default forwardRef(function CommonInput(
                                                 ]}
                                                 size="sm"
                                                 placeholder="Month"
+                                                hideChevron={true}
                                             />
                                         </div>
 
-                                        <div className="w-[76px] flex-shrink-0">
+                                        <div className="w-[56px] flex-shrink-0">
                                             <SearchableSelect
                                                 value={date.getFullYear()}
                                                 onChange={(val) => changeYear(Number(val))}
@@ -452,9 +457,9 @@ export default forwardRef(function CommonInput(
                                                     const yr = new Date().getFullYear() + 2 - i;
                                                     return { value: yr, label: String(yr) };
                                                 })}
-                                                allowCustom={true}
                                                 size="sm"
                                                 placeholder="Year"
+                                                hideChevron={true}
                                             />
                                         </div>
                                     </div>
@@ -463,11 +468,11 @@ export default forwardRef(function CommonInput(
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); increaseMonth(); }}
                                         disabled={nextMonthButtonDisabled}
                                         type="button"
-                                        className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-25 disabled:pointer-events-none"
+                                        className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors disabled:opacity-25 disabled:pointer-events-none"
                                         title="Next Month"
                                         aria-label="Next Month"
                                     >
-                                        <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-3 h-3 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                         </svg>
                                     </button>

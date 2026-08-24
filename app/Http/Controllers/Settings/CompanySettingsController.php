@@ -304,7 +304,7 @@ public function updateAccounting(Request $request)
     public function updateBusinessType(Request $request)
     {
         $validated = $request->validate([
-            'business_type' => 'required|string|in:Normal,Fuel Station,Service Station',
+            'business_type' => 'required|string|in:Normal,Fuel Station,Service Station,Dealership',
             'drop_tables' => 'nullable|boolean',
         ]);
 
@@ -322,8 +322,26 @@ public function updateAccounting(Request $request)
             $company->update(['business_type' => $type]);
         }
 
-        if ($type === 'Fuel Station') {
+        if ($type === 'Dealership') {
+            $settings->update([
+                'branches_enabled' => true,
+                'business_type' => 'Dealership',
+            ]);
+            if ($dropTables) {
+                $this->handleModuleMigrations('fuel_station', false, true);
+                $this->handleModuleMigrations('service_station', false, true);
+                $settings->update([
+                    'job_layout_enabled' => false,
+                    'warranty_layout_enabled' => false,
+                    'vehicles_enabled' => false,
+                ]);
+            }
+        } elseif ($type === 'Fuel Station') {
             $this->handleModuleMigrations('fuel_station', true);
+            $settings->update([
+                'branches_enabled' => false,
+                'business_type' => 'Fuel Station',
+            ]);
             if ($dropTables) {
                 $this->handleModuleMigrations('service_station', false, true);
                 $settings->update([
@@ -334,9 +352,12 @@ public function updateAccounting(Request $request)
             }
         } elseif ($type === 'Service Station') {
             $this->handleModuleMigrations('service_station', true);
+            $settings->update([
+                'branches_enabled' => false,
+                'business_type' => 'Service Station',
+            ]);
             if ($dropTables) {
                 $this->handleModuleMigrations('fuel_station', false, true);
-                // No boolean flags exist for fuel station currently
             }
         } else { // Normal
             if ($dropTables) {

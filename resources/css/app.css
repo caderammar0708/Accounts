@@ -1,4 +1,4 @@
-﻿@import './datepicker.css';
+@import './datepicker.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,6 +12,10 @@
 html {
     scroll-behavior: smooth;
     font-size: 19px;
+}
+
+select, option, optgroup {
+    font-size: 12px;
 }
 
 body {

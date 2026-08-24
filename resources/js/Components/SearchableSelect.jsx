@@ -320,7 +320,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                 className={`${getBaseClasses()} ${className}`}
             >
                 <div
-                    className="flex-1 px-2 truncate flex items-center h-full select-text cursor-text"
+                    className={`flex-1 px-1.5 truncate flex items-center ${hideChevron ? 'justify-center' : ''} h-full select-text cursor-text`}
                     onClick={(e) => {
                         const sel = window.getSelection();
                         if (sel && sel.toString().trim().length > 0) {

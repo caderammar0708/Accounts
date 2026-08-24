@@ -295,45 +295,50 @@ export default function ReportDateFilter({ currentFilter, onFilterChange }) {
                 </select>
             </div>
 
-            {/* From Date - Always visible and editable; editing switches dropdown to Custom Date */}
-            <div className="w-28">
-                <CommonInput
-                    type="date"
-                    value={startDate}
-                    placeholder="From Date"
-                    onChange={(e) => {
-                        const newStart = e.target.value;
-                        setStartDate(newStart);
-                        setFilterType('custom');
-                    }}
-                />
-            </div>
+            {/* Date inputs & Apply button - Hidden when "All Dates" is selected */}
+            {filterType !== 'all_dates' && (
+                <>
+                    {/* From Date - Always visible and editable; editing switches dropdown to Custom Date */}
+                    <div className="w-28">
+                        <CommonInput
+                            type="date"
+                            value={startDate}
+                            placeholder="From Date"
+                            onChange={(e) => {
+                                const newStart = e.target.value;
+                                setStartDate(newStart);
+                                setFilterType('custom');
+                            }}
+                        />
+                    </div>
 
-            {/* To Date - Always visible and editable; editing switches dropdown to Custom Date */}
-            <div className="w-28">
-                <CommonInput
-                    type="date"
-                    value={endDate}
-                    placeholder="To Date"
-                    onChange={(e) => {
-                        const newEnd = e.target.value;
-                        setEndDate(newEnd);
-                        setFilterType('custom');
-                    }}
-                />
-            </div>
+                    {/* To Date - Always visible and editable; editing switches dropdown to Custom Date */}
+                    <div className="w-28">
+                        <CommonInput
+                            type="date"
+                            value={endDate}
+                            placeholder="To Date"
+                            onChange={(e) => {
+                                const newEnd = e.target.value;
+                                setEndDate(newEnd);
+                                setFilterType('custom');
+                            }}
+                        />
+                    </div>
 
-            {/* Apply button - visible when in Custom Date mode */}
-            {filterType === 'custom' && (
-                <div>
-                    <button
-                        type="button"
-                        onClick={() => handleApply('custom', startDate, endDate)}
-                        className="h-[30px] px-3 bg-primary text-white text-xs font-semibold rounded-sm hover:bg-primary-600 focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors shadow-sm"
-                    >
-                        Apply
-                    </button>
-                </div>
+                    {/* Apply button - visible when in Custom Date mode */}
+                    {filterType === 'custom' && (
+                        <div>
+                            <button
+                                type="button"
+                                onClick={() => handleApply('custom', startDate, endDate)}
+                                className="h-[30px] px-3 bg-primary text-white text-xs font-semibold rounded-sm hover:bg-primary-600 focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors shadow-sm"
+                            >
+                                Apply
+                            </button>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );

@@ -737,16 +737,17 @@ const businessTypeConfirmationModalSubmit = () => {
                                     options={[
                                         { label: 'Normal', value: 'Normal' },
                                         { label: 'Fuel Station', value: 'Fuel Station' },
-                                        { label: 'Service Station', value: 'Service Station' }
+                                        { label: 'Service Station', value: 'Service Station' },
+                                        { label: 'Dealership', value: 'Dealership' }
                                     ]}
                                 />
                             </div>
                         </div>
                     </div>
 
-                    {settings?.business_type === 'Normal' && (
+                    {settings?.business_type !== 'Normal' && (
                         <div className="space-y-3 pt-3">
-                            <p className="text-xs text-gray-500 italic">Advanced feature toggles are hidden when Business Type is set.</p>
+                            <p className="text-xs text-gray-500 italic">Advanced feature toggles are automatically configured for {settings?.business_type}.</p>
                         </div>
                     )}
 
@@ -817,23 +818,25 @@ const businessTypeConfirmationModalSubmit = () => {
                         </div>
                     </div>
 
-                    <div className="space-y-3 pt-3">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <h3 className="text-xs font-bold text-gray-800">Locations</h3>
-                                <p className="text-gray-400 text-[10px]">If enabled, Locations will be shown in the sidebar and settings.</p>
+                    {settings?.business_type === 'Normal' && (
+                        <div className="space-y-3 pt-3">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-xs font-bold text-gray-800">Locations</h3>
+                                    <p className="text-gray-400 text-[10px]">If enabled, Locations will be shown in the sidebar and settings.</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer scale-90">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={settings?.branches_enabled ?? false}
+                                        onChange={(e) => handleToggleFeature('branches', settings?.branches_enabled, e)}
+                                    />
+                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                                </label>
                             </div>
-                            <label className="relative inline-flex items-center cursor-pointer scale-90">
-                                <input
-                                    type="checkbox"
-                                    className="sr-only peer"
-                                    checked={settings?.branches_enabled ?? false}
-                                    onChange={(e) => handleToggleFeature('branches', settings?.branches_enabled, e)}
-                                />
-                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
-                            </label>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
 
