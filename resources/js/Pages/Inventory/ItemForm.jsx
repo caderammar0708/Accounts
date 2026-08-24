@@ -343,7 +343,7 @@ export default function ItemForm({
                                 type="button"
                                 onClick={() => handleTypeChange(type.id)}
                                 className={`flex-1 px-4 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-all text-center ${data.type === type.id
-                                    ? 'bg-blue-600 text-white shadow-md'
+                                    ? 'bg-primary text-white shadow-md'
                                     : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
                                     }`}
                             >
@@ -374,7 +374,7 @@ export default function ItemForm({
                                             <button
                                                 type="button"
                                                 onClick={() => setData('sku', 'ITM-' + Math.floor(100000 + Math.random() * 900000))}
-                                                className="text-[10px] text-blue-600 hover:text-blue-800"
+                                                className="text-[10px] text-primary hover:text-primary-700"
                                             >
                                                 Generate
                                             </button>

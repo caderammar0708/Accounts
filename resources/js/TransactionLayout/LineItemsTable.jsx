@@ -427,14 +427,14 @@ export default function LineItemsTable({
                                         <button
                                             type="button"
                                             onClick={() => onDiscountChange(discountValue, 'percent')}
-                                            className={`px-2 text-xs font-bold transition-colors ${discountType === 'percent' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                                            className={`px-2 text-xs font-bold transition-colors ${discountType === 'percent' ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-200'}`}
                                         >
                                             %
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => onDiscountChange(discountValue, 'fixed')}
-                                            className={`px-2 text-xs font-bold transition-colors ${discountType === 'fixed' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                                            className={`px-2 text-xs font-bold transition-colors ${discountType === 'fixed' ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-200'}`}
                                         >
                                             $
                                         </button>

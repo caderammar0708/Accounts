@@ -620,20 +620,20 @@ export default function CreditInvoiceForm({
                                     setData(prev => ({ ...prev, discount_value: val }));
                                     setIsDirty(true);
                                 }}
-                                className="w-[80px] h-8 text-right text-sm font-medium border border-slate-300 rounded-l-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none px-2"
+                                className="w-[80px] h-8 text-right text-sm font-medium border border-slate-300 rounded-l-md focus:border-primary focus:ring-1 focus:ring-blue-500 outline-none px-2"
                             />
                             <div className="flex h-8 bg-slate-100 border border-l-0 border-slate-300 rounded-r-md overflow-hidden">
                                 <button
                                     type="button"
                                     onClick={() => { setData(prev => ({ ...prev, discount_type: 'percent' })); setIsDirty(true); }}
-                                    className={`px-2 text-xs font-bold transition-colors ${data.discount_type === 'percent' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    className={`px-2 text-xs font-bold transition-colors ${data.discount_type === 'percent' ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-200'}`}
                                 >
                                     %
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => { setData(prev => ({ ...prev, discount_type: 'fixed' })); setIsDirty(true); }}
-                                    className={`px-2 text-xs font-bold transition-colors ${data.discount_type === 'fixed' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                                    className={`px-2 text-xs font-bold transition-colors ${data.discount_type === 'fixed' ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-200'}`}
                                 >
                                     {currencyPrefix}
                                 </button>
@@ -656,7 +656,7 @@ export default function CreditInvoiceForm({
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Payments Applied</span>
                             {invoice.payments.map((payment, idx) => (
                                 <div key={idx} className="flex justify-between items-center w-full mb-1">
-                                    <a href={route('receive-payment.edit', payment.id)} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+                                    <a href={route('receive-payment.edit', payment.id)} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-primary hover:text-primary-700 hover:underline">
                                         Receive Payment # {payment.reference} ({formatDate(payment.date, dateFormat)})
                                     </a>
                                     <span className="text-xs font-black text-slate-700 flex items-center gap-1">

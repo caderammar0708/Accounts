@@ -10,10 +10,11 @@ use Illuminate\Notifications\Notifiable;
 use App\Models\Tenant;
 use App\Models\Company;
 use Spatie\Permission\Traits\HasRoles;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, \Illuminate\Database\Eloquent\Concerns\HasUuids, HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, \Illuminate\Database\Eloquent\Concerns\HasUuids, HasRoles;
 
     public function employee()
     {

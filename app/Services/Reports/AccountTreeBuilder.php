@@ -81,7 +81,7 @@ class AccountTreeBuilder
         return collect($tree)->groupBy('account_type');
     }
 
-    public function buildBalanceSheetTree($types, $lines, $displayBy, $months)
+    public function buildBalanceSheetTree($types, $lines, $displayBy, $months, $start = null)
     {
         $allAccounts = ChartOfAcc::query()
             ->whereIn('account_type', $types)
@@ -99,30 +99,34 @@ class AccountTreeBuilder
             $total_balance = 0;
 
             if ($displayBy === 'month') {
-                $runningBalance = 0;
-                foreach ($months as $month) {
-                    $monthLine = $accountLines->firstWhere('month', $month);
-                    $debit = $monthLine ? $monthLine->total_debit : 0;
-                    $credit = $monthLine ? $monthLine->total_credit : 0;
-
-                    if ($type === 'income' || $type === 'liability' || $type === 'equity') {
-                        $runningBalance += ($credit - $debit);
-                    } else {
-                        $runningBalance += ($debit - $credit);
+                foreach ($months as $m) {
+                    $bal = 0;
+                    foreach ($accountLines as $line) {
+                        if ($line->month <= $m) {
+                            $debit = $line->total_debit;
+                            $credit = $line->total_credit;
+                            if ($type === 'income' || $type === 'liability' || $type === 'equity') {
+                                $bal += ($credit - $debit);
+                            } else {
+                                $bal += ($debit - $credit);
+                            }
+                        }
                     }
-
-                    $monthly_balances[$month] = (float) $runningBalance;
+                    $monthly_balances[$m] = (float) $bal;
                 }
-                $total_balance = $runningBalance;
+                $total_balance = end($monthly_balances) ?: 0;
             } else {
-                $line = $accountLines->first();
-                $debit = $line ? $line->total_debit : 0;
-                $credit = $line ? $line->total_credit : 0;
-                if ($type === 'income' || $type === 'liability' || $type === 'equity') {
-                    $total_balance = $credit - $debit;
-                } else {
-                    $total_balance = $debit - $credit;
+                $bal = 0;
+                foreach ($accountLines as $line) {
+                    $debit = $line->total_debit;
+                    $credit = $line->total_credit;
+                    if ($type === 'income' || $type === 'liability' || $type === 'equity') {
+                        $bal += ($credit - $debit);
+                    } else {
+                        $bal += ($debit - $credit);
+                    }
                 }
+                $total_balance = (float) $bal;
             }
 
             $accountBalances[$account->id] = [
@@ -138,6 +142,88 @@ class AccountTreeBuilder
                 'children' => []
             ];
         }
+
+        // Calculate Retained Earnings and Net Income
+        $incomeExpenseAccounts = ChartOfAcc::query()
+            ->whereIn('account_type', ['Income', 'Expense'])
+            ->get();
+
+        $retainedEarnings = 0;
+        $netIncome = 0;
+        $retainedEarningsBalances = [];
+        $netIncomeBalances = [];
+
+        $startMonth = $start ? (new \DateTime($start))->format('Y-m') : null;
+
+        foreach ($incomeExpenseAccounts as $account) {
+            $accountLines = $lines->where('chart_of_acc_id', $account->id);
+            $type = strtolower($account->account_type);
+
+            foreach ($accountLines as $line) {
+                $debit = $line->total_debit;
+                $credit = $line->total_credit;
+                
+                // Both Income and Expense impact equity as (Credit - Debit)
+                // Income (Cr) increases equity, Expense (Dr) decreases equity
+                $balance = $credit - $debit;
+
+                $isBeforeStart = $startMonth ? ($line->month < $startMonth) : false;
+
+                if ($isBeforeStart) {
+                    $retainedEarnings += $balance;
+                } else {
+                    $netIncome += $balance;
+                }
+
+                if ($displayBy === 'month') {
+                    foreach ($months as $m) {
+                        if (!isset($netIncomeBalances[$m])) $netIncomeBalances[$m] = 0;
+                        if (!isset($retainedEarningsBalances[$m])) $retainedEarningsBalances[$m] = 0;
+
+                        if ($isBeforeStart) {
+                            // Before start date, so it goes to Retained Earnings for all columns
+                            $retainedEarningsBalances[$m] += $balance;
+                        } elseif ($line->month <= $m) {
+                            // On or after start date, AND on or before the current column month $m
+                            $netIncomeBalances[$m] += $balance;
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($displayBy === 'month') {
+            foreach ($months as $m) {
+                if (!isset($netIncomeBalances[$m])) $netIncomeBalances[$m] = 0;
+                if (!isset($retainedEarningsBalances[$m])) $retainedEarningsBalances[$m] = 0;
+            }
+        }
+
+        $accountBalances['retained_earnings'] = [
+            'id' => 'retained_earnings',
+            'name' => 'Retained Earnings',
+            'account_type' => 'equity',
+            'sub_type' => 'retained-earnings',
+            'parent_id' => null,
+            'balance' => (float) $retainedEarnings,
+            'total_balance' => (float) $retainedEarnings,
+            'monthly_balances' => $retainedEarningsBalances,
+            'total_monthly_balances' => $retainedEarningsBalances,
+            'children' => []
+        ];
+
+        $accountBalances['net_income'] = [
+            'id' => 'net_income',
+            'name' => 'Net Income',
+            'account_type' => 'equity',
+            'sub_type' => 'retained-earnings',
+            'parent_id' => null,
+            'balance' => (float) $netIncome,
+            'total_balance' => (float) $netIncome,
+            'monthly_balances' => $netIncomeBalances,
+            'total_monthly_balances' => $netIncomeBalances,
+            'children' => []
+        ];
 
         $tree = [];
         foreach ($accountBalances as $id => &$node) {

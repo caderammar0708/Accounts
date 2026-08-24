@@ -14,7 +14,7 @@ export default function Index({ auth, jobCards, filters }) {
 
     const statusColors = {
         'Pending': 'bg-slate-100 text-slate-800',
-        'Diagnosing': 'bg-blue-100 text-blue-800',
+        'Diagnosing': 'bg-primary-50 text-primary-700',
         'Waiting for Parts': 'bg-orange-100 text-orange-800',
         'In Progress': 'bg-indigo-100 text-indigo-800',
         'Ready': 'bg-green-100 text-green-800',

@@ -36,7 +36,7 @@ export default function Create({ managers }) {
                 <div className="max-w-2xl mx-auto">
                     <div className="bg-white border border-slate-200 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] overflow-hidden">
                         <div className="px-10 pt-10 pb-6 border-b border-slate-100 bg-slate-50/30 text-center">
-                            <div className="w-16 h-16 bg-[#00713D]/10 rounded-3xl flex items-center justify-center text-[#00713D] mx-auto mb-4">
+                            <div className="w-16 h-16 bg-primary/10 rounded-3xl flex items-center justify-center text-primary mx-auto mb-4">
                                 <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                                 </svg>
@@ -112,7 +112,7 @@ export default function Create({ managers }) {
                                     id="is_active"
                                     checked={data.is_active}
                                     onChange={(e) => setData('is_active', e.target.checked)}
-                                    className="h-5 w-5 text-[#00713D] border-slate-300 rounded-lg focus:ring-[#00713D]/20 transition-all cursor-pointer"
+                                    className="h-5 w-5 text-primary border-slate-300 rounded-lg focus:ring-primary/20 transition-all cursor-pointer"
                                 />
                                 <label htmlFor="is_active" className="text-sm font-bold text-slate-700 cursor-pointer select-none">
                                     Enable Account Access

@@ -16,12 +16,12 @@ export default function CommonButton({
     ...props
 }) {
     const variants = {
-        primary: 'bg-green-600 text-white hover:bg-green-700 border-green-600 shadow-sm',
+        primary: 'bg-primary text-white hover:bg-primary-600 border-primary shadow-sm',
         secondary: 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200 shadow-sm',
-        blue: 'bg-primary-600 text-white hover:bg-primary-700 border-primary-600 shadow-sm',
         danger: 'bg-red-600 text-white hover:bg-red-700 border-red-600 shadow-sm',
         outline: 'bg-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50 border-slate-200',
         ghost: 'bg-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50 border-transparent',
+        custom: '',
     };
 
     const sizes = {
@@ -29,9 +29,10 @@ export default function CommonButton({
         sm: 'px-2.5 py-1 text-[10px]',
         md: 'px-3 py-1.5 text-[11px]',
         lg: 'px-4.5 py-2 text-xs',
+        none: '',
     };
 
-    const baseClasses = `inline-flex items-center justify-center font-bold uppercase tracking-widest rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`;
+    const baseClasses = variant === 'custom' ? `${className}` : `inline-flex items-center justify-center font-bold uppercase tracking-widest rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`;
 
     if (href) {
         return (

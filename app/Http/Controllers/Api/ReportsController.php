@@ -17,49 +17,73 @@ use Illuminate\Http\Request;
 
 class ReportsController extends Controller
 {
-    protected $reportDataService;
+    protected ReportDataService $reportDataService;
 
     public function __construct(ReportDataService $reportDataService)
     {
         $this->reportDataService = $reportDataService;
     }
 
-    public function profitAndLoss(Request $request)
+    public function dashboardSummary(Request $request)
     {
-        $reportData = $this->reportDataService->profitAndLoss(
-            $request->query('start_date'),
-            $request->query('end_date'),
-            $request->query('display_by', 'total')
-        );
+        $plRequest = new Request();
+        $plRequest->merge(['type' => 'this_year']);
+        $plData = $this->reportDataService->profitAndLossData($plRequest);
+        
+        $totalIncome = $this->calculateTotal(data_get($plData, 'reportData.income', []));
+        $totalCogs = $this->calculateTotal(data_get($plData, 'reportData.cogs', []));
+        $totalExpense = $this->calculateTotal(data_get($plData, 'reportData.expense', []));
+        
+        $netIncome = $totalIncome - $totalCogs - $totalExpense;
 
+        $bsRequest = new Request();
+        $bsRequest->merge(['type' => 'this_year']);
+        $bsData = $this->reportDataService->balanceSheetData($bsRequest);
+        
+        $totalAssets = $this->calculateTotal(data_get($bsData, 'reportData.asset', []));
+
+        return response()->json([
+            'net_income' => $netIncome,
+            'total_assets' => $totalAssets,
+        ]);
+    }
+
+    private function calculateTotal($items) {
+        $total = 0;
+        foreach ($items as $item) {
+            if (is_array($item)) {
+                $total += (float) ($item['total_balance'] ?? 0);
+            }
+        }
+        return $total;
+    }
+
+        public function profitAndLoss(Request $request)
+    {
+        $reportData = $this->reportDataService->profitAndLossData($request);
         return new ProfitAndLossResource($reportData);
     }
 
-    public function balanceSheet(Request $request)
+        public function balanceSheet(Request $request)
     {
-        $reportData = $this->reportDataService->balanceSheet(
-            $request->query('start_date'),
-            $request->query('end_date'),
-            $request->query('display_by', 'total')
-        );
-
+        $reportData = $this->reportDataService->balanceSheetData($request);
         return new BalanceSheetResource($reportData);
     }
 
     public function customerBalance(Request $request)
     {
-        return CustomerBalanceResource::collection($this->reportDataService->customerBalance());
+        return CustomerBalanceResource::collection($this->reportDataService->customerBalanceData());
     }
 
     public function supplierBalance(Request $request)
     {
-        return SupplierBalanceResource::collection($this->reportDataService->supplierBalance());
+        return SupplierBalanceResource::collection($this->reportDataService->supplierBalanceData());
     }
 
     public function inventorySummary(Request $request)
     {
         return InventorySummaryResource::collection(
-            $this->reportDataService->inventorySummary(
+            $this->reportDataService->inventorySummaryData(
                 $request->query('start_date'),
                 $request->query('end_date')
             )
@@ -68,21 +92,75 @@ class ReportsController extends Controller
 
     public function salesByItem(Request $request)
     {
-        return SalesByItemResource::collection($this->reportDataService->salesByItem());
+        return SalesByItemResource::collection($this->reportDataService->salesByItemData());
     }
 
     public function salesByCustomer(Request $request)
     {
-        return SalesByCustomerResource::collection($this->reportDataService->salesByCustomer());
+        return SalesByCustomerResource::collection($this->reportDataService->salesByCustomerData());
     }
 
     public function purchaseByItem(Request $request)
     {
-        return PurchaseByItemResource::collection($this->reportDataService->purchaseByItem());
+        return PurchaseByItemResource::collection($this->reportDataService->purchaseByItemData());
     }
 
-    public function purchaseBySupplier(Request $request)
+        public function purchaseBySupplier(Request $request)
     {
-        return PurchaseBySupplierResource::collection($this->reportDataService->purchaseBySupplier());
+        return PurchaseBySupplierResource::collection($this->reportDataService->purchaseBySupplierData());
+    }
+
+    public function accountHistory(Request $request, \App\Models\Accounting\ChartOfAcc $account)
+    {
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        $query = \App\Models\Accounting\JournalEntryLine::with(['journalEntry.creator', 'journalEntry.transactionable'])
+            ->where('chart_of_acc_id', $account->id)
+            ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+            ->select('journal_entry_lines.*', 'journal_entries.date as journal_date')
+            ->orderBy('journal_entries.date')
+            ->orderBy('journal_entries.created_at');
+
+        $openingBalance = 0;
+        
+        if ($startDate) {
+            $priorLines = \App\Models\Accounting\JournalEntryLine::where('chart_of_acc_id', $account->id)
+                ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+                ->where('journal_entries.date', '<', $startDate)
+                ->selectRaw('SUM(journal_entry_lines.debit) as total_debit, SUM(journal_entry_lines.credit) as total_credit')
+                ->first();
+
+            $totalDebit = (float)($priorLines->total_debit ?? 0);
+            $totalCredit = (float)($priorLines->total_credit ?? 0);
+
+            $isNormalDebit = in_array(strtolower($account->account_type), ['asset', 'expense']);
+            $openingBalance = $isNormalDebit ? ($totalDebit - $totalCredit) : ($totalCredit - $totalDebit);
+            
+            $query->where('journal_entries.date', '>=', $startDate);
+        }
+
+        if ($endDate) {
+            $query->where('journal_entries.date', '<=', $endDate);
+        }
+
+        $lines = $query->get()->map(function ($line) {
+            return [
+                'id' => $line->id,
+                'date' => $line->journal_date,
+                'reference' => $line->journalEntry->reference,
+                'memo' => $line->memo ?? $line->journalEntry->description,
+                'debit' => (float)$line->debit,
+                'credit' => (float)$line->credit,
+            ];
+        });
+
+        return response()->json([
+            'account' => $account,
+            'opening_balance' => $openingBalance,
+            'is_normal_debit' => in_array(strtolower($account->account_type), ['asset', 'expense']),
+            'lines' => $lines
+        ]);
     }
 }
+

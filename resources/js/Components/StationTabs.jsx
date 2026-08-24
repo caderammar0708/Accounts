@@ -19,7 +19,7 @@ export default function StationTabs() {
                         className={`
                             whitespace-nowrap py-4 px-1 border-b-2 font-bold text-xs uppercase tracking-widest transition-colors
                             ${tab.current
-                                ? 'border-[#00713D] text-[#00713D]'
+                                ? 'border-primary text-primary'
                                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                             }
                         `}

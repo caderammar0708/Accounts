@@ -15,6 +15,7 @@ export default function Edit({ userToEdit, roles = [] }) {
         email: userToEdit?.email || '',
         role: userToEdit?.role || roles[0]?.name || 'Admin',
         phone: userToEdit?.phone || '',
+        mobile_access: !!userToEdit?.mobile_access,
     });
 
     function submit(e) {
@@ -82,6 +83,17 @@ export default function Edit({ userToEdit, roles = [] }) {
                                         onChange={(e) => setData('phone', e.target.value)}
                                         error={errors.phone}
                                     />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.mobile_access}
+                                            onChange={(e) => setData('mobile_access', e.target.checked)}
+                                            className="w-5 h-5 text-primary rounded border-slate-300 focus:ring-primary"
+                                        />
+                                        <span className="text-sm font-semibold text-slate-700">Enable Mobile App Access</span>
+                                    </label>
                                 </div>
                             </div>
 

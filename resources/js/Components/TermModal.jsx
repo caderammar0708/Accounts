@@ -22,7 +22,7 @@ export default function TermModal({ isOpen, onClose, onSave }) {
                             </label>
                             <input
                                 type="text"
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#00713D] focus:border-[#00713D] outline-none transition-all"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 autoFocus
@@ -33,7 +33,7 @@ export default function TermModal({ isOpen, onClose, onSave }) {
                             <label className="flex items-start gap-3 cursor-pointer group">
                                 <input
                                     type="radio"
-                                    className="mt-1 w-4 h-4 text-[#00713D] focus:ring-[#00713D] border-slate-300"
+                                    className="mt-1 w-4 h-4 text-primary focus:ring-primary border-slate-300"
                                     checked={type === "fixed"}
                                     onChange={() => setType("fixed")}
                                 />
@@ -42,7 +42,7 @@ export default function TermModal({ isOpen, onClose, onSave }) {
                                     <div className="mt-2 flex items-center gap-2">
                                         <input
                                             type="text"
-                                            className="w-16 px-2 py-1.5 border border-slate-300 rounded text-center text-sm focus:ring-1 focus:ring-[#00713D] outline-none disabled:bg-slate-50 disabled:text-slate-400"
+                                            className="w-16 px-2 py-1.5 border border-slate-300 rounded text-center text-sm focus:ring-1 focus:ring-primary outline-none disabled:bg-slate-50 disabled:text-slate-400"
                                             disabled={type !== "fixed"}
                                             value={days}
                                             onChange={(e) => setDays(e.target.value)}
@@ -55,7 +55,7 @@ export default function TermModal({ isOpen, onClose, onSave }) {
                             <label className="flex items-start gap-3 cursor-pointer group">
                                 <input
                                     type="radio"
-                                    className="mt-1 w-4 h-4 text-[#00713D] focus:ring-[#00713D] border-slate-300"
+                                    className="mt-1 w-4 h-4 text-primary focus:ring-primary border-slate-300"
                                     checked={type === "certain_day"}
                                     onChange={() => setType("certain_day")}
                                 />
@@ -64,7 +64,7 @@ export default function TermModal({ isOpen, onClose, onSave }) {
                                     <div className="mt-2 flex items-center gap-2">
                                         <input
                                             type="text"
-                                            className="w-16 px-2 py-1.5 border border-slate-300 rounded text-center text-sm focus:ring-1 focus:ring-[#00713D] outline-none disabled:bg-slate-50 disabled:text-slate-400"
+                                            className="w-16 px-2 py-1.5 border border-slate-300 rounded text-center text-sm focus:ring-1 focus:ring-primary outline-none disabled:bg-slate-50 disabled:text-slate-400"
                                             disabled={type !== "certain_day"}
                                             value={dayOfMonth}
                                             onChange={(e) => setDayOfMonth(e.target.value)}
@@ -77,7 +77,7 @@ export default function TermModal({ isOpen, onClose, onSave }) {
                                         <div className="flex items-center gap-2">
                                             <input
                                                 type="text"
-                                                className="w-16 px-2 py-1.5 border border-slate-300 rounded text-center text-sm focus:ring-1 focus:ring-[#00713D] outline-none disabled:bg-slate-50 disabled:text-slate-400"
+                                                className="w-16 px-2 py-1.5 border border-slate-300 rounded text-center text-sm focus:ring-1 focus:ring-primary outline-none disabled:bg-slate-50 disabled:text-slate-400"
                                                 disabled={type !== "certain_day"}
                                                 value={nextMonthThreshold}
                                                 onChange={(e) => setNextMonthThreshold(e.target.value)}
@@ -103,7 +103,7 @@ export default function TermModal({ isOpen, onClose, onSave }) {
                             onSave({ name, type, days, dayOfMonth, nextMonthThreshold });
                             onClose();
                         }}
-                        className="px-8 py-2.5 bg-[#00713D] text-white font-bold rounded-full hover:bg-[#005a30] transition-all shadow-lg shadow-[#00713D]/20"
+                        className="px-8 py-2.5 bg-primary text-white font-bold rounded-full hover:bg-primary-600 transition-all shadow-lg shadow-primary/20"
                     >
                         Save
                     </button>

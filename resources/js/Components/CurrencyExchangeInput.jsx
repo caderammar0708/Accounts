@@ -99,7 +99,7 @@ export default function CurrencyExchangeInput({
                 </div>
             </div>
             {isFetching && (
-                <div className="text-xs text-blue-500 font-medium">Fetching latest exchange rate...</div>
+                <div className="text-xs text-primary font-medium">Fetching latest exchange rate...</div>
             )}
         </div>
     );

@@ -53,6 +53,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email',
             'role' => 'required|string|exists:roles,name',
             'phone' => ['nullable', 'string', 'max:20'],
+            'mobile_access' => ['nullable', 'boolean'],
         ]);
 
         $inviteToken = Str::random(64);
@@ -61,6 +62,7 @@ class UserController extends Controller
             'email' => $request->email,
             'role' => strtolower($request->role) === 'admin' ? 'admin' : 'user',
             'phone' => $request->phone,
+            'mobile_access' => $request->mobile_access ?? false,
             'is_active' => true,
             'invite_token' => $inviteToken,
             'invite_expires_at' => now()->addHours(48),
@@ -71,7 +73,7 @@ class UserController extends Controller
 
         $inviteUrl = route('invite.setup', $inviteToken);
         try {
-            Mail::to($user->email)->send(new UserInvitationMail($user, $inviteUrl));
+            Mail::to($user->email)->send(new UserInvitationMail($user, $inviteUrl, auth()->user()));
         } catch (\Exception $e) {
             // Log mail exception if mailer is not configured in local environment
         }
@@ -93,7 +95,7 @@ class UserController extends Controller
 
         $inviteUrl = route('invite.setup', $user->invite_token);
         try {
-            Mail::to($user->email)->send(new UserInvitationMail($user, $inviteUrl));
+            Mail::to($user->email)->send(new UserInvitationMail($user, $inviteUrl, auth()->user()));
         } catch (\Exception $e) {
             // Log mail exception
         }
@@ -121,6 +123,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'role' => 'required|string|exists:roles,name',
             'phone' => ['nullable', 'string', 'max:20'],
+            'mobile_access' => ['nullable', 'boolean'],
         ]);
 
         $user->update([
@@ -128,6 +131,7 @@ class UserController extends Controller
             'email' => $request->email,
             'role' => strtolower($request->role) === 'admin' ? 'admin' : 'user',
             'phone' => $request->phone,
+            'mobile_access' => $request->mobile_access ?? false,
         ]);
 
         $user->syncRoles([$request->role]);

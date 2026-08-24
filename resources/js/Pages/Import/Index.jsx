@@ -17,7 +17,7 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
             title: 'Customers',
             badgeCount: stats.customers,
             description: 'Import customers with QuickBooks format: Name, Company, Address, Contact, Tax & Balance.',
-            color: 'bg-[#00713D]',
+            color: 'bg-primary',
             icon: (
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -49,7 +49,7 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
             title: 'Suppliers',
             badgeCount: stats.suppliers,
             description: 'Import vendors & suppliers with QuickBooks format: Name, Company, Address, Contact, Tax & Balance.',
-            color: 'bg-[#00713D]',
+            color: 'bg-primary',
             icon: (
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -81,7 +81,7 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
             title: 'Employees',
             badgeCount: stats.employees,
             description: 'Import employee profiles, designations, departments, contact info, address & hire dates.',
-            color: 'bg-[#00713D]',
+            color: 'bg-primary',
             icon: (
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
@@ -111,7 +111,7 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
             title: 'Chart of Accounts',
             badgeCount: stats.chart_of_accounts,
             description: 'Import general ledger accounts, parent:sub-account hierarchy, account types & opening balances.',
-            color: 'bg-[#00713D]',
+            color: 'bg-primary',
             icon: (
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -134,7 +134,7 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
             title: 'Bank Data',
             description: 'Connect bank accounts, import transactions, review feeds and match bank statements.',
             badgeCount: stats.bank_transactions,
-            color: 'bg-[#00713D]',
+            color: 'bg-primary',
             icon: (
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
@@ -205,7 +205,7 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
                 {/* Header Banner */}
                 <div className="mb-8">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00713D] to-[#00a859] flex items-center justify-center shadow-md shadow-green-900/10">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-primary-400 flex items-center justify-center shadow-md shadow-green-900/10">
                             <span className="material-symbols-outlined text-white text-2xl">upload_file</span>
                         </div>
                         <div>
@@ -239,18 +239,18 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
                         <div
                             key={card.key}
                             onClick={() => handleCardClick(card)}
-                            className="bg-white rounded-2xl border border-slate-200 hover:border-[#00713D] shadow-sm hover:shadow-xl transition-all duration-300 p-6 flex flex-col items-center text-center cursor-pointer group relative overflow-hidden"
+                            className="bg-white rounded-2xl border border-slate-200 hover:border-primary shadow-sm hover:shadow-xl transition-all duration-300 p-6 flex flex-col items-center text-center cursor-pointer group relative overflow-hidden"
                         >
                             {/* Top decorative gradient bar */}
-                            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#00713D]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                             {/* Circle Icon Badge */}
-                            <div className="w-20 h-20 rounded-full bg-[#00713D] flex items-center justify-center shadow-lg shadow-[#00713D]/25 mb-4 group-hover:scale-105 transition-transform duration-300">
+                            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/25 mb-4 group-hover:scale-105 transition-transform duration-300">
                                 {card.icon}
                             </div>
 
                             {/* Title */}
-                            <h3 className="text-base font-bold text-slate-800 group-hover:text-[#00713D] transition-colors mb-1.5">
+                            <h3 className="text-base font-bold text-slate-800 group-hover:text-primary transition-colors mb-1.5">
                                 {card.title}
                             </h3>
 
@@ -261,7 +261,7 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
 
                             {/* Action Button */}
                             <div className="mt-auto w-full pt-2">
-                                <span className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-slate-50 group-hover:bg-[#00713D] text-slate-700 group-hover:text-white text-xs font-bold transition-all duration-200 border border-slate-200 group-hover:border-[#00713D]">
+                                <span className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-slate-50 group-hover:bg-primary text-slate-700 group-hover:text-white text-xs font-bold transition-all duration-200 border border-slate-200 group-hover:border-primary">
                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                     </svg>
@@ -300,7 +300,7 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
                         {/* Modal Header */}
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-[#00713D] flex items-center justify-center shadow-md shadow-[#00713D]/20">
+                                <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
                                     <div className="scale-75 text-white">
                                         {selectedCard.icon}
                                     </div>
@@ -335,7 +335,7 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
                             <a
                                 href={selectedCard.templateUrl}
                                 download
-                                className="inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-100 text-[#00713D] border border-slate-300 font-bold text-xs rounded-xl transition-all shadow-sm shrink-0"
+                                className="inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-100 text-primary border border-slate-300 font-bold text-xs rounded-xl transition-all shadow-sm shrink-0"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -352,7 +352,7 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
                                 onDragLeave={() => setDragOver(false)}
                                 onDrop={handleDrop}
                                 onClick={() => fileInputRef.current?.click()}
-                                className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-200 ${dragOver ? 'border-[#00713D] bg-green-50/50' : 'border-slate-300 hover:border-[#00713D] hover:bg-slate-50/80 bg-white'
+                                className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-200 ${dragOver ? 'border-primary bg-green-50/50' : 'border-slate-300 hover:border-primary hover:bg-slate-50/80 bg-white'
                                     }`}
                             >
                                 <input
@@ -432,7 +432,7 @@ export default function ImportIndex({ bankAccounts = [], stats = {} }) {
                                 variant="primary"
                                 size="sm"
                                 disabled={processing || !data.file}
-                                className="bg-[#00713D] hover:bg-[#005a30] text-white"
+                                className="bg-primary hover:bg-primary-600 text-white"
                             >
                                 {processing ? (
                                     <span className="flex items-center gap-2">

@@ -30,7 +30,7 @@ export default function RoleIndex({ roles = [] }) {
                 <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00713D] to-[#00a859] flex items-center justify-center shadow-md shadow-green-900/10 text-white">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-primary-400 flex items-center justify-center shadow-md shadow-green-900/10 text-white">
                                 <span className="material-symbols-outlined text-2xl">admin_panel_settings</span>
                             </div>
                             <div>
@@ -44,7 +44,7 @@ export default function RoleIndex({ roles = [] }) {
                             href={route('roles.create')}
                             variant="primary"
                             size="md"
-                            className="bg-[#00713D] hover:bg-[#005a30] text-white flex items-center gap-2 shadow-sm"
+                            className="bg-primary hover:bg-primary-600 text-white flex items-center gap-2 shadow-sm"
                         >
                             <span className="material-symbols-outlined text-[18px]">add</span>
                             Create Role
@@ -54,8 +54,8 @@ export default function RoleIndex({ roles = [] }) {
 
                 {/* Feedback Alerts */}
                 {flash.success && (
-                    <div className="mb-6 p-4 bg-[#00713D]/10 border border-[#00713D]/20 text-[#00713D] rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm animate-in fade-in">
-                        <svg className="w-4 h-4 text-[#00713D] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="mb-6 p-4 bg-primary/10 border border-primary/20 text-primary rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm animate-in fade-in">
+                        <svg className="w-4 h-4 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                         </svg>
                         <span>{flash.success}</span>
@@ -97,7 +97,7 @@ export default function RoleIndex({ roles = [] }) {
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${
                                                     role.is_admin
-                                                        ? 'bg-[#00713D]/10 text-[#00713D] border border-[#00713D]/20'
+                                                        ? 'bg-primary/10 text-primary border border-primary/20'
                                                         : 'bg-slate-100 text-slate-600 border border-slate-200'
                                                 }`}>
                                                     <span className="material-symbols-outlined text-[18px]">
@@ -107,7 +107,7 @@ export default function RoleIndex({ roles = [] }) {
                                                 <div>
                                                     <span className="font-bold text-slate-900 text-sm">{role.name}</span>
                                                     {role.is_admin && (
-                                                        <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-[#00713D]/10 text-[#00713D] border border-[#00713D]/20">
+                                                        <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-primary/10 text-primary border border-primary/20">
                                                             Primary Admin
                                                         </span>
                                                     )}
@@ -127,7 +127,7 @@ export default function RoleIndex({ roles = [] }) {
                                                     {role.permissions_count} permissions
                                                 </span>
                                                 {role.is_admin ? (
-                                                    <span className="text-2xs text-[#00713D] font-bold bg-[#00713D]/10 px-2 py-0.5 rounded-md border border-[#00713D]/20">
+                                                    <span className="text-2xs text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20">
                                                         Full System Access
                                                     </span>
                                                 ) : (

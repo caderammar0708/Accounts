@@ -147,7 +147,7 @@ export default function Form({ auth, jobCard, customers }) {
                                         multiple
                                         accept="image/*"
                                         onChange={e => setData('photos', e.target.files)}
-                                        className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                        className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-600 hover:file:bg-primary-50"
                                     />
                                 </div>
                             )}

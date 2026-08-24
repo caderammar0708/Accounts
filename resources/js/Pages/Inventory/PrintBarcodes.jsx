@@ -51,7 +51,7 @@ export default function PrintBarcodes({ item, count }) {
             <div className="no-print p-4 bg-yellow-50 text-yellow-800 text-center font-bold">
                 Preparing to print {count} barcode(s) for {item.name}...
                 <br />
-                <button onClick={() => window.print()} className="mt-2 text-blue-600 underline">Click here if print dialog doesn't open</button>
+                <button onClick={() => window.print()} className="mt-2 text-primary underline">Click here if print dialog doesn't open</button>
             </div>
 
             <div className="bg-white">

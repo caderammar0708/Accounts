@@ -25,7 +25,7 @@ export default forwardRef(function TextInput(
                 {...props}
                 type={isPassword ? (show ? 'text' : 'password') : type}
                 className={
-                    'w-full rounded-xl border-slate-200 shadow-sm focus:border-[#00713D] focus:ring-[#00713D] transition-all duration-200 text-slate-800 placeholder:text-slate-300 ' +
+                    'w-full rounded-xl border-slate-200 shadow-sm focus:border-primary focus:ring-primary transition-all duration-200 text-slate-800 placeholder:text-slate-300 ' +
                     (isPassword ? 'pr-12 ' : '') +
                     className
                 }

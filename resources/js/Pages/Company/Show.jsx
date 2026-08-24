@@ -122,7 +122,7 @@ export default function Show({ company, packages }) {
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="w-full py-2.5 bg-[#00713D] text-white rounded-xl text-xs font-bold hover:bg-[#005a30] transition-all shadow-md shadow-green-900/10 disabled:opacity-50 uppercase tracking-widest"
+                                    className="w-full py-2.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-600 transition-all shadow-md shadow-green-900/10 disabled:opacity-50 uppercase tracking-widest"
                                 >
                                     {processing ? 'Assigning...' : 'Update Subscription'}
                                 </button>

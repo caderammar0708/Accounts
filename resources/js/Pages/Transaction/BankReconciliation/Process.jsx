@@ -56,7 +56,7 @@ export default function Process({ reconciliation, lines }) {
                             disabled={!isBalanced}
                             className={`font-bold py-2 px-6 rounded transition-colors ${
                                 isBalanced 
-                                ? 'bg-[#00713D] hover:bg-[#005a30] text-white shadow-sm' 
+                                ? 'bg-primary hover:bg-primary-600 text-white shadow-sm' 
                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             }`}
                         >
@@ -89,7 +89,7 @@ export default function Process({ reconciliation, lines }) {
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Cleared Balance</p>
-                                <p className="text-lg font-bold text-[#00713D] font-mono">{currencyPrefix} {formatCurrency(reconciliation.cleared_balance)}</p>
+                                <p className="text-lg font-bold text-primary font-mono">{currencyPrefix} {formatCurrency(reconciliation.cleared_balance)}</p>
                             </div>
                             <div className="md:col-span-2 bg-gray-50 rounded-lg p-2 flex flex-col justify-center border border-gray-100">
                                 <p className="text-sm text-gray-500 font-medium">Difference</p>
@@ -119,7 +119,7 @@ export default function Process({ reconciliation, lines }) {
                             <div className="flex bg-white rounded-md shadow-sm border border-gray-200 p-1">
                                 <button 
                                     onClick={() => setFilter('all')}
-                                    className={`px-4 py-1 text-sm rounded-md font-medium transition-colors ${filter === 'all' ? 'bg-[#00713D] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                                    className={`px-4 py-1 text-sm rounded-md font-medium transition-colors ${filter === 'all' ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                                 >
                                     All
                                 </button>
@@ -177,7 +177,7 @@ export default function Process({ reconciliation, lines }) {
                                                         checked={line.is_cleared}
                                                         onChange={() => handleToggleClear(line)}
                                                         disabled={reconciliation.status === 'completed'}
-                                                        className="h-5 w-5 text-[#00713D] focus:ring-[#00713D] border-gray-300 rounded cursor-pointer disabled:opacity-50"
+                                                        className="h-5 w-5 text-primary focus:ring-primary border-gray-300 rounded cursor-pointer disabled:opacity-50"
                                                     />
                                                 </td>
                                             </tr>

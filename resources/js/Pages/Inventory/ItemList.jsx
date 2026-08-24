@@ -231,7 +231,7 @@ export default function ItemList({ items, filters, counts }) {
                                                     </td>
                                                     <td className="px-4 py-2 text-right">
                                                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button onClick={() => setPrintModalItem(item)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all" title="Print Barcode">
+                                                            <button onClick={() => setPrintModalItem(item)} className="p-1.5 text-slate-400 hover:text-primary hover:bg-primary-50 rounded transition-all" title="Print Barcode">
                                                                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
                                                             </button>
                                                             <button onClick={() => handleEdit(item)} className="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-all" title="Edit">

@@ -114,7 +114,7 @@ export default function LocationsIndex({ locations = [], users = [] }) {
                             <div className="p-5 border-b border-slate-100">
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-2">
-                                        <div className="h-9 w-9 rounded-lg bg-emerald-50 text-[#00713D] flex items-center justify-center font-bold">
+                                        <div className="h-9 w-9 rounded-lg bg-emerald-50 text-primary flex items-center justify-center font-bold">
                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                             </svg>
@@ -135,7 +135,7 @@ export default function LocationsIndex({ locations = [], users = [] }) {
                                         <button
                                             type="button"
                                             onClick={() => handleOpenAssign(loc)}
-                                            className="text-xs font-semibold text-[#00713D] hover:underline flex items-center gap-1"
+                                            className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
                                         >
                                             + Assign Employee
                                         </button>
@@ -190,7 +190,7 @@ export default function LocationsIndex({ locations = [], users = [] }) {
 
                 {locations.length === 0 && (
                     <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-                        <div className="w-12 h-12 rounded-full bg-emerald-50 text-[#00713D] flex items-center justify-center mx-auto mb-3">
+                        <div className="w-12 h-12 rounded-full bg-emerald-50 text-primary flex items-center justify-center mx-auto mb-3">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
@@ -238,7 +238,7 @@ export default function LocationsIndex({ locations = [], users = [] }) {
                                 id="is_active_create"
                                 checked={data.is_active}
                                 onChange={(e) => setData('is_active', e.target.checked)}
-                                className="rounded border-slate-300 text-[#00713D] focus:ring-[#00713D]"
+                                className="rounded border-slate-300 text-primary focus:ring-primary"
                             />
                             <label htmlFor="is_active_create" className="text-xs font-semibold text-slate-700 cursor-pointer">
                                 Branch is active
@@ -289,7 +289,7 @@ export default function LocationsIndex({ locations = [], users = [] }) {
                                 id="is_active_edit"
                                 checked={data.is_active}
                                 onChange={(e) => setData('is_active', e.target.checked)}
-                                className="rounded border-slate-300 text-[#00713D] focus:ring-[#00713D]"
+                                className="rounded border-slate-300 text-primary focus:ring-primary"
                             />
                             <label htmlFor="is_active_edit" className="text-xs font-semibold text-slate-700 cursor-pointer">
                                 Branch is active
@@ -319,7 +319,7 @@ export default function LocationsIndex({ locations = [], users = [] }) {
                         <select
                             value={assignForm.data.user_id}
                             onChange={(e) => assignForm.setData('user_id', e.target.value)}
-                            className="w-full text-xs rounded-lg border-slate-300 focus:border-[#00713D] focus:ring-[#00713D]"
+                            className="w-full text-xs rounded-lg border-slate-300 focus:border-primary focus:ring-primary"
                         >
                             <option value="">-- Choose User --</option>
                             {users.map((usr) => (

@@ -407,24 +407,7 @@ export default function BalanceSheet({ reportData, filters, auth }) {
                             </>
                         )}
 
-                        {/* Equity Sub-section */}
-                        <tr className="bg-white mt-2">
-                            <td colSpan={2 + (isMonthWise ? monthCols.length : 0)} className="py-2 px-3 pl-6 font-semibold text-gray-700 italic border-t border-gray-100">
-                                Equity
-                            </td>
-                        </tr>
-                        {equity.map((item) => (
-                            <AccountRow key={item.id} item={item} />
-                        ))}
-                        <tr className="border-t border-gray-200 bg-white font-medium">
-                            <td className="py-2 px-3 pl-8 text-gray-900">Total Equity</td>
-                            {isMonthWise && monthCols.map(ym => (
-                                <td key={ym} className="py-2 px-3 text-right whitespace-nowrap text-gray-900">
-                                    <Currency value={totalEquityMonthly[ym] || 0} />
-                                </td>
-                            ))}
-                            <td className="py-2 px-3 text-right whitespace-nowrap text-gray-900"><Currency value={totalEquity} /></td>
-                        </tr>
+
 
                         <tr className="border-t-2 border-b-4 border-gray-400 font-bold bg-white text-[14px]">
                             <td className="py-3 px-3 text-gray-900">TOTAL LIABILITIES AND EQUITY</td>

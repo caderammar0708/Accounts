@@ -444,7 +444,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                                         )}
                                         <span>{opt.label}</span>
                                         {opt.isNew && (
-                                            <span className="text-[10px] text-[#00713D] bg-green-50 border border-green-200 px-1.5 py-0.5 rounded font-bold ml-1">
+                                            <span className="text-[10px] text-primary bg-green-50 border border-green-200 px-1.5 py-0.5 rounded font-bold ml-1">
                                                 + Add "{opt.value}"
                                             </span>
                                         )}
