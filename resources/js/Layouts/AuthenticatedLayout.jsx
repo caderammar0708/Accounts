@@ -84,7 +84,6 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
         { name: 'Chart of Accounts', href: route('chart-of-account.index'), icon: 'accounting', permission: 'chart-of-accounts.view' },
         { name: 'Reports', href: route('reports.index'), icon: 'reports', permission: 'reports.view' },
         ...(showLocationsAndStockShifts ? [{ name: 'Locations', href: route('locations.index'), icon: 'locations', activeRoutes: ['locations.*'] }] : []),
-        { name: 'Import Tools', href: route('import.index'), icon: 'import_tools', permission: 'import.view', activeRoutes: ['import.*'] },
         { name: 'Bank Reconciliation', href: route('bank-reconciliation.index'), icon: 'reconciliation', permission: 'bank-reconciliation.view' },
     ];
 

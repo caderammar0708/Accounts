@@ -6,13 +6,6 @@
             "DB_DATABASE": "u487520070_aaass",
             "DB_USERNAME": "u487520070_aaass",
             "DB_PASSWORD": "Grow2025@"
-        },
-        "local": {
-            "APP_URL": "http://127.0.0.1:8000/",
-            "SSO_CLIENT_SECRET": "cb5fff85ed424dc538d7ca450bfd545f",
-            "DB_DATABASE": "jbooks_aaass",
-            "DB_USERNAME": "root",
-            "DB_PASSWORD": ""
         }
     },
     "hallam-city-campus": {
@@ -22,13 +15,6 @@
             "DB_DATABASE": "u487520070_halam",
             "DB_USERNAME": "u487520070_halam",
             "DB_PASSWORD": "Grow2025@"
-        },
-        "local": {
-            "APP_URL": "http://127.0.0.1:8000/",
-            "SSO_CLIENT_SECRET": "ff8dd8a7344892cb6b881b97bcc955ef",
-            "DB_DATABASE": "jbooks_halam",
-            "DB_USERNAME": "root",
-            "DB_PASSWORD": ""
         }
     },
     "jobalign": {
@@ -38,13 +24,6 @@
             "DB_DATABASE": "u487520070_jb_jobalign",
             "DB_USERNAME": "u487520070_jb_jobalign",
             "DB_PASSWORD": "Grow2025@"
-        },
-        "local": {
-            "APP_URL": "http://127.0.0.1:8000/",
-            "SSO_CLIENT_SECRET": "526454b4317fecf46a7550b4232b7bec",
-            "DB_DATABASE": "jbooks_jobalign",
-            "DB_USERNAME": "root",
-            "DB_PASSWORD": ""
         }
     },
     "steel-audit": {
@@ -54,13 +33,6 @@
             "DB_DATABASE": "u487520070_steel_audit",
             "DB_USERNAME": "u487520070_steel_audit",
             "DB_PASSWORD": "Grow2025@"
-        },
-        "local": {
-            "APP_URL": "http://127.0.0.1:8000/",
-            "SSO_CLIENT_SECRET": "ecb1dff657582ef41b700904c12630c9",
-            "DB_DATABASE": "jbooks_steel_audit",
-            "DB_USERNAME": "root",
-            "DB_PASSWORD": ""
         }
     },
     "tgl-kandy": {
@@ -70,13 +42,6 @@
             "DB_DATABASE": "u487520070_tglk_acc",
             "DB_USERNAME": "u487520070_tglk_acc",
             "DB_PASSWORD": "Grow2025@"
-        },
-        "local": {
-            "APP_URL": "http://127.0.0.1:8000/",
-            "SSO_CLIENT_SECRET": "526454b4317fecf46a7550b42347bbec",
-            "DB_DATABASE": "jbooks_tgl_kandy",
-            "DB_USERNAME": "root",
-            "DB_PASSWORD": ""
         }
     },
     "aaafs": {
@@ -86,13 +51,6 @@
             "DB_DATABASE": "u487520070_aaafs",
             "DB_USERNAME": "u487520070_aaafs",
             "DB_PASSWORD": "Grow2025@"
-        },
-        "local": {
-            "APP_URL": "http://127.0.0.1:8000/",
-            "SSO_CLIENT_SECRET": "7bd3eabc6521d9660719c42221548e24",
-            "DB_DATABASE": "jbooks_aaafs",
-            "DB_USERNAME": "root",
-            "DB_PASSWORD": ""
         }
     },
     "demo": {
@@ -102,13 +60,6 @@
             "DB_DATABASE": "u487520070_jb_demo",
             "DB_USERNAME": "u487520070_jb_demo",
             "DB_PASSWORD": "Grow2025@"
-        },
-        "local": {
-            "APP_URL": "http://127.0.0.1:8000/",
-            "SSO_CLIENT_SECRET": "0cfe0eeac8b89a7bcc654b8f5fe9bfbd",
-            "DB_DATABASE": "jbooks_demo",
-            "DB_USERNAME": "root",
-            "DB_PASSWORD": ""
         }
     }
 }

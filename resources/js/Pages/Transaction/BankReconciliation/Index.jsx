@@ -38,7 +38,7 @@ export default function Index({ reconciliations }) {
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {reconciliations.length === 0 ? (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                                        <td colSpan="5" className="px-6 py-4 text-sm text-center text-gray-500">
                                             No bank reconciliations found. Click "New Reconciliation" to get started.
                                         </td>
                                     </tr>
@@ -51,12 +51,11 @@ export default function Index({ reconciliations }) {
                                             Up to {recon.end_date}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-semibold font-mono">
-                                            {currencyPrefix} {parseFloat(recon.ending_balance).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                            {currencyPrefix} {parseFloat(recon.ending_balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                recon.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                            }`}>
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${recon.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                                }`}>
                                                 {recon.status}
                                             </span>
                                         </td>

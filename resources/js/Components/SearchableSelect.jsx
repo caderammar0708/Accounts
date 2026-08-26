@@ -399,7 +399,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                                     setIsOpen(false);
                                     restoreFocus();
                                 }}
-                                className="px-3 py-1.5 text-xs text-primary-600 font-bold border-b border-slate-100 hover:bg-primary-50 cursor-pointer flex items-center gap-2"
+                                className="px-3 py-1 text-[11px] text-primary-600 font-bold border-b border-slate-100 hover:bg-primary-50 cursor-pointer flex items-center gap-2"
                             >
                                 <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
                                 Add New
@@ -434,7 +434,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                                         setSearch("");
                                         restoreFocus();
                                     }}
-                                    className={`px-3 py-1.5 text-xs cursor-pointer  flex justify-between items-center ${idx === activeIndex ? 'bg-slate-100' : ''
+                                    className={`px-3 py-1 text-[11px] cursor-pointer  flex justify-between items-center ${idx === activeIndex ? 'bg-slate-100' : ''
                                         } ${isMulti ? selectedValues.some(val => String(val) === String(opt.value)) ? 'bg-green-50 text-green-700 font-bold' : 'text-slate-700 hover:bg-slate-50' : String(opt.value) === String(value) ? 'bg-green-50 text-green-700 font-bold' : 'text-slate-700 hover:bg-slate-50'}
                                         `}
                                 >
@@ -462,7 +462,7 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                                 </div>
                             ))
                         ) : (
-                            <div className="px-3 py-3 text-xs text-slate-400 text-center italic">
+                            <div className="px-3 py-3 text-[11px] text-slate-400 text-center italic">
                                 No results found
                             </div>
                         )}
