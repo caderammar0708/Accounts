@@ -149,7 +149,14 @@ class UserController extends Controller
             return back()->with('error', 'You cannot delete your own account.');
         }
 
-        $user->delete();
+        try {
+            $user->delete();
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == 23000 || $e->getCode() == 1451) {
+                return back()->with('error', 'Cannot delete this user because they have associated transactions or records in the system. Please deactivate the user instead.');
+            }
+            throw $e;
+        }
 
         return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }

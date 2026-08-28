@@ -1,6 +1,7 @@
 import { useForm, usePage } from '@inertiajs/react';
 import SlideOver from './SlideOver';
 import CommonInput from './CommonInput';
+import SearchableSelect from './SearchableSelect';
 import CommonButton from './CommonButton';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -324,24 +325,21 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
 
                 {data.is_subaccount && (
                     <div className="pt-4 border-t border-slate-150 space-y-4">
-                        <CommonInput
-                            type="select"
-                            label="Parent Account"
-                            value={data.parent_id}
-                            onChange={e => setData('parent_id', e.target.value)}
-                            error={errors.parent_id}
-                            required={data.is_subaccount}
-                            disabled={data.is_locked}
-                        >
-                            <option value="">Select a parent account</option>
-                            {parentAccounts
-                                .filter(acc => String(acc.account_type).toLowerCase() === String(data.account_type).toLowerCase() && (!account || acc.value !== account.id))
-                                .map(acc => (
-                                    <option key={acc.value} value={acc.value}>
-                                        {acc.label} {acc.account_type ? `(${acc.account_type})` : ''}
-                                    </option>
-                                ))}
-                        </CommonInput>
+                        <div className={data.is_locked ? "opacity-50 pointer-events-none" : ""}>
+                            <SearchableSelect
+                                label="Parent Account"
+                                value={data.parent_id}
+                                onChange={(val) => setData('parent_id', val)}
+                                error={errors.parent_id}
+                                required={data.is_subaccount}
+                                options={parentAccounts
+                                    .filter(acc => String(acc.account_type).toLowerCase() === String(data.account_type).toLowerCase() && (!account || acc.value !== account.id))
+                                    .map(acc => ({
+                                        value: acc.value,
+                                        label: `${acc.label} ${acc.account_type ? `(${acc.account_type})` : ''}`
+                                    }))}
+                            />
+                        </div>
                     </div>
                 )}
 

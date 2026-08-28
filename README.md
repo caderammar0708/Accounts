@@ -1,0 +1,1 @@
+bash sync-branches.sh
