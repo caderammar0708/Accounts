@@ -8,17 +8,24 @@ use OwenIt\Auditing\Contracts\Auditable;
 use App\Models\Supplier;
 
 use App\Traits\BelongsToLocation;
+use App\Traits\HasAttachments;
 
 class BillPayment extends Model implements Auditable
 {
-    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
+    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation, HasAttachments;
 
     protected $fillable = [
         'currency_id',
         'exchange_rate',
         'supplier_id', 'amount', 'payment_date',
         'payment_method_id', 'payment_account_id', 'reference_no', 'memo', 'check_date', 'check_number', 'location_id',
+        'status', 'voided_at',
     ];
+
+    public function journalEntry()
+    {
+        return $this->morphOne(JournalEntry::class, 'transactionable');
+    }
 
     public function supplier()
     {

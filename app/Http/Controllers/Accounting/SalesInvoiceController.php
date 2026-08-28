@@ -89,7 +89,7 @@ class SalesInvoiceController extends Controller
             $journalEntry = DB::transaction(function() use ($request) {
                 // Filter out empty items
                 $items = collect($request->items)->filter(function($item) {
-                    return !empty($item['product']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['product']) && isset($item['amount']) && $item['amount'] !== '';
                 })->values()->all();
 
                 if (empty($items)) {
@@ -250,6 +250,9 @@ class SalesInvoiceController extends Controller
                     }
                 }
 
+                $this->syncAttachments($receipt, $request);
+                $this->syncAttachments($journalEntry, $request);
+
                 return $journalEntry;
             });
 
@@ -267,14 +270,14 @@ class SalesInvoiceController extends Controller
 
     public function edit(JournalEntry $journalEntry)
     {
-        $journalEntry->load('lines');
+        $journalEntry->load(['lines', 'attachments']);
         $receipt = SalesInvoice::find($journalEntry->transactionable_id);
 
         if (!$receipt) {
             abort(404, 'Sales invoice not found');
         }
 
-        $receipt->load('customer');
+        $receipt->load(['customer', 'attachments']);
         $customer = $receipt->customer;
         $billingAddress = $customer ? $customer->address : '';
 
@@ -308,6 +311,7 @@ class SalesInvoiceController extends Controller
             'discountValue' => (float)$receipt->discount_value,
             'currency_id' => $receipt->currency_id ?? '',
             'exchange_rate' => $receipt->exchange_rate ?? 1.0,
+            'attachments' => $receipt->attachments->isNotEmpty() ? $receipt->attachments : $journalEntry->attachments,
         ];
 
         return Inertia::render('Transaction/SalesInvoice/SalesInvoiceForm', [
@@ -330,7 +334,7 @@ class SalesInvoiceController extends Controller
             DB::transaction(function() use ($request, $journalEntry) {
                 // Filter out empty items
                 $items = collect($request->items)->filter(function($item) {
-                    return !empty($item['product']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['product']) && isset($item['amount']) && $item['amount'] !== '';
                 })->values()->all();
 
                 if (empty($items)) {
@@ -495,12 +499,42 @@ class SalesInvoiceController extends Controller
                         }
                     }
                 }
+
+                $receipt = SalesInvoice::find($journalEntry->transactionable_id);
+                if ($receipt) {
+                    $this->syncAttachments($receipt, $request);
+                }
+                $this->syncAttachments($journalEntry, $request);
             });
             return $this->handleActionRedirect($request, 'sales-invoice', $journalEntry->id, 'Cash sale updated successfully.');
 
         } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        \App\Services\BooksLockService::check($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            $receipt = SalesInvoice::find($journalEntry->transactionable_id);
+
+            if ($receipt) {
+                foreach ($receipt->items as $oldItem) {
+                    $itemModel = \App\Models\Item::find($oldItem->item_id);
+                    if ($itemModel && $itemModel->type === 'inventory') {
+                        $itemModel->increment('quantity_on_hand', $oldItem->quantity);
+                    }
+                }
+                $receipt->update(['status' => 'void', 'voided_at' => now()]);
+            }
+
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'Sales Invoice voided successfully.');
     }
 
     public function destroy(Request $request, JournalEntry $journalEntry)

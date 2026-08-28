@@ -164,6 +164,9 @@ class ReceivePaymentController extends Controller
 
                 JournalEntryLine::insert($linesData);
 
+                $receivePayment->attachAttachments($request->input('attachment_ids', []));
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
+
                 return $journalEntry;
             });
 
@@ -176,12 +179,14 @@ class ReceivePaymentController extends Controller
 
     public function edit(JournalEntry $journalEntry)
     {
-        $journalEntry->load('lines');
+        $journalEntry->load(['lines', 'attachments']);
         $receivePayment = \App\Models\Accounting\ReceivePayment::find($journalEntry->transactionable_id);
 
         if (!$receivePayment) {
             abort(404, 'ReceivePayment not found');
         }
+
+        $receivePayment->load('attachments');
 
         $paymentData = [
             'id' => $journalEntry->id,
@@ -198,6 +203,7 @@ class ReceivePaymentController extends Controller
             'checkNumber' => $receivePayment->check_number,
             'exchange_rate' => $receivePayment->exchange_rate ?? 1,
             'currency_id' => $receivePayment->currency_id ?? "",
+            'attachments' => $receivePayment->attachments->isNotEmpty() ? $receivePayment->attachments : $journalEntry->attachments,
         ];
 
         return Inertia::render('Transaction/ReceivePayment/ReceivePaymentForm', [
@@ -311,12 +317,37 @@ class ReceivePaymentController extends Controller
                 ];
 
                 JournalEntryLine::insert($linesData);
+
+                $receivePayment = \App\Models\Accounting\ReceivePayment::find($journalEntry->transactionable_id);
+                if ($receivePayment) {
+                    $receivePayment->attachAttachments($request->input('attachment_ids', []));
+                }
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
             });
 
             return $this->handleActionRedirect($request, 'receive-payment', $journalEntry->id, 'ReceivePayment updated successfully.');
         } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        \App\Services\BooksLockService::check($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            $receivePayment = \App\Models\Accounting\ReceivePayment::find($journalEntry->transactionable_id);
+
+            if ($receivePayment) {
+                $receivePayment->allocations()->delete();
+                $receivePayment->update(['status' => 'void', 'voided_at' => now()]);
+            }
+
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'Receive Payment voided successfully.');
     }
 
     public function destroy(Request $request, JournalEntry $journalEntry)

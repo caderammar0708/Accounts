@@ -9,14 +9,15 @@ use OwenIt\Auditing\Contracts\Auditable;
 use App\Models\Supplier;
 
 use App\Traits\BelongsToLocation;
+use App\Traits\HasAttachments;
 
 class BillReturn extends Model implements Auditable
 {
-    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
+    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation, HasAttachments;
 
     protected $fillable = [
         'supplier_id', 'date', 
-        'total_amount', 'memo', 'status', 'location_id',
+        'total_amount', 'memo', 'status', 'voided_at', 'location_id',
     ];
 
     public function items()

@@ -11,6 +11,7 @@ import InventoryItemSidePanel from "@/Components/InventoryItemSidePanel";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import PinPromptModal from "@/Components/PinPromptModal";
 import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
+import AttachmentUpload from "@/Components/AttachmentUpload";
 
 export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = null }) {
     const company = auth.company;
@@ -89,6 +90,8 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
         memo: invoiceReturn?.memo || "",
         statementMessage: invoiceReturn?.statementMessage || "",
         prefix: invoiceReturn?.prefix || "",
+        attachments: invoiceReturn?.attachments || [],
+        attachment_ids: (invoiceReturn?.attachments || []).map(a => a.id),
         action: 'save',
         books_pin: '',
         items: invoiceReturn?.items ? invoiceReturn.items.map(i => ({
@@ -115,6 +118,8 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
                 memo: invoiceReturn.memo || "",
                 statementMessage: invoiceReturn.statementMessage || "",
                 prefix: invoiceReturn.prefix || "",
+                attachments: invoiceReturn.attachments || [],
+                attachment_ids: (invoiceReturn.attachments || []).map(a => a.id),
                 items: invoiceReturn.items ? invoiceReturn.items.map(i => ({
                     ...i,
                     qty: i.qty ? parseFloat(i.qty).toLocaleString('en-US', { maximumFractionDigits: 4 }) : "1",
@@ -212,12 +217,12 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
             action: action,
             books_pin: pinOverride !== null ? pinOverride : data.books_pin,
             items: data.items
-                .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount && item.amount !== "0.00" && item.amount !== "0"))
+                .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount !== "" && item.amount !== null && item.amount !== undefined && item.amount !== "0.00" && item.amount !== "0"))
                 .map(item => ({
                     ...item,
-                    qty: String(item.qty).replace(/,/g, ''),
-                    rate: String(item.rate).replace(/,/g, ''),
-                    amount: String(item.amount).replace(/,/g, '')
+                    qty: String(item.qty ?? '').replace(/,/g, ''),
+                    rate: String(item.rate ?? '').replace(/,/g, ''),
+                    amount: String(item.amount ?? '').replace(/,/g, '')
                 }))
         }));
 
@@ -460,6 +465,19 @@ export default function InvoiceReturnForm({ auth, nextRef = "", invoiceReturn = 
                             error={errors.statementMessage}
                         />
                     </div>
+                </div>
+                <div className="w-[400px]">
+                    <AttachmentUpload
+                        attachments={data.attachments}
+                        onChange={(newAttachments, newIds) => {
+                            setData(prev => ({
+                                ...prev,
+                                attachments: newAttachments,
+                                attachment_ids: newIds
+                            }));
+                            setIsDirty(true);
+                        }}
+                    />
                 </div>
             </div>
 

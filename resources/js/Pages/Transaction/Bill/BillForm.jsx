@@ -14,6 +14,7 @@ import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import PinPromptModal from "@/Components/PinPromptModal";
 import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
+import AttachmentUpload from "@/Components/AttachmentUpload";
 import axios from "axios";
 
 export default function BillForm({
@@ -175,6 +176,8 @@ export default function BillForm({
         ],
         exchange_rate: bill?.exchange_rate || 1,
         currency_id: bill?.currency_id || "",
+        attachments: bill?.attachments || [],
+        attachment_ids: (bill?.attachments || []).map(a => a.id),
         action: 'save',
         books_pin: ''
     });
@@ -209,6 +212,8 @@ export default function BillForm({
                 ],
                 exchange_rate: bill.exchange_rate || 1,
                 currency_id: bill.currency_id || "",
+                attachments: bill.attachments || [],
+                attachment_ids: (bill.attachments || []).map(a => a.id),
                 action: 'save'
             });
         }
@@ -227,18 +232,18 @@ export default function BillForm({
             ...data,
             action: actionRef.current,  // ADD THIS LINE
             items: data.items
-                .filter(item => item.category || item.description || (item.amount && item.amount !== "0.00" && item.amount !== "0"))
+                .filter(item => item.category || item.description || (item.amount !== "" && item.amount !== null && item.amount !== undefined && item.amount !== "0.00" && item.amount !== "0"))
                 .map(item => ({
                     ...item,
-                    amount: String(item.amount).replace(/,/g, '')
+                    amount: String(item.amount ?? '').replace(/,/g, '')
                 })),
             itemDetails: data.itemDetails
-                .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount && item.amount !== "0.00" && item.amount !== "0"))
+                .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount !== "" && item.amount !== null && item.amount !== undefined && item.amount !== "0.00" && item.amount !== "0"))
                 .map(item => ({
                     ...item,
-                    qty: String(item.qty).replace(/,/g, ''),
-                    rate: String(item.rate).replace(/,/g, ''),
-                    amount: String(item.amount).replace(/,/g, '')
+                    qty: String(item.qty ?? '').replace(/,/g, ''),
+                    rate: String(item.rate ?? '').replace(/,/g, ''),
+                    amount: String(item.amount ?? '').replace(/,/g, '')
                 }))
         }));
     }, [transform]);;
@@ -343,18 +348,18 @@ export default function BillForm({
             action,
             books_pin: pinOverride !== null ? pinOverride : d.books_pin,
             items: d.items
-                .filter(item => item.category || item.description || (item.amount && item.amount !== "0.00" && item.amount !== "0"))
+                .filter(item => item.category || item.description || (item.amount !== "" && item.amount !== null && item.amount !== undefined && item.amount !== "0.00" && item.amount !== "0"))
                 .map(item => ({
                     ...item,
-                    amount: String(item.amount).replace(/,/g, '')
+                    amount: String(item.amount ?? '').replace(/,/g, '')
                 })),
             itemDetails: d.itemDetails
-                .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount && item.amount !== "0.00" && item.amount !== "0"))
+                .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount !== "" && item.amount !== null && item.amount !== undefined && item.amount !== "0.00" && item.amount !== "0"))
                 .map(item => ({
                     ...item,
-                    qty: String(item.qty).replace(/,/g, ''),
-                    rate: String(item.rate).replace(/,/g, ''),
-                    amount: String(item.amount).replace(/,/g, '')
+                    qty: String(item.qty ?? '').replace(/,/g, ''),
+                    rate: String(item.rate ?? '').replace(/,/g, ''),
+                    amount: String(item.amount ?? '').replace(/,/g, '')
                 }))
         }));
 
@@ -674,6 +679,19 @@ export default function BillForm({
                         onChange={(e) => { setData('memo', e.target.value); setIsDirty(true); }}
                         size="sm"
                         className="h-24"
+                    />
+                </div>
+                <div className="w-[400px]">
+                    <AttachmentUpload
+                        attachments={data.attachments}
+                        onChange={(newAttachments, newIds) => {
+                            setData(prev => ({
+                                ...prev,
+                                attachments: newAttachments,
+                                attachment_ids: newIds
+                            }));
+                            setIsDirty(true);
+                        }}
                     />
                 </div>
             </div>

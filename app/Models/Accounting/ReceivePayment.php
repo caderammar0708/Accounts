@@ -9,10 +9,11 @@ use App\Models\Customer;
 use OwenIt\Auditing\Contracts\Auditable;
 
 use App\Traits\BelongsToLocation;
+use App\Traits\HasAttachments;
 
 class ReceivePayment extends Model implements Auditable
 {
-    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
+    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation, HasAttachments;
 
     protected $fillable = [
         'currency_id',
@@ -20,6 +21,7 @@ class ReceivePayment extends Model implements Auditable
         'customer_id', 'amount', 'payment_date',
         'payment_method_id', 'deposit_to_account_id', 'reference_no', 'memo',
         'check_date', 'check_number', 'cheque_deposit_id', 'location_id',
+        'status', 'voided_at',
     ];
 
     public function chequeDeposit()

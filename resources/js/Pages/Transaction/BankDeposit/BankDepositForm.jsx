@@ -9,10 +9,10 @@ import CommonInput from "@/Components/CommonInput";
 import QuickAddPayee from "@/Components/QuickAddPayee";
 import QuickAddAccount from "@/Components/QuickAddAccount";
 import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
-import { showToast } from "@/Components/ToastNotification";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import PinPromptModal from "@/Components/PinPromptModal";
 import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
+import AttachmentUpload from "@/Components/AttachmentUpload";
 
 export default function BankDepositForm({ auth, nextRef = "", deposit = null, onModeChange = null, onClose = null }) {
     const company = auth.company;
@@ -115,6 +115,8 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
         memo: deposit?.memo || "",
         exchange_rate: deposit?.exchange_rate || 1,
         currency_id: deposit?.currency_id || "",
+        attachments: deposit?.attachments || [],
+        attachment_ids: (deposit?.attachments || []).map(a => a.id),
         action: 'save',
         books_pin: ''
     });
@@ -150,6 +152,8 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                 memo: deposit.memo || "",
                 exchange_rate: deposit.exchange_rate || 1,
                 currency_id: deposit.currency_id || "",
+                attachments: deposit.attachments || [],
+                attachment_ids: (deposit.attachments || []).map(a => a.id),
                 action: 'save'
             });
         }
@@ -352,7 +356,7 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                 />
 
                 <div className="mt-8 grid grid-cols-12 gap-8 pb-12">
-                    <div className="col-span-4">
+                    <div className="col-span-5 flex flex-col gap-4">
                         <CommonInput
                             type="textarea"
                             label="Memo"
@@ -363,9 +367,20 @@ export default function BankDepositForm({ auth, nextRef = "", deposit = null, on
                             className="h-24"
                             error={errors.memo}
                         />
+                        <AttachmentUpload
+                            attachments={data.attachments}
+                            onChange={(newAttachments, newIds) => {
+                                setData(prev => ({
+                                    ...prev,
+                                    attachments: newAttachments,
+                                    attachment_ids: newIds
+                                }));
+                                setIsDirty(true);
+                            }}
+                        />
                     </div>
 
-                    <div className="col-span-8 flex flex-col justify-end items-end pb-2">
+                    <div className="col-span-7 flex flex-col justify-end items-end pb-2">
                         <div className="text-right flex items-center gap-6">
                             <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Grand Total</span>
                             <span className="text-3xl font-black tracking-tighter text-slate-900 leading-none">

@@ -10,15 +10,16 @@ use App\Models\ServiceStation\Vehicle;
 use OwenIt\Auditing\Contracts\Auditable;
 
 use App\Traits\BelongsToLocation;
+use App\Traits\HasAttachments;
 
 class SalesInvoice extends Model implements Auditable
 {
-    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
+    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation, HasAttachments;
 
     protected $fillable = [
         'created_by',
         'receipt_no', 'customer_id', 'email', 'receipt_date', 'payment_method_id',
-        'deposit_to_account_id', 'total_amount', 'memo', 'statement_message', 'status',
+        'deposit_to_account_id', 'total_amount', 'memo', 'statement_message', 'status', 'voided_at',
         'vehicle_id', 'check_date', 'check_number', 'discount_type', 'discount_value', 'prefix', 'memo_on_statement',
         'location_id', 'currency_id', 'exchange_rate',
     ];

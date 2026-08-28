@@ -14,6 +14,7 @@ import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
+import AttachmentUpload from "@/Components/AttachmentUpload";
 
 export default function ReceivePaymentForm({ paymentMethods = [], payment = null, nextPaymentNo = "" }) {
     const { auth } = usePage().props;
@@ -51,6 +52,8 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
         checkNumber: payment?.checkNumber || "",
         exchange_rate: payment?.exchange_rate || 1,
         currency_id: payment?.currency_id || "",
+        attachments: payment?.attachments || [],
+        attachment_ids: (payment?.attachments || []).map(a => a.id),
         action: 'save',
         books_pin: ''
     });
@@ -775,6 +778,34 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                         )}
                     </div>
                 )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-10 mt-8 pb-12">
+                <div className="w-[400px]">
+                    <CommonInput
+                        type="textarea"
+                        label="Memo"
+                        placeholder="Add a memo..."
+                        value={data.memo}
+                        onChange={(e) => { setData('memo', e.target.value); setIsDirty(true); }}
+                        size="sm"
+                        className="h-24"
+                        error={errors.memo}
+                    />
+                </div>
+                <div className="w-[400px]">
+                    <AttachmentUpload
+                        attachments={data.attachments}
+                        onChange={(newAttachments, newIds) => {
+                            setData(prev => ({
+                                ...prev,
+                                attachments: newAttachments,
+                                attachment_ids: newIds
+                            }));
+                            setIsDirty(true);
+                        }}
+                    />
+                </div>
             </div>
 
             <QuickAddPayee

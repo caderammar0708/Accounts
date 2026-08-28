@@ -32,48 +32,58 @@ export default function TransactionLayout({
             return {
                 copyRoute: 'journal-entries.create',
                 deleteRoute: 'journal-entries.destroy',
+                voidRoute: 'journal-entries.void',
                 recordId: props.journalEntry?.id ?? props.journalEntry?.journalEntry?.id,
-                listRoute: 'journal-entries.index'
+                listRoute: 'journal-entries.index',
+                isVoided: (props.journalEntry?.status ?? props.journalEntry?.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/invoice/')) {
             return {
                 copyRoute: 'invoice',
                 deleteRoute: 'invoice.destroy',
+                voidRoute: 'credit-invoice.void',
                 printRoute: 'invoice.print',
                 documentType: 'invoice',
                 recordId: props.invoice?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.invoice?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/sales-invoice/')) {
             return {
                 copyRoute: 'sales-invoice.create',
                 deleteRoute: 'sales-invoice.destroy',
+                voidRoute: 'sales-invoice.void',
                 printRoute: 'sales-invoice.print',
                 documentType: 'sales_invoice',
                 recordId: props.receipt?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.receipt?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/credit-invoice/')) {
             return {
                 copyRoute: 'credit-invoice.create',
                 deleteRoute: 'credit-invoice.destroy',
+                voidRoute: 'credit-invoice.void',
                 printRoute: 'credit-invoice.print',
                 documentType: 'invoice',
                 recordId: props.invoice?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.invoice?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/bill/')) {
             return {
                 copyRoute: 'bill',
                 deleteRoute: 'bill.destroy',
+                voidRoute: 'bill.void',
                 printRoute: 'bill.print',
                 documentType: 'bill',
                 recordId: props.bill?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.bill?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/chart-of-account/') && currentPath.includes('/history')) {
@@ -90,19 +100,23 @@ export default function TransactionLayout({
             const expenseId = currentPath.split('/')[2];
             return {
                 copyRoute: 'payment',
-                deleteRoute: 'expense.destroy',
+                deleteRoute: 'payment.destroy',
+                voidRoute: 'payment.void',
                 recordId: expenseId,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.payment?.status ?? props.expense?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/pay-bill/')) {
             return {
                 copyRoute: null,
                 deleteRoute: 'pay-bill.destroy',
+                voidRoute: 'pay-bill.void',
                 printRoute: 'pay-bill.print',
                 documentType: 'payment_voucher',
                 recordId: props.payment?.id || props.journalEntry?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.payment?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/cheque/')) {
@@ -110,96 +124,128 @@ export default function TransactionLayout({
             return {
                 copyRoute: 'cheque',
                 deleteRoute: 'cheque.destroy',
+                voidRoute: 'cheque.void',
                 recordId: chequeId,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.cheque?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/payment/')) {
             return {
                 copyRoute: 'receive_payment',
                 deleteRoute: 'payment.destroy',
+                voidRoute: 'payment.void',
                 printRoute: 'payment.print',
                 documentType: 'payment_receipt',
                 recordId: props.payment?.id || props.expense?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.payment?.status ?? props.expense?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/receipt/')) {
             return {
                 copyRoute: 'receipt',
-                deleteRoute: 'receipt.destroy',
+                deleteRoute: 'sales-invoice.destroy',
+                voidRoute: 'sales-invoice.void',
                 recordId: props.receipt?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.receipt?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/invoice-return/')) {
             return {
                 copyRoute: 'invoice-return',
                 deleteRoute: 'invoice-return.destroy',
+                voidRoute: 'invoice-return.void',
                 printRoute: 'invoice-return.print',
                 documentType: 'invoice_return',
                 recordId: props.invoiceReturn?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.invoiceReturn?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/bill-return/')) {
             return {
                 copyRoute: 'bill-return',
                 deleteRoute: 'bill-return.destroy',
+                voidRoute: 'bill-return.void',
                 printRoute: 'bill-return.print',
                 documentType: 'bill_return',
                 recordId: props.billReturn?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.billReturn?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/deposit/')) {
             return {
                 copyRoute: 'deposit',
                 deleteRoute: 'deposit.destroy',
+                voidRoute: 'bank-deposit.void',
                 recordId: props.deposit?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.deposit?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/bank-deposit/')) {
             return {
                 copyRoute: 'bank-deposit',
                 deleteRoute: 'bank-deposit.destroy',
+                voidRoute: 'bank-deposit.void',
                 recordId: props.deposit?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.deposit?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/cheque-deposit/')) {
             return {
                 copyRoute: 'cheque-deposit',
                 deleteRoute: 'cheque-deposit.destroy',
+                voidRoute: 'cheque-deposit.void',
                 recordId: props.deposit?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.deposit?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/transfer/')) {
             return {
                 copyRoute: 'transfer',
                 deleteRoute: 'transfer.destroy',
+                voidRoute: 'transfer.void',
                 recordId: props.transfer?.id || props.journalEntry?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.transfer?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/receive-payment/')) {
             return {
                 copyRoute: null,
                 deleteRoute: 'receive-payment.destroy',
+                voidRoute: 'receive-payment.void',
                 printRoute: 'receive-payment.print',
                 documentType: 'payment_receipt',
                 recordId: props.payment?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.payment?.status ?? props.journalEntry?.status) === 'void'
             };
         }
         if (currentPath.startsWith('/inventory-adjustment/')) {
             return {
                 copyRoute: null,
                 deleteRoute: 'inventory-adjustment.destroy',
+                voidRoute: 'inventory-adjustment.void',
                 recordId: props.adjustment?.id,
-                listRoute: 'dashboard'
+                listRoute: 'dashboard',
+                isVoided: (props.adjustment?.status ?? props.journalEntry?.status) === 'void'
+            };
+        }
+        if (currentPath.startsWith('/pos/')) {
+            return {
+                copyRoute: null,
+                deleteRoute: 'pos.destroy',
+                voidRoute: 'pos.void',
+                recordId: props.journalEntry?.id,
+                listRoute: 'pos.index',
+                isVoided: props.journalEntry?.status === 'void'
             };
         }
 
@@ -324,6 +370,8 @@ export default function TransactionLayout({
                             copyRoute={resolvedMoreOptions.copyRoute}
                             deleteRoute={resolvedMoreOptions.deleteRoute}
                             printRoute={resolvedMoreOptions.printRoute}
+                            voidRoute={resolvedMoreOptions.voidRoute}
+                            isVoided={resolvedMoreOptions.isVoided}
                             documentType={resolvedMoreOptions.documentType}
                             recordId={resolvedMoreOptions.recordId}
                             listRoute={resolvedMoreOptions.listRoute}

@@ -23,8 +23,13 @@ export default function TransactionHeader({ title, amount, historyType = null, d
                         <ApplicationLogo className="h-7 w-auto" />
                     )}
                     <div className="h-6 w-px bg-slate-200 mx-1" />
-                    <h1 className="text-lg font-semibold text-gray-800">
+                    <h1 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                         {title}
+                        {moreOptions?.isVoided && (
+                            <span className="inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 uppercase tracking-wider">
+                                Voided
+                            </span>
+                        )}
                     </h1>
                 </div>
             </div>

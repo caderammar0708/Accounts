@@ -87,11 +87,11 @@ class BillReturnController extends Controller
             $journalEntry = DB::transaction(function() use ($request) {
                 
                 $categoryItems = collect($request->items)->filter(function($item) {
-                    return !empty($item['category']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['category']) && isset($item['amount']) && $item['amount'] !== '';
                 });
 
                 $productItems = collect($request->itemDetails)->filter(function($item) {
-                    return !empty($item['product']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['product']) && isset($item['amount']) && $item['amount'] !== '';
                 });
 
                 if ($categoryItems->isEmpty() && $productItems->isEmpty()) {
@@ -209,6 +209,9 @@ class BillReturnController extends Controller
                     ]);
                 }
 
+                $billReturn->attachAttachments($request->input('attachment_ids', []));
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
+
                 return $journalEntry;
             });
 
@@ -228,14 +231,14 @@ class BillReturnController extends Controller
 
     public function edit(JournalEntry $journalEntry)
     {
-        $journalEntry->load('lines');
+        $journalEntry->load(['lines', 'attachments']);
         $billReturn = BillReturn::find($journalEntry->transactionable_id);
 
         if (!$billReturn) {
             abort(404, 'Bill Return not found');
         }
 
-        $billReturn->load('items');
+        $billReturn->load(['items', 'attachments']);
 
         $billReturnData = [
             'id' => $journalEntry->id,
@@ -259,6 +262,7 @@ class BillReturnController extends Controller
                     'amount' => number_format($item->amount, 2, '.', ''),
                 ];
             })->values()->toArray(),
+            'attachments' => $billReturn->attachments->isNotEmpty() ? $billReturn->attachments : $journalEntry->attachments,
         ];
 
         return Inertia::render('Transaction/BillReturn/BillReturnForm', [
@@ -277,11 +281,11 @@ class BillReturnController extends Controller
             DB::transaction(function() use ($request, $journalEntry) {
                 
                 $categoryItems = collect($request->items)->filter(function($item) {
-                    return !empty($item['category']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['category']) && isset($item['amount']) && $item['amount'] !== '';
                 });
 
                 $productItems = collect($request->itemDetails)->filter(function($item) {
-                    return !empty($item['product']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['product']) && isset($item['amount']) && $item['amount'] !== '';
                 });
 
                 if ($categoryItems->isEmpty() && $productItems->isEmpty()) {
@@ -406,6 +410,12 @@ class BillReturnController extends Controller
                         'memo' => $productItem['description'] ?? $request->memo,
                     ]);
                 }
+
+                $billReturn = BillReturn::find($journalEntry->transactionable_id);
+                if ($billReturn) {
+                    $billReturn->attachAttachments($request->input('attachment_ids', []));
+                }
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
             });
 
             $action = $request->input('action', 'save');
@@ -420,6 +430,30 @@ class BillReturnController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        $this->checkBooksLock($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            $billReturn = BillReturn::find($journalEntry->transactionable_id);
+
+            if ($billReturn) {
+                foreach ($billReturn->items->whereNotNull('item_id') as $oldItem) {
+                    $itemModel = \App\Models\Item::find($oldItem->item_id);
+                    if ($itemModel && $itemModel->type === 'inventory') {
+                        $itemModel->increment('quantity_on_hand', $oldItem->quantity);
+                    }
+                }
+                $billReturn->update(['status' => 'void', 'voided_at' => now()]);
+            }
+
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'Bill return voided successfully.');
     }
 
     public function destroy(JournalEntry $journalEntry)

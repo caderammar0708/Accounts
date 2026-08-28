@@ -56,13 +56,22 @@ export default function TransactionHistoryPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {records.map((record) => (
-                                        <tr key={record.id} className="hover:bg-slate-50/50 transition-colors group">
+                                    {records.map((record) => {
+                                        const isVoided = record.status === 'void';
+                                        return (
+                                        <tr key={record.id} className={`transition-colors group ${isVoided ? 'bg-slate-50/60 opacity-60' : 'hover:bg-slate-50/50'}`}>
                                             <td className="px-4 py-3 text-slate-600 font-mono">
                                                 {formatDate(record.date, dateFormat) || '—'}
                                             </td>
                                             <td className="px-4 py-3 font-bold text-slate-800 font-mono">
-                                                {record.ref_no || record.id}
+                                                <div className="flex items-center gap-1.5">
+                                                    <span>{record.ref_no || record.id}</span>
+                                                    {isVoided && (
+                                                        <span className="rounded bg-rose-100 px-1.5 py-0.2 text-[9px] font-bold text-rose-700 uppercase tracking-wider">
+                                                            Void
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3 text-slate-800 font-bold">
                                                 {record.payee_account || '—'}
@@ -87,7 +96,8 @@ export default function TransactionHistoryPage() {
                                                 </CommonButton>
                                             </td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         )}

@@ -482,15 +482,24 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                                 );
                             }
 
+                            const isVoided = tx.journal_entry?.status === 'void';
+
                             return (
-                                <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors group">
+                                <tr key={tx.id} className={`transition-colors group ${isVoided ? 'bg-slate-50/60 opacity-60' : 'hover:bg-slate-50/50'}`}>
                                     {/* Date */}
                                     <td className="px-4 py-3 text-[11px] text-slate-600 font-mono whitespace-nowrap">
                                         {tx.journal_entry?.date}
                                     </td>
                                     {/* Ref No */}
                                     <td className="px-4 py-3 text-[11px] font-bold text-slate-800 font-mono whitespace-nowrap">
-                                        {tx.journal_entry?.reference || '-'}
+                                        <div className="flex items-center gap-1.5">
+                                            <span>{tx.journal_entry?.reference || '-'}</span>
+                                            {isVoided && (
+                                                <span className="rounded bg-rose-100 px-1.5 py-0.2 text-[9px] font-bold text-rose-700 uppercase tracking-wider">
+                                                    Void
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     {/* Payee / Account */}
                                     <td className="px-4 py-3 text-[11px] text-slate-600">

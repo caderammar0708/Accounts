@@ -153,6 +153,11 @@ class InventoryQuantityAdjustmentController extends Controller
                         $journalEntry->lines()->create($line);
                     }
                 }
+
+                $adjustment->attachAttachments($request->input('attachment_ids', []));
+                if ($journalEntry) {
+                    $journalEntry->attachAttachments($request->input('attachment_ids', []));
+                }
             });
             $action = $request->input('action', 'save');
 
@@ -176,8 +181,8 @@ class InventoryQuantityAdjustmentController extends Controller
     
     public function edit(JournalEntry $journalEntry)
     {
-        $journalEntry->load('lines');
-        $adjustment = InventoryQuantityAdjustment::with('items.item')->findOrFail($journalEntry->transactionable_id);
+        $journalEntry->load(['lines', 'attachments']);
+        $adjustment = InventoryQuantityAdjustment::with(['items.item', 'attachments'])->findOrFail($journalEntry->transactionable_id);
 
         $items = Item::query()
             ->where('track_inventory', true)
@@ -202,7 +207,8 @@ class InventoryQuantityAdjustmentController extends Controller
                     'new_qty' => (float) $adjItem->new_qty,
                     'change_in_qty' => (float) $adjItem->change_in_qty,
                 ];
-            })->toArray()
+            })->toArray(),
+            'attachments' => ($adjustment && $adjustment->attachments->isNotEmpty()) ? $adjustment->attachments : $journalEntry->attachments,
         ];
 
         return Inertia::render('Inventory/QuantityAdjustment/Edit', [
@@ -324,6 +330,12 @@ class InventoryQuantityAdjustmentController extends Controller
                 foreach ($journalLines as $line) {
                     $journalEntry->lines()->create($line);
                 }
+
+                $adjustment = InventoryQuantityAdjustment::find($journalEntry->transactionable_id);
+                if ($adjustment) {
+                    $adjustment->attachAttachments($request->input('attachment_ids', []));
+                }
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
             });
 
             $action = $request->input('action', 'save');
@@ -339,6 +351,30 @@ class InventoryQuantityAdjustmentController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        $this->checkBooksLock($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            $adjustment = InventoryQuantityAdjustment::find($journalEntry->transactionable_id);
+
+            if ($adjustment) {
+                foreach ($adjustment->items as $oldItem) {
+                    $item = Item::find($oldItem->item_id);
+                    if ($item) {
+                        $item->decrement('quantity_on_hand', $oldItem->change_in_qty);
+                    }
+                }
+                $adjustment->update(['status' => 'void', 'voided_at' => now()]);
+            }
+
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'Inventory quantity adjustment voided successfully.');
     }
 
     public function destroy(JournalEntry $journalEntry)

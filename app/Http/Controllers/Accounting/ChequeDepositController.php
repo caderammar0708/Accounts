@@ -138,6 +138,9 @@ class ChequeDepositController extends Controller
                     'memo' => $request->memo,
                 ]);
 
+                $deposit->attachAttachments($request->input('attachment_ids', []));
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
+
                 return $journalEntry;
             });
 
@@ -153,7 +156,8 @@ class ChequeDepositController extends Controller
      */
     public function edit(JournalEntry $journalEntry)
     {
-        $deposit = ChequeDeposit::with('items.receivePayment.customer')
+        $journalEntry->load(['lines', 'attachments']);
+        $deposit = ChequeDeposit::with(['items.receivePayment.customer', 'attachments'])
             ->find($journalEntry->transactionable_id);
 
         if (!$deposit) {
@@ -179,7 +183,6 @@ class ChequeDepositController extends Controller
             $otherOutstanding = ReceivePayment::with('customer')
                 ->where('deposit_to_account_id', $chequeInHand->id)
                 ->whereNull('cheque_deposit_id')
-                ->orderBy('payment_date', 'desc')
                 ->get()
                 ->map(fn($rp) => [
                     'id' => $rp->id,
@@ -204,6 +207,7 @@ class ChequeDepositController extends Controller
                 'depositDate' => $deposit->deposit_date,
                 'depositNo' => $deposit->deposit_no,
                 'memo' => $deposit->memo,
+                'attachments' => ($deposit && $deposit->attachments->isNotEmpty()) ? $deposit->attachments : $journalEntry->attachments,
             ],
             'outstandingCheques' => $allCheques,
             'selectedChequeIds' => $selectedIds,
@@ -291,6 +295,11 @@ class ChequeDepositController extends Controller
                     'credit' => $total,
                     'memo' => $request->memo,
                 ]);
+
+                if ($deposit) {
+                    $deposit->attachAttachments($request->input('attachment_ids', []));
+                }
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
             });
 
             return $this->handleActionRedirect($request, 'cheque-deposit', $journalEntry->id, 'Cheque deposit updated successfully.');
@@ -298,6 +307,28 @@ class ChequeDepositController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        $this->checkBooksLock($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            $deposit = ChequeDeposit::find($journalEntry->transactionable_id);
+
+            if ($deposit) {
+                // Release linked receive payments
+                ReceivePayment::where('cheque_deposit_id', $deposit->id)
+                    ->update(['cheque_deposit_id' => null]);
+
+                $deposit->update(['status' => 'void', 'voided_at' => now()]);
+            }
+
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'Cheque deposit voided successfully.');
     }
 
     /**

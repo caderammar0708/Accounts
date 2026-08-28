@@ -9,14 +9,15 @@ use OwenIt\Auditing\Contracts\Auditable;
 use App\Models\Customer;
 
 use App\Traits\BelongsToLocation;
+use App\Traits\HasAttachments;
 
 class InvoiceReturn extends Model implements Auditable
 {
-    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
+    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation, HasAttachments;
 
     protected $fillable = [
         'customer_id', 'email', 'date', 
-        'total_amount', 'memo', 'statement_message', 'status', 'prefix', 'location_id',
+        'total_amount', 'memo', 'statement_message', 'status', 'voided_at', 'prefix', 'location_id',
     ];
 
     public function items()

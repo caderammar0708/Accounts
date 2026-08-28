@@ -16,6 +16,7 @@ import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
+import AttachmentUpload from "@/Components/AttachmentUpload";
 
 export default function PaymentForm({
     auth,
@@ -131,6 +132,8 @@ export default function PaymentForm({
         ],
         exchange_rate: expense?.exchange_rate || 1,
         currency_id: expense?.currency_id || "",
+        attachments: expense?.attachments || [],
+        attachment_ids: (expense?.attachments || []).map(a => a.id),
         action: 'save',
         books_pin: ''
     });
@@ -236,18 +239,18 @@ export default function PaymentForm({
             ...data,
             action: actionRef.current,
             items: data.items
-                .filter(item => item.category || item.description || (item.amount && item.amount !== "0.00" && item.amount !== "0"))
+                .filter(item => item.category || item.description || (item.amount !== "" && item.amount !== null && item.amount !== undefined && item.amount !== "0.00" && item.amount !== "0"))
                 .map(item => ({
                     ...item,
-                    amount: String(item.amount).replace(/,/g, '')
+                    amount: String(item.amount ?? '').replace(/,/g, '')
                 })),
             itemDetails: data.itemDetails
-                .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount && item.amount !== "0.00" && item.amount !== "0"))
+                .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount !== "" && item.amount !== null && item.amount !== undefined && item.amount !== "0.00" && item.amount !== "0"))
                 .map(item => ({
                     ...item,
-                    qty: String(item.qty).replace(/,/g, ''),
-                    rate: String(item.rate).replace(/,/g, ''),
-                    amount: String(item.amount).replace(/,/g, '')
+                    qty: String(item.qty ?? '').replace(/,/g, ''),
+                    rate: String(item.rate ?? '').replace(/,/g, ''),
+                    amount: String(item.amount ?? '').replace(/,/g, '')
                 })),
         }));
     }, [transform]);
@@ -682,7 +685,7 @@ export default function PaymentForm({
             </div>
 
             <div className="mt-8 grid grid-cols-12 gap-8 pb-12">
-                <div className="col-span-4">
+                <div className="col-span-5 flex flex-col gap-4">
                     <CommonInput
                         type="textarea"
                         label="Memo"
@@ -693,8 +696,19 @@ export default function PaymentForm({
                         size="sm"
                         error={errors.memo}
                     />
+                    <AttachmentUpload
+                        attachments={data.attachments}
+                        onChange={(newAttachments, newIds) => {
+                            setData(prev => ({
+                                ...prev,
+                                attachments: newAttachments,
+                                attachment_ids: newIds
+                            }));
+                            setIsDirty(true);
+                        }}
+                    />
                 </div>
-                <div className="col-span-8 flex flex-col justify-end items-end pb-2">
+                <div className="col-span-7 flex flex-col justify-end items-end pb-2">
                     <div className="text-right flex items-center gap-6">
                         <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Grand Total</span>
                         <span className="text-3xl font-black tracking-tighter text-slate-900 leading-none">

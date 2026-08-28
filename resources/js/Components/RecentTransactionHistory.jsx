@@ -171,10 +171,17 @@ export default function RecentTransactionHistory({ historyType = 'invoice', dirt
                                     >
                                         <div className="flex items-center justify-between gap-4">
                                             <div className="flex flex-col overflow-hidden">
-                                                <span className="font-semibold text-slate-800">{record.date || '—'}</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="font-semibold text-slate-800">{record.date || '—'}</span>
+                                                    {record.status === 'void' && (
+                                                        <span className="rounded bg-rose-100 px-1 py-0.2 text-[8px] font-bold text-rose-700 uppercase">
+                                                            Void
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <span className="text-slate-500 truncate" title={record.memo}>{record.memo || '—'}</span>
                                             </div>
-                                            <span className="font-bold text-slate-700 whitespace-nowrap">
+                                            <span className={`font-bold whitespace-nowrap ${record.status === 'void' ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
                                                 {parseFloat(record.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </span>
                                         </div>

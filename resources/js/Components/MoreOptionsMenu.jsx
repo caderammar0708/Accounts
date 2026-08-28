@@ -9,6 +9,8 @@ export default function MoreOptionsMenu({
     copyRoute = null,
     deleteRoute = null,
     printRoute = null,
+    voidRoute = null,
+    isVoided = false,
     recordId = null,
     listRoute = 'dashboard',
     label = 'More Options',
@@ -23,6 +25,7 @@ export default function MoreOptionsMenu({
 
     // Books Lock PIN Modal
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pinAction, setPinAction] = useState('delete');
     const [booksPin, setBooksPin] = useState('');
     const [booksPinError, setBooksPinError] = useState(null);
 
@@ -58,6 +61,7 @@ export default function MoreOptionsMenu({
             onError: (err) => {
                 if (err.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED' || err.books_pin) {
                     setBooksPinError(err.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? err.books_pin : null);
+                    setPinAction('delete');
                     setIsPinModalOpen(true);
                 } else {
                     const message = err?.error || err?.message || 'This record cannot be deleted right now.';
@@ -82,8 +86,51 @@ export default function MoreOptionsMenu({
         if (!confirmed) return;
 
         setOpen(false);
-
+        setPinAction('delete');
         handleDeleteSubmit(booksPin);
+    };
+
+    const handleVoidSubmit = (pin = '') => {
+        const data = pin ? { books_pin: pin } : {};
+        router.post(route(voidRoute, recordId), data, {
+            preserveScroll: false,
+            onError: (err) => {
+                if (err.books_pin === 'BOOKS_LOCKED_PIN_REQUIRED' || err.books_pin) {
+                    setBooksPinError(err.books_pin !== 'BOOKS_LOCKED_PIN_REQUIRED' ? err.books_pin : null);
+                    setPinAction('void');
+                    setIsPinModalOpen(true);
+                } else {
+                    const message = err?.error || err?.message || 'This record cannot be voided right now.';
+                    window.alert(message);
+                }
+            },
+            onSuccess: () => {
+                setIsPinModalOpen(false);
+                setBooksPin('');
+                setBooksPinError(null);
+            }
+        });
+    };
+
+    const handleVoid = () => {
+        if (!voidRoute || !recordId) {
+            window.alert('Void is not available for this record type yet.');
+            return;
+        }
+
+        if (isVoided) {
+            window.alert('This transaction is already voided.');
+            return;
+        }
+
+        const confirmed = window.confirm(
+            'Void Transaction\n\nAre you sure you want to void this transaction?\n\nVoiding will reverse its financial and ledger impact while preserving the record for audit trail purposes.'
+        );
+        if (!confirmed) return;
+
+        setOpen(false);
+        setPinAction('void');
+        handleVoidSubmit(booksPin);
     };
 
     const handlePrint = async () => {
@@ -106,7 +153,7 @@ export default function MoreOptionsMenu({
         }
     };
 
-    if (!recordId || (!copyRoute && !deleteRoute && !printRoute)) {
+    if (!recordId || (!copyRoute && !deleteRoute && !printRoute && !voidRoute)) {
         return null;
     }
 
@@ -141,6 +188,21 @@ export default function MoreOptionsMenu({
                             Print
                         </button>
                     )}
+                    {voidRoute && (
+                        <button
+                            type="button"
+                            onClick={handleVoid}
+                            disabled={isVoided}
+                            className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition ${
+                                isVoided 
+                                    ? 'text-slate-500 cursor-not-allowed' 
+                                    : 'text-amber-400 hover:bg-slate-700 hover:text-amber-300'
+                            }`}
+                        >
+                            {isVoided ? 'Voided' : 'Void'}
+                            {isVoided && <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Voided</span>}
+                        </button>
+                    )}
                     {deleteRoute && (
                         <button
                             type="button"
@@ -162,7 +224,11 @@ export default function MoreOptionsMenu({
                 }}
                 onSubmit={(pin) => {
                     setBooksPin(pin);
-                    handleDeleteSubmit(pin);
+                    if (pinAction === 'void') {
+                        handleVoidSubmit(pin);
+                    } else {
+                        handleDeleteSubmit(pin);
+                    }
                 }}
                 errorMessage={booksPinError}
             />

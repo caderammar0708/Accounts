@@ -26,12 +26,12 @@ class SalesInvoiceRequest extends FormRequest
             'receiptNo' => 'required',
             'paymentMethod' => 'nullable',
             'checkDate' => [
-                Rule::requiredIf($this->paymentMethod === $chequeMethodId),
+                Rule::requiredIf(!empty($chequeMethodId) && $this->paymentMethod === $chequeMethodId),
                 'nullable',
                 'date',
             ],
             'checkNumber' => [
-                Rule::requiredIf($this->paymentMethod === $chequeMethodId),
+                Rule::requiredIf(!empty($chequeMethodId) && $this->paymentMethod === $chequeMethodId),
                 'nullable',
                 'string',
             ],

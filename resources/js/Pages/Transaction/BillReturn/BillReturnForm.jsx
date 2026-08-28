@@ -12,6 +12,7 @@ import InventoryItemSidePanel from "@/Components/InventoryItemSidePanel";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import PinPromptModal from "@/Components/PinPromptModal";
 import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
+import AttachmentUpload from "@/Components/AttachmentUpload";
 
 export default function BillReturnForm({ auth, nextRef = "", billReturn = null }) {
     const currencyPrefix = auth.company?.home_currency_prefix || '';
@@ -89,6 +90,8 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
             { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
             { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
         ],
+        attachments: billReturn?.attachments || [],
+        attachment_ids: (billReturn?.attachments || []).map(a => a.id),
         action: 'save',
         books_pin: ''
     });
@@ -109,6 +112,9 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
                     rate: parseFloat(i.rate || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                     amount: parseFloat(i.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                 })) : [{ product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" }],
+                attachments: billReturn.attachments || [],
+                attachment_ids: (billReturn.attachments || []).map(a => a.id),
+                action: 'save'
             });
         } else {
             const cachedDate = localStorage.getItem('last_transaction_date') || new Date().toISOString().split('T')[0];
@@ -125,6 +131,9 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
                     { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
                     { product: "", description: "", qty: "1", rate: "0.00", amount: "0.00" },
                 ],
+                attachments: [],
+                attachment_ids: [],
+                action: 'save'
             });
         }
     }, [billReturn?.id, nextRef]);
@@ -199,16 +208,16 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
             action: actionType,
             books_pin: pinOverride !== null ? pinOverride : data.books_pin,
             items: data.items
-                .filter(item => item.category || item.description || parseCurrency(item.amount) > 0)
+                .filter(item => item.category || item.description || (item.amount !== "" && item.amount !== null && item.amount !== undefined && item.amount !== "0.00" && item.amount !== "0"))
                 .map(item => ({
                     ...item,
                     amount: parseCurrency(item.amount)
                 })),
             itemDetails: data.itemDetails
-                .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || parseCurrency(item.amount) > 0)
+                .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount !== "" && item.amount !== null && item.amount !== undefined && item.amount !== "0.00" && item.amount !== "0"))
                 .map(item => ({
                     ...item,
-                    qty: String(item.qty).replace(/,/g, ''),
+                    qty: String(item.qty ?? '').replace(/,/g, ''),
                     rate: parseCurrency(item.rate),
                     amount: parseCurrency(item.amount)
                 }))
@@ -476,16 +485,31 @@ export default function BillReturnForm({ auth, nextRef = "", billReturn = null }
                     )}
                 </div>
 
-                <div className="w-[400px] mt-8">
-                    <CommonInput
-                        type="textarea"
-                        label="Memo"
-                        placeholder="Add a memo..."
-                        value={data.memo}
-                        onChange={(e) => { setData('memo', e.target.value); setIsDirty(true); }}
-                        size="sm"
-                        className="h-24"
-                    />
+                <div className="grid grid-cols-2 gap-10 mt-8">
+                    <div className="w-[400px]">
+                        <CommonInput
+                            type="textarea"
+                            label="Memo"
+                            placeholder="Add a memo..."
+                            value={data.memo}
+                            onChange={(e) => { setData('memo', e.target.value); setIsDirty(true); }}
+                            size="sm"
+                            className="h-24"
+                        />
+                    </div>
+                    <div className="w-[400px]">
+                        <AttachmentUpload
+                            attachments={data.attachments}
+                            onChange={(newAttachments, newIds) => {
+                                setData(prev => ({
+                                    ...prev,
+                                    attachments: newAttachments,
+                                    attachment_ids: newIds
+                                }));
+                                setIsDirty(true);
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
 
