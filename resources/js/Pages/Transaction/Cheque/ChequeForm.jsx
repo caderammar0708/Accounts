@@ -11,6 +11,7 @@ import { showToast } from "@/Components/ToastNotification";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import PinPromptModal from "@/Components/PinPromptModal";
 import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
+import AttachmentUpload from "@/Components/AttachmentUpload";
 import axios from "axios";
 
 export default function ChequeForm({
@@ -92,6 +93,8 @@ export default function ChequeForm({
         items: cheque?.items && cheque.items.length > 0 ? cheque.items.map(i => ({ ...i, amount: parseFloat(i.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })) : [
             { category: "", description: "", amount: "0.00", customer_id: "" },
         ],
+        attachments: cheque?.attachments || [],
+        attachment_ids: (cheque?.attachments || []).map(a => a.id),
         action: 'save',
         books_pin: ''
     });
@@ -149,10 +152,10 @@ export default function ChequeForm({
             ...data,
             action: actionRef.current,
             items: data.items
-                .filter(item => item.category && (parseFloat(String(item.amount).replace(/,/g, '')) > 0))
+                .filter(item => item.category && item.amount !== "" && item.amount !== null && item.amount !== undefined)
                 .map(item => ({
                     ...item,
-                    amount: String(item.amount).replace(/,/g, '')
+                    amount: String(item.amount ?? '').replace(/,/g, '')
                 })),
         }));
     }, [transform]);
@@ -198,10 +201,10 @@ export default function ChequeForm({
             action,
             books_pin: pinOverride !== null ? pinOverride : d.books_pin,
             items: d.items
-                .filter(item => item.category && (parseFloat(String(item.amount).replace(/,/g, '')) > 0))
+                .filter(item => item.category && item.amount !== "" && item.amount !== null && item.amount !== undefined)
                 .map(item => ({
                     ...item,
-                    amount: String(item.amount).replace(/,/g, '')
+                    amount: String(item.amount ?? '').replace(/,/g, '')
                 })),
         }));
 
@@ -438,7 +441,7 @@ export default function ChequeForm({
             </div>
 
             <div className="mt-8 grid grid-cols-12 gap-8 pb-12">
-                <div className="col-span-4">
+                <div className="col-span-5 flex flex-col gap-4">
                     <CommonInput
                         type="textarea"
                         label="Memo"
@@ -449,8 +452,19 @@ export default function ChequeForm({
                         size="sm"
                         error={errors.memo}
                     />
+                    <AttachmentUpload
+                        attachments={data.attachments}
+                        onChange={(newAttachments, newIds) => {
+                            setData(prev => ({
+                                ...prev,
+                                attachments: newAttachments,
+                                attachment_ids: newIds
+                            }));
+                            setIsDirty(true);
+                        }}
+                    />
                 </div>
-                <div className="col-span-8 flex flex-col justify-end items-end pb-2">
+                <div className="col-span-7 flex flex-col justify-end items-end pb-2">
                     <div className="text-right flex items-center gap-6">
                         <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Grand Total</span>
                         <span className="text-3xl font-black tracking-tighter text-slate-900 leading-none">

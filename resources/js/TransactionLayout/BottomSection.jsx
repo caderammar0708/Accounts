@@ -1,50 +1,32 @@
-import { useRef } from 'react';
+import React from 'react';
+import AttachmentUpload from '@/Components/AttachmentUpload';
 
 export default function BottomSection({ form, setForm }) {
-    const fileInputRef = useRef(null);
-
-    const handleFileUpload = (e) => {
-        const files = e.target.files;
-        if (files.length > 0) {
-            console.log('Files selected:', files);
-            // Process files here
-            for (let i = 0; i < files.length; i++) {
-                console.log('File:', files[i].name);
-                // You can upload to server here
-            }
-        }
-    };
-
     return (
         <div className="grid grid-cols-2 gap-10 pt-4">
-
             <div>
-                <label className="text-xs text-gray-500">Memo</label>
+                <label className="text-xs font-medium text-slate-600">Memo</label>
                 <textarea
-                    className="w-full border-b border-gray-300 text-sm py-1 leading-snug"
-                    value={form.memo}
+                    className="w-full border border-slate-300 rounded-lg text-sm p-2.5 mt-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    rows={3}
+                    value={form.memo || ''}
                     onChange={(e) => setForm({ ...form, memo: e.target.value })}
+                    placeholder="Enter memo..."
                 />
             </div>
 
             <div>
-                <label className="text-xs text-gray-500">Attachments</label>
-                <div
-                    className="border border-dashed p-6 text-center text-sm text-gray-500 cursor-pointer hover:bg-gray-50 rounded-md"
-                    onClick={() => fileInputRef.current.click()}
-                >
-                    📎 Upload files
-                </div>
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={handleFileUpload}
-                    accept=".pdf,.jpg,.png,.doc,.docx"
+                <AttachmentUpload
+                    attachments={form.attachments || []}
+                    onChange={(newAttachments, newIds) => {
+                        setForm({
+                            ...form,
+                            attachments: newAttachments,
+                            attachment_ids: newIds
+                        });
+                    }}
                 />
             </div>
-
         </div>
     );
 }

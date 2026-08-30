@@ -86,6 +86,7 @@ class TransactionHistoryController extends Controller
                     'debit' => in_array($normalizedType, ['invoice', 'receive_payment', 'bank_deposit', 'payment', 'pay_bill', 'bill_return', 'journal_entry', 'inventory_adjustment']) ? $amount : 0,
                     'credit' => in_array($normalizedType, ['bill', 'invoice_return', 'sales_invoice']) ? $amount : 0,
                     'amount' => $amount,
+                    'status' => $entry->status ?: $entry->transactionable?->status ?: 'posted',
                 ];
             })
             ->values()

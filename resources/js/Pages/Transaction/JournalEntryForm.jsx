@@ -12,6 +12,7 @@ import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import { isBooksLocked, useBooksLock } from "@/Hooks/useBooksLock";
 import SearchableSelect from "@/Components/SearchableSelect";
 import CurrencyExchangeInput from "@/Components/CurrencyExchangeInput";
+import AttachmentUpload from "@/Components/AttachmentUpload";
 
 export default function JournalEntryForm({ journalEntry = null, nextJournalNo = "" }) {
     const isEditing = Boolean(journalEntry?.id);
@@ -71,6 +72,8 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
         memo: journalEntry?.description || "",
         currency_id: journalEntry?.currency_id || auth?.currency?.home_id || "",
         exchange_rate: journalEntry?.exchange_rate || 1,
+        attachments: journalEntry?.attachments || [],
+        attachment_ids: (journalEntry?.attachments || []).map(a => a.id),
     });
 
     const selectedCurrency = currencies.find(c => String(c.id) === String(form.currency_id));
@@ -294,7 +297,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
             currency_id: form.currency_id,
             exchange_rate: form.exchange_rate,
             lines: items
-                .filter(i => i.account_id && (parseCurrency(i.debit) > 0 || parseCurrency(i.credit) > 0))
+                .filter(i => i.account_id && (i.debit !== "" || i.credit !== "" || parseCurrency(i.debit) >= 0 || parseCurrency(i.credit) >= 0))
                 .map(i => {
                     const dispDebit = parseCurrency(i.debit);
                     const dispCredit = parseCurrency(i.credit);
@@ -320,6 +323,7 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                         fc_credit: fcCredit,
                     };
                 }),
+            attachment_ids: form.attachment_ids || [],
             books_pin: pinOverride !== null ? pinOverride : booksPin
         };
 
@@ -491,19 +495,34 @@ export default function JournalEntryForm({ journalEntry = null, nextJournalNo = 
                 hideActions={true}
             />
 
-            <div className="mt-3 w-[500px]">
-                <CommonInput
-                    type="textarea"
-                    label="Memo"
-                    value={form.memo}
-                    onChange={(e) => {
-                        setForm({ ...form, memo: e.target.value });
-                        setIsDirty(true);
-                    }}
-                    placeholder="Add a memo for this journal entry..."
-                    size="sm"
-                    className="h-24"
-                />
+            <div className="grid grid-cols-2 gap-10 mt-6 pb-12">
+                <div className="w-[450px]">
+                    <CommonInput
+                        type="textarea"
+                        label="Memo"
+                        value={form.memo}
+                        onChange={(e) => {
+                            setForm({ ...form, memo: e.target.value });
+                            setIsDirty(true);
+                        }}
+                        placeholder="Add a memo for this journal entry..."
+                        size="sm"
+                        className="h-24"
+                    />
+                </div>
+                <div className="w-[450px]">
+                    <AttachmentUpload
+                        attachments={form.attachments}
+                        onChange={(newAttachments, newIds) => {
+                            setForm(prev => ({
+                                ...prev,
+                                attachments: newAttachments,
+                                attachment_ids: newIds
+                            }));
+                            setIsDirty(true);
+                        }}
+                    />
+                </div>
             </div>
 
             <QuickAddPayee

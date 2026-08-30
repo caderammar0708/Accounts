@@ -62,4 +62,19 @@ trait AccountingControllerTrait
     {
         \App\Services\BooksLockService::check($date, $providedPin);
     }
+
+    /**
+     * Sync attachments provided in request to the given model.
+     *
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param Request $request
+     * @return void
+     */
+    protected function syncAttachments($model, Request $request)
+    {
+        if ($request->filled('attachment_ids') && method_exists($model, 'attachAttachments')) {
+            $ids = is_array($request->input('attachment_ids')) ? $request->input('attachment_ids') : [$request->input('attachment_ids')];
+            $model->attachAttachments($ids);
+        }
+    }
 }

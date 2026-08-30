@@ -31,7 +31,7 @@ class PayBillController extends Controller
     {
         $validated = $request->validate([
             'supplier' => 'required|uuid',
-            'amount' => 'required|numeric|min:0.01',
+            'amount' => 'required|numeric|min:0',
             'paymentDate' => 'required|date',
             'paymentMethod' => 'nullable|uuid',
             'paymentAccount' => 'required|uuid',
@@ -137,6 +137,9 @@ class PayBillController extends Controller
                     'exchange_rate' => $exchangeRate,
                 ]);
 
+                $billPayment->attachAttachments($request->input('attachment_ids', []));
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
+
                 return $journalEntry;
             });
 
@@ -149,8 +152,8 @@ class PayBillController extends Controller
 
     public function edit(JournalEntry $journalEntry)
     {
-        $journalEntry->load('lines');
-        $receivePayment = BillPayment::with('allocations')->find($journalEntry->transactionable_id);
+        $journalEntry->load(['lines', 'attachments']);
+        $receivePayment = BillPayment::with(['allocations', 'attachments'])->find($journalEntry->transactionable_id);
 
         if (!$receivePayment) {
             abort(404, 'Bill payment not found');
@@ -174,7 +177,8 @@ class PayBillController extends Controller
                     'bill_id' => $alloc->bill_id,
                     'amount_applied' => $alloc->amount_applied,
                 ];
-            })->toArray()
+            })->toArray(),
+            'attachments' => $receivePayment->attachments->isNotEmpty() ? $receivePayment->attachments : $journalEntry->attachments,
         ];
 
         return Inertia::render('Transaction/PayBill/PayBill', [
@@ -187,7 +191,7 @@ class PayBillController extends Controller
     {
         $validated = $request->validate([
             'supplier' => 'required|uuid',
-            'amount' => 'required|numeric|min:0.01',
+            'amount' => 'required|numeric|min:0',
             'paymentDate' => 'required|date',
             'paymentMethod' => 'nullable|uuid',
             'paymentAccount' => 'required|uuid',
@@ -306,6 +310,12 @@ class PayBillController extends Controller
                     'fc_debit' => $currencyId ? $amount : null,
                     'exchange_rate' => $exchangeRate,
                 ]);
+
+                $billPayment = BillPayment::find($journalEntry->transactionable_id);
+                if ($billPayment) {
+                    $billPayment->attachAttachments($request->input('attachment_ids', []));
+                }
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
             });
 
             return $this->handleActionRedirect($request, 'pay-bill', $journalEntry->id, 'Bill payment updated successfully.');
@@ -313,6 +323,42 @@ class PayBillController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        $this->checkBooksLock($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            $billPayment = BillPayment::find($journalEntry->transactionable_id);
+
+            if ($billPayment) {
+                $allocations = BillPaymentAllocation::where('bill_payment_id', $billPayment->id)->get();
+
+                foreach ($allocations as $allocation) {
+                    $billId = $allocation->bill_id;
+                    $allocation->delete();
+
+                    // Re-evaluate bill status
+                    $bill = \App\Models\Accounting\Bill::find($billId);
+                    if ($bill) {
+                        $totalPaid = BillPaymentAllocation::where('bill_id', $bill->id)->sum('amount_applied');
+                        if ($totalPaid >= $bill->total_amount - 0.01) {
+                            $bill->update(['status' => 'paid']);
+                        } else {
+                            $bill->update(['status' => 'posted']);
+                        }
+                    }
+                }
+
+                $billPayment->update(['status' => 'void', 'voided_at' => now()]);
+            }
+
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'Bill payment voided successfully.');
     }
 
     public function destroy(JournalEntry $journalEntry)

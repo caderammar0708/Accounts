@@ -7,6 +7,7 @@ import CommonInput from '@/Components/CommonInput';
 import BooksLockIndicator from '@/Components/BooksLockIndicator';
 import PinPromptModal from '@/Components/PinPromptModal';
 import { useBooksLock } from '@/Hooks/useBooksLock';
+import AttachmentUpload from '@/Components/AttachmentUpload';
 
 const FormSection = ({ title, children, show = true }) => {
     if (!show) return null;
@@ -31,6 +32,8 @@ export default function CreateAdjustment({ items, accounts, nextReference }) {
         items: [
             { id: 1, item_id: '', sku: '', description: '', qty_on_hand: 0, new_qty: 0, change_in_qty: 0 }
         ],
+        attachments: [],
+        attachment_ids: [],
         books_pin: ''
     });
 
@@ -265,14 +268,28 @@ export default function CreateAdjustment({ items, accounts, nextReference }) {
                         </div>
                     </FormSection>
 
-                    <div className="mt-8 w-1/2">
-                        <label className="block text-[11px] font-bold text-slate-600 ml-0.5 text-xs mb-1">Memo</label>
-                        <textarea
-                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-sm text-xs focus:border-green-500 focus:ring-2 focus:ring-green-500/20 shadow-sm transition-all resize-none min-h-[80px] leading-snug"
-                            value={data.memo}
-                            onChange={e => setData('memo', e.target.value)}
-                            placeholder="Add a note for internal use..."
-                        ></textarea>
+                    <div className="mt-8 grid grid-cols-2 gap-8">
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-600 ml-0.5 text-xs mb-1">Memo</label>
+                            <textarea
+                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-sm text-xs focus:border-green-500 focus:ring-2 focus:ring-green-500/20 shadow-sm transition-all resize-none min-h-[80px] leading-snug"
+                                value={data.memo}
+                                onChange={e => setData('memo', e.target.value)}
+                                placeholder="Add a note for internal use..."
+                            ></textarea>
+                        </div>
+                        <div>
+                            <AttachmentUpload
+                                attachments={data.attachments}
+                                onChange={(newAttachments, newIds) => {
+                                    setData(prev => ({
+                                        ...prev,
+                                        attachments: newAttachments,
+                                        attachment_ids: newIds
+                                    }));
+                                }}
+                            />
+                        </div>
                     </div>
 
                     <div className="pt-8 mt-4 border-t border-slate-100 flex items-center justify-between">

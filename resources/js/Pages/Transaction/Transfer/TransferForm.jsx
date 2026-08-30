@@ -9,6 +9,7 @@ import { showToast } from "@/Components/ToastNotification";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import PinPromptModal from "@/Components/PinPromptModal";
 import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
+import AttachmentUpload from "@/Components/AttachmentUpload";
 import axios from "axios";
 
 export default function TransferForm({ transfer = null }) {
@@ -36,6 +37,8 @@ export default function TransferForm({ transfer = null }) {
         referenceNo: transfer?.referenceNo || "",
         exchange_rate: transfer?.exchange_rate || 1,
         currency_id: transfer?.currency_id || "",
+        attachments: transfer?.attachments || [],
+        attachment_ids: (transfer?.attachments || []).map(a => a.id),
         books_pin: ''
     });
 
@@ -77,7 +80,7 @@ export default function TransferForm({ transfer = null }) {
     };
 
     const handleAmountBlur = () => {
-        if (data.amount) {
+        if (data.amount !== "" && data.amount !== null && data.amount !== undefined) {
             setData('amount', formatCurrency(data.amount));
         }
     };
@@ -152,7 +155,7 @@ export default function TransferForm({ transfer = null }) {
             onSaveAndNew={() => handleSave('new')}
             processing={processing}
             dirty={isDirty}
-            moreOptions={transfer?.id ? { copyRoute: 'transfer', deleteRoute: 'transfer.destroy', recordId: transfer.id, listRoute: 'dashboard' } : null}
+            moreOptions={transfer?.id ? { copyRoute: 'transfer', deleteRoute: 'transfer.destroy', voidRoute: 'transfer.void', isVoided: (transfer?.status || journalEntry?.status) === 'void', recordId: transfer.id, listRoute: 'dashboard' } : null}
         >
             <Head title="Transfer Funds" />
 
@@ -263,17 +266,32 @@ export default function TransferForm({ transfer = null }) {
                     </div>
                 </div>
 
-                <div className="w-[500px] mt-8 pt-4 border-t border-slate-100">
-                    <CommonInput
-                        type="textarea"
-                        label="Memo"
-                        placeholder="Why are you transferring these funds?"
-                        value={data.memo}
-                        onChange={(e) => { setData('memo', e.target.value); setIsDirty(true); }}
-                        size="sm"
-                        className="h-24"
-                        error={errors.memo}
-                    />
+                <div className="grid grid-cols-2 gap-10 mt-8 pt-4 border-t border-slate-100">
+                    <div className="w-[450px]">
+                        <CommonInput
+                            type="textarea"
+                            label="Memo"
+                            placeholder="Why are you transferring these funds?"
+                            value={data.memo}
+                            onChange={(e) => { setData('memo', e.target.value); setIsDirty(true); }}
+                            size="sm"
+                            className="h-24"
+                            error={errors.memo}
+                        />
+                    </div>
+                    <div className="w-[450px]">
+                        <AttachmentUpload
+                            attachments={data.attachments}
+                            onChange={(newAttachments, newIds) => {
+                                setData(prev => ({
+                                    ...prev,
+                                    attachments: newAttachments,
+                                    attachment_ids: newIds
+                                }));
+                                setIsDirty(true);
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
 

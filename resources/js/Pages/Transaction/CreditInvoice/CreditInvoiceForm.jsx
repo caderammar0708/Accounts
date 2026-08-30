@@ -13,6 +13,7 @@ import axios from "axios";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
+import AttachmentUpload from "@/Components/AttachmentUpload";
 
 export default function CreditInvoiceForm({
     auth,
@@ -175,6 +176,8 @@ export default function CreditInvoiceForm({
         discount_type: invoice?.discountType || 'percent',
         discount_value: invoice?.discountValue !== undefined ? String(invoice.discountValue) : '0',
         prefix: invoice?.prefix || '',
+        attachments: invoice?.attachments || [],
+        attachment_ids: (invoice?.attachments || []).map(a => a.id),
         books_pin: ''
     });
 
@@ -587,6 +590,17 @@ export default function CreditInvoiceForm({
                         onChange={(e) => { setData('memo_on_statement', e.target.value); setIsDirty(true); }}
                         size="sm"
                         className="h-24"
+                    />
+                    <AttachmentUpload
+                        attachments={data.attachments}
+                        onChange={(newAttachments, newIds) => {
+                            setData(prev => ({
+                                ...prev,
+                                attachments: newAttachments,
+                                attachment_ids: newIds
+                            }));
+                            setIsDirty(true);
+                        }}
                     />
                 </div>
 

@@ -119,6 +119,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -161,6 +162,7 @@ Route::middleware('auth')->group(function () {
     Route::controller(JournalEntryController::class)->group(function () {
         Route::get('/journal', 'create')->name('journal');
         Route::post('/journal-entries/{journalEntry}/quick-update', 'quickUpdate')->name('journal-entries.quick-update');
+        Route::post('/journal-entries/{journalEntry}/void', 'void')->name('journal-entries.void');
     });
     Route::resource('journal-entries', JournalEntryController::class);
 
@@ -194,6 +196,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -205,6 +208,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::get('/{journalEntry}/print', 'print')->name('print');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -216,6 +220,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::get('/{journalEntry}/print', 'print')->name('print');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -227,6 +232,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::get('/{journalEntry}/print', 'print')->name('print');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -238,6 +244,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::get('/{journalEntry}/print', 'print')->name('print');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -248,6 +255,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -259,6 +267,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::get('/{journalEntry}/print', 'print')->name('print');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -270,6 +279,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::get('/{journalEntry}/print', 'print')->name('print');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -281,6 +291,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::get('/{journalEntry}/print', 'print')->name('print');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -292,6 +303,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -303,6 +315,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -313,6 +326,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -323,6 +337,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::get('/{journalEntry}/edit', 'edit')->name('edit');
         Route::patch('/{journalEntry}', 'update')->name('update');
+        Route::post('/{journalEntry}/void', 'void')->name('void');
         Route::delete('/{journalEntry}', 'destroy')->name('destroy');
     });
 
@@ -397,6 +412,13 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{location}', 'destroy')->name('destroy');
         Route::post('/{location}/assign-user', 'assignUser')->name('assign-user');
         Route::post('/unassign-user', 'unassignUser')->name('unassign-user');
+    });
+
+    // Attachments
+    Route::controller(\App\Http\Controllers\AttachmentController::class)->prefix('attachments')->as('attachments.')->group(function () {
+        Route::post('/', 'store')->name('store');
+        Route::delete('/{attachment}', 'destroy')->name('destroy');
+        Route::get('/{attachment}/download', 'download')->name('download');
     });
 });
 

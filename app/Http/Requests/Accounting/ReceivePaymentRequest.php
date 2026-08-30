@@ -28,12 +28,12 @@ class ReceivePaymentRequest extends FormRequest
             'depositTo' => 'required',
             'paymentMethod' => 'required',
             'checkDate' => [
-                Rule::requiredIf($this->paymentMethod === $chequeMethodId),
+                Rule::requiredIf(!empty($chequeMethodId) && $this->paymentMethod === $chequeMethodId),
                 'nullable',
                 'date',
             ],
             'checkNumber' => [
-                Rule::requiredIf($this->paymentMethod === $chequeMethodId),
+                Rule::requiredIf(!empty($chequeMethodId) && $this->paymentMethod === $chequeMethodId),
                 'nullable',
                 'string',
             ],

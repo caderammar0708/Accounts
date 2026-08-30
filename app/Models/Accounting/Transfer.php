@@ -8,16 +8,18 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use OwenIt\Auditing\Contracts\Auditable;
 
 use App\Traits\BelongsToLocation;
+use App\Traits\HasAttachments;
 
 class Transfer extends Model implements Auditable
 {
-    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
+    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation, HasAttachments;
 
     protected $fillable = [
         'currency_id',
         'exchange_rate',
         'from_account_id', 'to_account_id',
         'amount', 'date', 'memo', 'reference_no', 'location_id',
+        'status', 'voided_at',
     ];
     public function journalEntry()
     {

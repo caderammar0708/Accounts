@@ -28,12 +28,12 @@ class PaymentRequest extends FormRequest
             'ref' => 'nullable|string',
             'memo' => 'nullable|string',
             'checkDate' => [
-                Rule::requiredIf($this->method === $chequeMethodId || $this->paymentMethod === $chequeMethodId),
+                Rule::requiredIf(!empty($chequeMethodId) && ($this->method === $chequeMethodId || $this->paymentMethod === $chequeMethodId)),
                 'nullable',
                 'date',
             ],
             'checkNumber' => [
-                Rule::requiredIf($this->method === $chequeMethodId || $this->paymentMethod === $chequeMethodId),
+                Rule::requiredIf(!empty($chequeMethodId) && ($this->method === $chequeMethodId || $this->paymentMethod === $chequeMethodId)),
                 'nullable',
                 'string',
             ],

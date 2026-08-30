@@ -89,7 +89,7 @@ class ChequeController extends Controller
         try {
             $journalEntry = DB::transaction(function() use ($request, $bankAccount, $paymentDate, $chequeNo) {
                 $categoryItems = collect($request->items)->filter(function($item) {
-                    return !empty($item['category']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['category']) && isset($item['amount']) && $item['amount'] !== '';
                 });
 
                 if ($categoryItems->isEmpty()) {
@@ -165,6 +165,9 @@ class ChequeController extends Controller
                     'memo' => $request->memo,
                 ]);
 
+                $cheque->attachAttachments($request->input('attachment_ids', []));
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
+
                 return $journalEntry;
             });
 
@@ -185,8 +188,8 @@ class ChequeController extends Controller
 
     public function edit(JournalEntry $journalEntry)
     {
-        $journalEntry->load('lines');
-        $cheque = Cheque::find($journalEntry->transactionable_id);
+        $journalEntry->load(['lines', 'attachments']);
+        $cheque = Cheque::with('attachments')->find($journalEntry->transactionable_id);
 
         $chequeData = [
             'id' => $journalEntry->id,
@@ -207,6 +210,7 @@ class ChequeController extends Controller
                     'customer_id' => $item->customer_id,
                 ];
             })->values()->toArray() : [],
+            'attachments' => ($cheque && $cheque->attachments->isNotEmpty()) ? $cheque->attachments : $journalEntry->attachments,
         ];
 
         return Inertia::render('Transaction/Cheque/ChequeForm', [
@@ -228,7 +232,7 @@ class ChequeController extends Controller
         try {
             DB::transaction(function() use ($request, $journalEntry, $bankAccount, $paymentDate, $chequeNo) {
                 $categoryItems = collect($request->items)->filter(function($item) {
-                    return !empty($item['category']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['category']) && isset($item['amount']) && $item['amount'] !== '';
                 });
 
                 if ($categoryItems->isEmpty()) {
@@ -304,6 +308,12 @@ class ChequeController extends Controller
                     'credit' => $totalAmount * $exchangeRate,
                     'memo' => $request->memo,
                 ]);
+
+                $cheque = Cheque::find($journalEntry->transactionable_id);
+                if ($cheque) {
+                    $cheque->attachAttachments($request->input('attachment_ids', []));
+                }
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
             });
 
             $action = $request->input('action', 'save');
@@ -316,6 +326,24 @@ class ChequeController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        $this->checkBooksLock($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            $cheque = Cheque::find($journalEntry->transactionable_id);
+
+            if ($cheque) {
+                $cheque->update(['status' => 'void', 'voided_at' => now()]);
+            }
+
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'Cheque voided successfully.');
     }
 
     public function destroy(JournalEntry $journalEntry)

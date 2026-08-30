@@ -239,6 +239,9 @@ class CreditInvoiceController extends Controller
             }
 
 
+            $creditInvoice->attachAttachments($request->input('attachment_ids', []));
+            $journalEntry->attachAttachments($request->input('attachment_ids', []));
+
             return $journalEntry;
         });
 
@@ -256,8 +259,8 @@ class CreditInvoiceController extends Controller
 
     public function edit(JournalEntry $journalEntry)
     {
-        $journalEntry->load('lines');
-        $creditInvoice = \App\Models\Accounting\CreditInvoice::with(['allocations.payment.journalEntry'])->find($journalEntry->transactionable_id);
+        $journalEntry->load(['lines', 'attachments']);
+        $creditInvoice = \App\Models\Accounting\CreditInvoice::with(['allocations.payment.journalEntry', 'attachments'])->find($journalEntry->transactionable_id);
 
         $invoiceData = [
             'id' => $journalEntry->id,
@@ -292,6 +295,7 @@ class CreditInvoiceController extends Controller
                     'amount' => $alloc->amount,
                 ];
             })->filter(fn($p) => !empty($p['id']))->toArray() ?? [],
+            'attachments' => ($creditInvoice && $creditInvoice->attachments->isNotEmpty()) ? $creditInvoice->attachments : $journalEntry->attachments,
         ];
 
         return Inertia::render('Transaction/CreditInvoice/CreditInvoiceForm', [
@@ -567,6 +571,12 @@ class CreditInvoiceController extends Controller
             if (!empty($journalLinesData)) {
                 JournalEntryLine::insert($journalLinesData);
             }
+
+            $creditInvoice = \App\Models\Accounting\CreditInvoice::find($journalEntry->transactionable_id);
+            if ($creditInvoice) {
+                $creditInvoice->attachAttachments($request->input('attachment_ids', []));
+            }
+            $journalEntry->attachAttachments($request->input('attachment_ids', []));
         });
 
 
@@ -578,6 +588,31 @@ class CreditInvoiceController extends Controller
         return redirect()->route('credit-invoice.edit', $journalEntry->id)->with('success', 'CreditInvoice updated successfully.');
     }
 
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        \App\Services\BooksLockService::check($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            $creditInvoice = \App\Models\Accounting\CreditInvoice::find($journalEntry->transactionable_id);
+
+            if ($creditInvoice) {
+                foreach ($creditInvoice->items as $oldItem) {
+                    $itemModel = \App\Models\Item::find($oldItem->item_id);
+                    if ($itemModel && $itemModel->type === 'inventory') {
+                        $itemModel->increment('quantity_on_hand', $oldItem->quantity);
+                    }
+                }
+                $creditInvoice->allocations()->delete();
+                $creditInvoice->update(['status' => 'void', 'voided_at' => now()]);
+            }
+
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'Credit Invoice voided successfully.');
+    }
 
     public function destroy(Request $request, JournalEntry $journalEntry)
     {

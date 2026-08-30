@@ -65,7 +65,7 @@ class POSController extends Controller
             $journalEntry = DB::transaction(function() use ($request) {
                 // Filter out empty items
                 $items = collect($request->items)->filter(function($item) {
-                    return !empty($item['product']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['product']) && isset($item['amount']) && $item['amount'] !== '';
                 })->values()->all();
 
                 if (empty($items)) {
@@ -364,7 +364,7 @@ class POSController extends Controller
             DB::transaction(function() use ($request, $journalEntry) {
                 // Filter out empty items
                 $items = collect($request->items)->filter(function($item) {
-                    return !empty($item['product']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['product']) && isset($item['amount']) && $item['amount'] !== '';
                 })->values()->all();
 
                 if (empty($items)) {
@@ -549,6 +549,34 @@ class POSController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        \App\Services\BooksLockService::check($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            if ($journalEntry->transactionable_type === CreditInvoice::class) {
+                $receipt = CreditInvoice::find($journalEntry->transactionable_id);
+            } else {
+                $receipt = SalesInvoice::find($journalEntry->transactionable_id);
+            }
+
+            if ($receipt) {
+                foreach ($receipt->items as $oldItem) {
+                    $itemModel = \App\Models\Item::find($oldItem->item_id);
+                    if ($itemModel && $itemModel->type === 'inventory') {
+                        $itemModel->increment('quantity_on_hand', $oldItem->quantity);
+                    }
+                }
+                $receipt->update(['status' => 'void', 'voided_at' => now()]);
+            }
+
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'POS transaction voided successfully.');
     }
 
     public function destroy(Request $request, JournalEntry $journalEntry)

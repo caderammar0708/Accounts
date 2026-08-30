@@ -14,6 +14,7 @@ import { showToast } from "@/Components/ToastNotification";
 import PinPromptModal from "@/Components/PinPromptModal";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
+import AttachmentUpload from "@/Components/AttachmentUpload";
 
 export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceiptNo = "", receipt = null }) {
     const company = auth.company;
@@ -80,6 +81,8 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
         memo_on_statement: receipt?.memo_on_statement || '',
         exchange_rate: receipt?.exchange_rate || 1,
         currency_id: receipt?.currency_id || "",
+        attachments: receipt?.attachments || [],
+        attachment_ids: (receipt?.attachments || []).map(a => a.id),
         action: 'save',
         books_pin: ''
     });
@@ -296,12 +299,12 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
             action: actionType,
             books_pin: pinOverride !== null ? pinOverride : data.books_pin,
             items: data.items
-                .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount && item.amount !== "0.00" && item.amount !== "0"))
+                .filter(item => item.product || item.description || (item.qty && item.qty !== "0" && item.qty !== "1") || (item.amount !== "" && item.amount !== null && item.amount !== undefined && item.amount !== "0.00" && item.amount !== "0"))
                 .map(item => ({
                     ...item,
-                    qty: String(item.qty).replace(/,/g, ''),
-                    rate: String(item.rate).replace(/,/g, ''),
-                    amount: String(item.amount).replace(/,/g, '')
+                    qty: String(item.qty ?? '').replace(/,/g, ''),
+                    rate: String(item.rate ?? '').replace(/,/g, ''),
+                    amount: String(item.amount ?? '').replace(/,/g, '')
                 }))
         }));
 
@@ -626,6 +629,17 @@ export default function SalesInvoiceForm({ auth, paymentMethods = [], nextReceip
                         onChange={(e) => { setData('memo_on_statement', e.target.value); setIsDirty(true); }}
                         size="sm"
                         className="h-24"
+                    />
+                    <AttachmentUpload
+                        attachments={data.attachments}
+                        onChange={(newAttachments, newIds) => {
+                            setData(prev => ({
+                                ...prev,
+                                attachments: newAttachments,
+                                attachment_ids: newIds
+                            }));
+                            setIsDirty(true);
+                        }}
                     />
                 </div>
 

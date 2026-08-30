@@ -42,8 +42,8 @@ class TransferController extends Controller
                     'exchange_rate'   => $request->input('exchange_rate', 1),
                 ]);
 
-                $exchangeRate = clone $request->input('exchange_rate', 1);
-                $currencyId = clone $request->input('currency_id');
+                $exchangeRate = $request->input('exchange_rate', 1);
+                $currencyId = $request->input('currency_id');
                 $homeAmount = $amount * $exchangeRate;
 
                 // 2. Create Financial Truth (Journal Entry)
@@ -84,6 +84,10 @@ class TransferController extends Controller
                     'fc_debit'         => $currencyId ? $amount : null,
                     'exchange_rate'    => $exchangeRate,
                 ]);
+
+                $transfer->attachAttachments($request->input('attachment_ids', []));
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
+
                 return $journalEntry;
             });
 
@@ -105,7 +109,7 @@ class TransferController extends Controller
     public function edit(JournalEntry $journalEntry)
     {
         // Load the lines and the related Transfer model
-        $journalEntry->load(['lines', 'transactionable']);
+        $journalEntry->load(['lines', 'transactionable.attachments', 'attachments']);
 
         $transfer = $journalEntry->transactionable;
 
@@ -120,6 +124,7 @@ class TransferController extends Controller
                 'referenceNo' => $transfer->reference_no,
                 'currency_id' => $transfer->currency_id ?? "",
                 'exchange_rate' => $transfer->exchange_rate ?? 1,
+                'attachments' => ($transfer && $transfer->attachments->isNotEmpty()) ? $transfer->attachments : $journalEntry->attachments,
             ]
         ]);
     }
@@ -142,27 +147,31 @@ class TransferController extends Controller
                     'amount'          => $amount,
                     'date'            => $request->date,
                     'memo'            => $request->memo,
-                    'reference_no'    => $request->referenceNo ?? $transfer->reference_no,
+                    'reference_no'    => $request->referenceNo,
                     'currency_id'     => $request->input('currency_id'),
                     'exchange_rate'   => $request->input('exchange_rate', 1),
                 ]);
 
-                $exchangeRate = clone $request->input('exchange_rate', 1);
-                $currencyId = clone $request->input('currency_id');
-                $homeAmount = $amount * $exchangeRate;
+                if ($transfer) {
+                    $transfer->attachAttachments($request->input('attachment_ids', []));
+                }
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
 
-                // 2. Update Financial Truth (Journal Entry)
+                $exchangeRate = (float) $request->input('exchange_rate', 1);
+                $currencyId   = $request->input('currency_id');
+                $homeAmount   = $amount * $exchangeRate;
+
+                // 2. Update Accounting Document (Journal Entry)
                 $journalEntry->update([
-                    'date'                => $request->date,
-                    'reference'           => $transfer->reference_no,
-                    'description'         => $request->memo,
-                    'total_amount'        => $homeAmount,
-                    'currency_id'         => $currencyId,
-                    'exchange_rate'       => $exchangeRate,
+                    'currency_id'   => $currencyId,
+                    'exchange_rate' => $exchangeRate,
+                    'date'          => $request->date,
+                    'description'   => $request->memo,
+                    'total_amount'  => $homeAmount,
                 ]);
 
-                // Clear existing lines
-                $journalEntry->lines->each->delete();
+                // 3. Re-create Lines
+                $journalEntry->lines()->delete();
 
                 // From Account (Credit - Money leaving Asset)
                 JournalEntryLine::create([
@@ -202,6 +211,24 @@ class TransferController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return response()->json(['message' => 'Database error: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        $this->checkBooksLock($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            $transfer = Transfer::find($journalEntry->transactionable_id);
+
+            if ($transfer) {
+                $transfer->update(['status' => 'void', 'voided_at' => now()]);
+            }
+
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'Transfer voided successfully.');
     }
 
     public function destroy(JournalEntry $journalEntry)

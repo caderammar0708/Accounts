@@ -141,6 +141,9 @@ class InvoiceReturnController extends Controller
                     ]);
                 }
 
+                $invoiceReturn->attachAttachments($request->input('attachment_ids', []));
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
+
                 return $journalEntry;
             });
 
@@ -160,14 +163,14 @@ class InvoiceReturnController extends Controller
 
     public function edit(JournalEntry $journalEntry)
     {
-        $journalEntry->load('lines');
+        $journalEntry->load(['lines', 'attachments']);
         $invoiceReturn = InvoiceReturn::find($journalEntry->transactionable_id);
 
         if (!$invoiceReturn) {
             abort(404, 'InvoiceReturn not found');
         }
 
-        $invoiceReturn->load('items');
+        $invoiceReturn->load(['items', 'attachments']);
 
         $invoiceReturnData = [
             'id' => $journalEntry->id,
@@ -187,6 +190,7 @@ class InvoiceReturnController extends Controller
                     'amount' => number_format($item->amount, 2, '.', ''),
                 ];
             })->toArray(),
+            'attachments' => $invoiceReturn->attachments->isNotEmpty() ? $invoiceReturn->attachments : $journalEntry->attachments,
         ];
 
         return Inertia::render('Transaction/InvoiceReturn/InvoiceReturnForm', [
@@ -279,6 +283,12 @@ class InvoiceReturnController extends Controller
                         'memo' => $itemData['description'] ?? $request->memo,
                     ]);
                 }
+
+                $invoiceReturn = InvoiceReturn::find($journalEntry->transactionable_id);
+                if ($invoiceReturn) {
+                    $invoiceReturn->attachAttachments($request->input('attachment_ids', []));
+                }
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
             });
 
             $action = $request->input('action', 'save');
@@ -291,6 +301,30 @@ class InvoiceReturnController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        $this->checkBooksLock($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            $invoiceReturn = InvoiceReturn::find($journalEntry->transactionable_id);
+
+            if ($invoiceReturn) {
+                foreach ($invoiceReturn->items as $oldItem) {
+                    $itemModel = \App\Models\Item::find($oldItem->item_id);
+                    if ($itemModel && $itemModel->type === 'inventory') {
+                        $itemModel->decrement('quantity_on_hand', $oldItem->quantity);
+                    }
+                }
+                $invoiceReturn->update(['status' => 'void', 'voided_at' => now()]);
+            }
+
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'Invoice return voided successfully.');
     }
 
     public function destroy(JournalEntry $journalEntry)

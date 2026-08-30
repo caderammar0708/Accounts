@@ -98,7 +98,7 @@ class JournalEntryController extends Controller
             $debit = (float)($line['debit'] ?? 0);
             $credit = (float)($line['credit'] ?? 0);
 
-            if ($debit == 0 && $credit == 0) continue;
+            if (empty($line['account_id'])) continue;
 
             $payeeId = $line['payee_id'] ?? null;
             $payeeType = null;
@@ -133,6 +133,7 @@ class JournalEntryController extends Controller
         }
 
         $entry->update(['total_amount' => $totalDebit]);
+        $entry->attachAttachments($request->input('attachment_ids', []));
 
         $action = $request->input('action', 'save');
         if ($action === 'close') { $lastValidRoute = session('last_valid_route', route('dashboard')); return redirect()->to($lastValidRoute)->with('success', 'Journal Entry saved successfully.'); }
@@ -145,7 +146,7 @@ class JournalEntryController extends Controller
 
     public function edit(JournalEntry $journalEntry)
     {
-        $journalEntry->load('lines');
+        $journalEntry->load(['lines', 'attachments']);
         $accounts = ChartOfAcc::orderBy('account_code')->get();
 
         return Inertia::render('Transaction/JournalEntryForm', [
@@ -177,7 +178,7 @@ class JournalEntryController extends Controller
                 $debit = (float)($line['debit'] ?? 0);
                 $credit = (float)($line['credit'] ?? 0);
 
-                if ($debit == 0 && $credit == 0) continue;
+                if (empty($line['account_id'])) continue;
 
                 $payeeId = $line['payee_id'] ?? null;
                 $payeeType = null;
@@ -204,6 +205,7 @@ class JournalEntryController extends Controller
             }
 
             $journalEntry->update(['total_amount' => $totalDebit]);
+            $journalEntry->attachAttachments($request->input('attachment_ids', []));
 
             $action = $request->input('action', 'save');
             if ($action === 'close') { $lastValidRoute = session('last_valid_route', route('dashboard')); return redirect()->to($lastValidRoute)->with('success', 'Journal Entry updated successfully.'); }
@@ -295,6 +297,18 @@ class JournalEntryController extends Controller
 
             return response()->json(['message' => 'Journal Entry Updated Successfully']);
         });
+    }
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        \App\Services\BooksLockService::check($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'Journal entry voided successfully.');
     }
 
     /**

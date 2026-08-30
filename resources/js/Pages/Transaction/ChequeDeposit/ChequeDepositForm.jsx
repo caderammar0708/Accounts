@@ -10,6 +10,7 @@ import { useDateFormat, formatDate } from "@/Utils/dateFormat";
 import BooksLockIndicator from "@/Components/BooksLockIndicator";
 import PinPromptModal from "@/Components/PinPromptModal";
 import { useBooksLock, isBooksLocked } from "@/Hooks/useBooksLock";
+import AttachmentUpload from "@/Components/AttachmentUpload";
 
 export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = null, outstandingCheques = [], selectedChequeIds = [], onModeChange = null, onClose = null }) {
     const company = auth.company;
@@ -70,6 +71,8 @@ export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = 
         depositNo: deposit?.depositNo || nextDepositNo || "1001",
         memo: deposit?.memo || "",
         selectedCheques: selectedChequeIds || [],
+        attachments: deposit?.attachments || [],
+        attachment_ids: (deposit?.attachments || []).map(a => a.id),
         action: 'save',
         books_pin: ''
     });
@@ -84,6 +87,8 @@ export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = 
                 depositNo: deposit.depositNo || "",
                 memo: deposit.memo || "",
                 selectedCheques: selectedChequeIds || [],
+                attachments: deposit.attachments || [],
+                attachment_ids: (deposit.attachments || []).map(a => a.id),
                 action: 'save'
             });
             setCheques(outstandingCheques.map(chk => ({
@@ -309,18 +314,33 @@ export default function ChequeDepositForm({ auth, nextDepositNo = "", deposit = 
                     </div>
                 </div>
 
-                {/* Memo section */}
-                <div className="w-[500px] mt-8 pt-4 border-t border-slate-100">
-                    <CommonInput
-                        type="textarea"
-                        label="Memo"
-                        placeholder="Add a memo..."
-                        value={data.memo}
-                        onChange={(e) => { setData("memo", e.target.value); setIsDirty(true); }}
-                        size="sm"
-                        className="h-24"
-                        error={errors.memo}
-                    />
+                {/* Memo & Attachments section */}
+                <div className="grid grid-cols-2 gap-10 mt-8 pt-4 border-t border-slate-100">
+                    <div className="w-[450px]">
+                        <CommonInput
+                            type="textarea"
+                            label="Memo"
+                            placeholder="Add a memo..."
+                            value={data.memo}
+                            onChange={(e) => { setData("memo", e.target.value); setIsDirty(true); }}
+                            size="sm"
+                            className="h-24"
+                            error={errors.memo}
+                        />
+                    </div>
+                    <div className="w-[450px]">
+                        <AttachmentUpload
+                            attachments={data.attachments}
+                            onChange={(newAttachments, newIds) => {
+                                setData(prev => ({
+                                    ...prev,
+                                    attachments: newAttachments,
+                                    attachment_ids: newIds
+                                }));
+                                setIsDirty(true);
+                            }}
+                        />
+                    </div>
                 </div>
 
                 {/* Outstanding Cheques Table */}

@@ -8,10 +8,11 @@ use App\Models\User;
 use OwenIt\Auditing\Contracts\Auditable;
 
 use App\Traits\BelongsToLocation;
+use App\Traits\HasAttachments;
 
 class JournalEntry extends Model implements Auditable
 {
-    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation;
+    use HasUuids, \OwenIt\Auditing\Auditable, BelongsToLocation, HasAttachments;
 
     protected $fillable = [
         'currency_id',
@@ -27,6 +28,7 @@ class JournalEntry extends Model implements Auditable
         'payment_method_id',
         'total_amount',
         'status',
+        'voided_at',
         'created_by',
         'location_id',
     ];

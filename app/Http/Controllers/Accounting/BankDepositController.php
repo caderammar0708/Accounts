@@ -31,7 +31,7 @@ class BankDepositController extends Controller
         \App\Services\BooksLockService::check($request->depositDate, $request->books_pin);
 
         DB::transaction(function() use ($request) {
-            $items = collect($request->items)->filter(fn($i) => (float)str_replace(',', '', $i['amount']) > 0)->values()->all();
+            $items = collect($request->items)->filter(fn($i) => !empty($i['account']) && isset($i['amount']) && $i['amount'] !== '')->values()->all();
 
             $total = collect($items)->sum(fn($i) => (float)str_replace(',', '', $i['amount']));
 
@@ -106,6 +106,9 @@ class BankDepositController extends Controller
                     ]);
                 }
             }
+
+            $deposit->attachAttachments($request->input('attachment_ids', []));
+            $journalEntry->attachAttachments($request->input('attachment_ids', []));
         });
 
         $action = $request->input('action', 'save');
@@ -115,12 +118,13 @@ class BankDepositController extends Controller
             return redirect()->route('bank-deposit.create')->with('success', 'Bank deposit saved successfully.');
         }
 
-        return redirect()->back()->with('success', 'Bank deposit saved successfully.');
+        return redirect()->route('bank-deposit.edit', $journalEntry->id)->with('success', 'Bank deposit saved successfully.');
     }
 
     public function edit(JournalEntry $journalEntry)
     {
-        $deposit = BankDeposit::with('items')->find($journalEntry->transactionable_id);
+        $journalEntry->load(['lines', 'attachments']);
+        $deposit = BankDeposit::with(['items', 'attachments'])->find($journalEntry->transactionable_id);
 
         return Inertia::render('Transaction/BankDeposit/BankDepositForm', [
             'deposit' => [
@@ -144,7 +148,8 @@ class BankDepositController extends Controller
                         'refNo' => $i->ref_no,
                         'amount' => $i->amount,
                     ];
-                })
+                }),
+                'attachments' => ($deposit && $deposit->attachments->isNotEmpty()) ? $deposit->attachments : $journalEntry->attachments,
             ],
             'paymentMethods' => $this->paymentMethods()
         ]);
@@ -158,7 +163,7 @@ class BankDepositController extends Controller
         $deposit = BankDeposit::find($journalEntry->transactionable_id);
 
         DB::transaction(function() use ($request, $deposit, $journalEntry) {
-            $items = collect($request->items)->filter(fn($i) => (float)str_replace(',', '', $i['amount']) > 0)->values()->all();
+            $items = collect($request->items)->filter(fn($i) => !empty($i['account']) && isset($i['amount']) && $i['amount'] !== '')->values()->all();
 
             $total = collect($items)->sum(fn($i) => (float)str_replace(',', '', $i['amount']));
 
@@ -230,6 +235,11 @@ class BankDepositController extends Controller
                     ]);
                 }
             }
+
+            if ($deposit) {
+                $deposit->attachAttachments($request->input('attachment_ids', []));
+            }
+            $journalEntry->attachAttachments($request->input('attachment_ids', []));
         });
 
         $action = $request->input('action', 'save');
@@ -240,6 +250,24 @@ class BankDepositController extends Controller
         }
 
         return redirect()->back()->with('success', 'Bank deposit updated successfully.');
+    }
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        \App\Services\BooksLockService::check($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            $deposit = BankDeposit::find($journalEntry->transactionable_id);
+
+            if ($deposit) {
+                $deposit->update(['status' => 'void', 'voided_at' => now()]);
+            }
+
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'Bank deposit voided successfully.');
     }
 
     public function destroy(JournalEntry $journalEntry)

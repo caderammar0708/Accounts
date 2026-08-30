@@ -98,11 +98,11 @@ class PaymentController extends Controller
             \App\Services\BooksLockService::check($paymentDate, $request->books_pin);
             $journalEntry = DB::transaction(function() use ($request, $paymentAccount, $paymentDate, $paymentMethod, $referenceNo) {
                 $categoryItems = collect($request->items)->filter(function($item) {
-                    return !empty($item['category']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['category']) && isset($item['amount']) && $item['amount'] !== '';
                 });
 
                 $productItems = collect($request->itemDetails)->filter(function($item) {
-                    return !empty($item['product']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['product']) && isset($item['amount']) && $item['amount'] !== '';
                 });
 
                 if ($categoryItems->isEmpty() && $productItems->isEmpty()) {
@@ -241,6 +241,9 @@ class PaymentController extends Controller
                     'memo' => $request->memo,
                 ]);
 
+                $payment->attachAttachments($request->input('attachment_ids', []));
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
+
                 return $journalEntry;
             });
 
@@ -248,13 +251,13 @@ class PaymentController extends Controller
 
             // No session saving needed
 
-            if ($action === 'close') { $lastValidRoute = session('last_valid_route', route('dashboard')); return redirect()->to($lastValidRoute)->with('success', 'ReceivePayment saved successfully.'); }
+            if ($action === 'close') { $lastValidRoute = session('last_valid_route', route('dashboard')); return redirect()->to($lastValidRoute)->with('success', 'Payment saved successfully.'); }
 
             if ($action === 'new') {
-                return redirect()->route('payment.create')->with('success', 'ReceivePayment saved successfully.');
+                return redirect()->route('payment.create')->with('success', 'Payment saved successfully.');
             }
 
-            return redirect()->route('payment.edit', $journalEntry->id)->with('success', 'ReceivePayment saved successfully.');
+            return redirect()->route('payment.edit', $journalEntry->id)->with('success', 'Payment saved successfully.');
 
         } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
@@ -263,8 +266,8 @@ class PaymentController extends Controller
 
     public function edit(JournalEntry $journalEntry)
     {
-        $journalEntry->load('lines');
-        $payment = \App\Models\Accounting\Payment::find($journalEntry->transactionable_id);
+        $journalEntry->load(['lines', 'attachments']);
+        $payment = \App\Models\Accounting\Payment::with('attachments')->find($journalEntry->transactionable_id);
 
         $expenseData = [
             'id' => $journalEntry->id,
@@ -295,6 +298,7 @@ class PaymentController extends Controller
                     'amount' => $item->amount,
                 ];
             })->values()->toArray() : [],
+            'attachments' => ($payment && $payment->attachments->isNotEmpty()) ? $payment->attachments : $journalEntry->attachments,
         ];
 
         return Inertia::render('Transaction/Payment/PaymentForm', [
@@ -326,11 +330,11 @@ class PaymentController extends Controller
 
             DB::transaction(function() use ($request, $journalEntry, $paymentAccount, $paymentDate, $paymentMethod, $referenceNo) {
                 $categoryItems = collect($request->items)->filter(function($item) {
-                    return !empty($item['category']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['category']) && isset($item['amount']) && $item['amount'] !== '';
                 });
 
                 $productItems = collect($request->itemDetails)->filter(function($item) {
-                    return !empty($item['product']) && (float)str_replace(',', '', $item['amount']) > 0;
+                    return !empty($item['product']) && isset($item['amount']) && $item['amount'] !== '';
                 });
 
                 if ($categoryItems->isEmpty() && $productItems->isEmpty()) {
@@ -476,6 +480,12 @@ class PaymentController extends Controller
                     'exchange_rate' => $exchangeRate,
                     'memo' => $request->memo,
                 ]);
+
+                $payment = Payment::find($journalEntry->transactionable_id);
+                if ($payment) {
+                    $payment->attachAttachments($request->input('attachment_ids', []));
+                }
+                $journalEntry->attachAttachments($request->input('attachment_ids', []));
             });
 
             $action = $request->input('action', 'save');
@@ -488,6 +498,30 @@ class PaymentController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function void(Request $request, JournalEntry $journalEntry)
+    {
+        \App\Services\BooksLockService::check($journalEntry->date, $request->input('books_pin'));
+
+        DB::transaction(function () use ($journalEntry) {
+            $payment = \App\Models\Accounting\Payment::find($journalEntry->transactionable_id);
+
+            if ($payment) {
+                foreach ($payment->items->whereNotNull('item_id') as $oldItem) {
+                    $itemModel = \App\Models\Item::find($oldItem->item_id);
+                    if ($itemModel && $itemModel->type === 'inventory') {
+                        $itemModel->decrement('quantity_on_hand', $oldItem->quantity);
+                    }
+                }
+                $payment->update(['status' => 'void', 'voided_at' => now()]);
+            }
+
+            $journalEntry->update(['status' => 'void', 'total_amount' => 0, 'voided_at' => now()]);
+            $journalEntry->lines()->update(['debit' => 0, 'credit' => 0, 'fc_debit' => 0, 'fc_credit' => 0]);
+        });
+
+        return redirect()->back()->with('success', 'Payment voided successfully.');
     }
 
     public function destroy(Request $request, JournalEntry $journalEntry)
