@@ -41,5 +41,23 @@ class CleanupMigrationsTableSeeder extends Seeder
         } else {
             $this->command->info('No orphaned migrations found. Migrations table is clean.');
         }
+
+        // Manually insert specific migrations that were renamed to prevent them from re-running and failing
+        $manualMigrations = [
+            '2026_04_01_075556_create_permission_tables',
+            '2026_04_01_153443_create_personal_access_tokens_table',
+        ];
+
+        $maxBatch = DB::table('migrations')->max('batch') ?? 0;
+        
+        foreach ($manualMigrations as $migration) {
+            if (!DB::table('migrations')->where('migration', $migration)->exists()) {
+                DB::table('migrations')->insert([
+                    'migration' => $migration,
+                    'batch' => $maxBatch + 1
+                ]);
+                $this->command->line("Added missing migration record: {$migration}");
+            }
+        }
     }
 }

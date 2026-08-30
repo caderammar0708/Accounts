@@ -1,4 +1,24 @@
 {
+    "ausj": {
+        "prod": {
+            "APP_URL": "https://ausj.jbooks.cloud/",
+            "SSO_CLIENT_SECRET": "9b8d7e6f5c4b3a210fedcba987654321",
+            "DB_DATABASE": "u487520070_ausj",
+            "DB_USERNAME": "u487520070_ausj",
+            "DB_PASSWORD": "Grow2025@",
+            "SANCTUM_STATEFUL_DOMAINS": "ausj.jbooks.cloud"
+        }
+    },
+    "demo": {
+        "prod": {
+            "APP_URL": "https://demo.jbooks.cloud/",
+            "SSO_CLIENT_SECRET": "0cfe0eeac8b89a7bcc654b8f5fe9bfbd",
+            "DB_DATABASE": "u487520070_jb_demo",
+            "DB_USERNAME": "u487520070_jb_demo",
+            "DB_PASSWORD": "Grow2025@",
+            "SANCTUM_STATEFUL_DOMAINS": "demo.jbooks.cloud"
+        }
+    },
     "aaass": {
         "prod": {
             "APP_URL": "https://aaass.jbooks.cloud/",
@@ -7,6 +27,16 @@
             "DB_USERNAME": "u487520070_aaass",
             "DB_PASSWORD": "Grow2025@",
             "SANCTUM_STATEFUL_DOMAINS": "aaass.jbooks.cloud"
+        }
+    },
+    "aaafs": {
+        "prod": {
+            "APP_URL": "https://aaafs.jbooks.cloud/",
+            "SSO_CLIENT_SECRET": "7bd3eabc6521d9660719c42221548e24",
+            "DB_DATABASE": "u487520070_aaafs",
+            "DB_USERNAME": "u487520070_aaafs",
+            "DB_PASSWORD": "Grow2025@",
+            "SANCTUM_STATEFUL_DOMAINS": "aaafs.jbooks.cloud"
         }
     },
     "hallam-city-campus": {
@@ -29,6 +59,16 @@
             "SANCTUM_STATEFUL_DOMAINS": "jobalign.jbooks.cloud"
         }
     },
+    "jobalign-test": {
+        "prod": {
+            "APP_URL": "https://jobalign-test.jbooks.cloud/",
+            "SSO_CLIENT_SECRET": "a8f9c123d4e56789b0a1c2d3e4f56789",
+            "DB_DATABASE": "u487520070_jobalign-test",
+            "DB_USERNAME": "u487520070_jobalign-test",
+            "DB_PASSWORD": "Grow2025@",
+            "SANCTUM_STATEFUL_DOMAINS": "ausj.jbooks.cloud"
+        }
+    },
     "steel-audit": {
         "prod": {
             "APP_URL": "https://steel-audit.jbooks.cloud/",
@@ -37,26 +77,6 @@
             "DB_USERNAME": "u487520070_steel_audit",
             "DB_PASSWORD": "Grow2025@",
             "SANCTUM_STATEFUL_DOMAINS": "steel-audit.jbooks.cloud"
-        }
-    },
-    "tgl-kandy": {
-        "prod": {
-            "APP_URL": "https://tglk-acc.jobalign.lk/",
-            "SSO_CLIENT_SECRET": "526454b4317fecf46a7550b42347bbec",
-            "DB_DATABASE": "u487520070_tglk_acc",
-            "DB_USERNAME": "u487520070_tglk_acc",
-            "DB_PASSWORD": "Grow2025@",
-            "SANCTUM_STATEFUL_DOMAINS": "tglk-acc.jobalign.lk"
-        }
-    },
-    "aaafs": {
-        "prod": {
-            "APP_URL": "https://aaafs.jbooks.cloud/",
-            "SSO_CLIENT_SECRET": "7bd3eabc6521d9660719c42221548e24",
-            "DB_DATABASE": "u487520070_aaafs",
-            "DB_USERNAME": "u487520070_aaafs",
-            "DB_PASSWORD": "Grow2025@",
-            "SANCTUM_STATEFUL_DOMAINS": "aaafs.jbooks.cloud"
         }
     },
     "steel-mobile": {
@@ -69,24 +89,14 @@
             "SANCTUM_STATEFUL_DOMAINS": "steel-mobile.jbooks.cloud"
         }
     },
-    "ausj": {
+    "tgl-kandy": {
         "prod": {
-            "APP_URL": "https://ausj.jbooks.cloud/",
-            "SSO_CLIENT_SECRET": "9b8d7e6f5c4b3a210fedcba987654321",
-            "DB_DATABASE": "u487520070_ausj",
-            "DB_USERNAME": "u487520070_ausj",
+            "APP_URL": "https://tglk-acc.jobalign.lk/",
+            "SSO_CLIENT_SECRET": "526454b4317fecf46a7550b42347bbec",
+            "DB_DATABASE": "u487520070_tglk_acc",
+            "DB_USERNAME": "u487520070_tglk_acc",
             "DB_PASSWORD": "Grow2025@",
-            "SANCTUM_STATEFUL_DOMAINS": "ausj.jbooks.cloud"
-        }
-    },
-    "demo": {
-        "prod": {
-            "APP_URL": "https://demo.jbooks.cloud/",
-            "SSO_CLIENT_SECRET": "0cfe0eeac8b89a7bcc654b8f5fe9bfbd",
-            "DB_DATABASE": "u487520070_jb_demo",
-            "DB_USERNAME": "u487520070_jb_demo",
-            "DB_PASSWORD": "Grow2025@",
-            "SANCTUM_STATEFUL_DOMAINS": "demo.jbooks.cloud"
+            "SANCTUM_STATEFUL_DOMAINS": "tglk-acc.jobalign.lk"
         }
     }
 }

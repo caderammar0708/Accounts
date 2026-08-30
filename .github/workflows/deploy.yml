@@ -4,11 +4,14 @@ on:
   push:
     branches:
       - demo
+      - ausj
       - aaass
       - aaafs
       - jobalign
+      - jobalign-test
       - hallam-city-campus
       - steel-audit
+      - steel-mobile
       - tgl-kandy
   workflow_dispatch:
 
