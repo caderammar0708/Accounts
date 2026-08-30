@@ -14,6 +14,8 @@ Route::get('/user', function (Request $request) {
 Route::prefix('v1')->group(function () {
     Route::post('/login-sso', [\App\Http\Controllers\Api\MobileAuthController::class, 'loginSso']);
     Route::get('/check-access', [\App\Http\Controllers\Api\MobileAuthController::class, 'checkAccess'])->middleware('auth:sanctum');
+
+     Route::post('/logout', [\App\Http\Controllers\Api\MobileAuthController::class, 'logout'])->middleware('auth:sanctum');
 });
 
 Route::middleware('auth:sanctum')->group(function () {

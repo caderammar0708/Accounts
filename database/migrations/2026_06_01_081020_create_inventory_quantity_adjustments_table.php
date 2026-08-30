@@ -20,6 +20,17 @@ return new class extends Migration
             $table->text('memo')->nullable();
             $table->timestamps();
         });
+
+        Schema::create('inventory_quantity_adjustment_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('inventory_quantity_adjustment_id')->constrained('inventory_quantity_adjustments', 'id', 'fk_inv_qty_adj_id')->cascadeOnDelete();
+            $table->foreignUuid('item_id')->constrained('items')->cascadeOnDelete();
+            $table->string('description')->nullable();
+            $table->decimal('qty_on_hand', 15, 2)->default(0);
+            $table->decimal('new_qty', 15, 2)->default(0);
+            $table->decimal('change_in_qty', 15, 2)->default(0);
+            $table->timestamps();
+        });
     }
 
     /**
@@ -28,5 +39,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('inventory_quantity_adjustments');
+        Schema::dropIfExists('inventory_quantity_adjustment_items');
     }
 };

@@ -18,6 +18,7 @@ return new class extends Migration
                 $table->string('document_type'); // e.g. 'invoice', 'bill'
                 $table->string('template_name')->nullable();
                 $table->boolean('is_default')->default(false);
+                $table->boolean('show_logo')->default(true);
                 $table->string('custom_title')->nullable();
                 $table->string('header_alignment')->default('left');
                 $table->text('static_footer_content')->nullable();

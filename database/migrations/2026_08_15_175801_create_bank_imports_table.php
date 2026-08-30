@@ -13,12 +13,30 @@ return new class extends Migration
     {
         Schema::create('bank_imports', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->uuid('bank_account_id')->nullable();
             $table->uuid('company_id')->nullable();
             $table->date('import_date');
             $table->string('filename')->nullable();
             $table->string('status')->default('pending'); // pending, completed
             $table->uuid('created_by')->nullable();
             $table->timestamps();
+
+            $table->foreign('bank_account_id')->references('id')->on('chart_of_accs')->onDelete('set null');
+        });
+
+        Schema::create('bank_import_lines', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('bank_import_id');
+            $table->date('transaction_date');
+            $table->text('description')->nullable();
+            $table->string('reference')->nullable();
+            $table->decimal('amount', 15, 2);
+            $table->string('status')->default('uncategorized'); // uncategorized, moved, closed
+            $table->uuid('assigned_account_id')->nullable();
+            $table->uuid('journal_entry_id')->nullable();
+            $table->timestamps();
+
+            $table->foreign('bank_import_id')->references('id')->on('bank_imports')->onDelete('cascade');
         });
     }
 
@@ -28,5 +46,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('bank_imports');
+        Schema::dropIfExists('bank_import_lines');
     }
 };

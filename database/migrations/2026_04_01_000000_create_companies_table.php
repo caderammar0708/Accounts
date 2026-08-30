@@ -26,8 +26,10 @@ return new class extends Migration
             $table->string('business_type')->nullable();
             $table->text('legal_address')->nullable();
 
-            $table->boolean('is_onboarded')->default(false);
-            $table->string('home_currency_prefix')->nullable();
+            $table->boolean('multi_currency_enabled')->default(false);
+            $table->uuid('home_currency_id')->nullable();
+            
+            $table->foreign('home_currency_id')->references('id')->on('currencies')->onDelete('set null');
             
             $table->timestamps();
         });

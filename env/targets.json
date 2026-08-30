@@ -53,6 +53,24 @@
             "DB_PASSWORD": "Grow2025@"
         }
     },
+    "steel-mobile": {
+        "prod": {
+            "APP_URL": "https://steel-mobile.jbooks.cloud/",
+            "SSO_CLIENT_SECRET": "f2a58cb123e4b78f9901d3a5cc7b2e84",
+            "DB_DATABASE": "u487520070_steelmobile",
+            "DB_USERNAME": "u487520070_steelmobile",
+            "DB_PASSWORD": "Grow2025@"
+        }
+    },
+    "ausj": {
+        "prod": {
+            "APP_URL": "https://ausj.jbooks.cloud/",
+            "SSO_CLIENT_SECRET": "9b8d7e6f5c4b3a210fedcba987654321",
+            "DB_DATABASE": "u487520070_ausj",
+            "DB_USERNAME": "u487520070_ausj",
+            "DB_PASSWORD": "Grow2025@"
+        }
+    },
     "demo": {
         "prod": {
             "APP_URL": "https://demo.jbooks.cloud/",

@@ -323,6 +323,7 @@ public function updateAccounting(Request $request)
         }
 
         if ($type === 'Dealership') {
+            $this->handleModuleMigrations('dealership', true);
             $settings->update([
                 'branches_enabled' => true,
                 'business_type' => 'Dealership',
@@ -343,6 +344,7 @@ public function updateAccounting(Request $request)
                 'business_type' => 'Fuel Station',
             ]);
             if ($dropTables) {
+                $this->handleModuleMigrations('dealership', false, true);
                 $this->handleModuleMigrations('service_station', false, true);
                 $settings->update([
                     'job_layout_enabled' => false,
@@ -357,10 +359,12 @@ public function updateAccounting(Request $request)
                 'business_type' => 'Service Station',
             ]);
             if ($dropTables) {
+                $this->handleModuleMigrations('dealership', false, true);
                 $this->handleModuleMigrations('fuel_station', false, true);
             }
         } else { // Normal
             if ($dropTables) {
+                $this->handleModuleMigrations('dealership', false, true);
                 $this->handleModuleMigrations('fuel_station', false, true);
                 $this->handleModuleMigrations('service_station', false, true);
                 $settings->update([

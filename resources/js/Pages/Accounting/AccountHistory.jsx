@@ -136,8 +136,7 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                 return route('bill-return.edit', id);
             case 'invoice_return':
                 return route('invoice-return.edit', id);
-            case 'sales_invoice':
-                return route('sales-invoice.edit', id);
+
             case 'transfer':
                 return route('transfer.edit', id);
             case 'cheque_deposit':

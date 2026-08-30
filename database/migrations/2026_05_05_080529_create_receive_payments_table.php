@@ -24,9 +24,22 @@ return new class extends Migration
             $table->foreign('deposit_to_account_id')->references('id')->on('chart_of_accs')->onDelete('set null');
         });
 
+        Schema::create('cheque_deposit_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('cheque_deposit_id');
+            $table->uuid('receive_payment_id');
+            $table->decimal('amount', 15, 2)->default(0);
+            $table->timestamps();
+
+            $table->foreign('cheque_deposit_id')->references('id')->on('cheque_deposits')->onDelete('cascade');
+            $table->foreign('receive_payment_id')->references('id')->on('receive_payments')->onDelete('cascade');
+        });
+
         Schema::create('receive_payments', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('customer_id');
+            $table->uuid('currency_id')->nullable();
+            $table->decimal('exchange_rate', 15, 6)->nullable();
             $table->decimal('amount', 15, 2)->default(0);
             $table->date('payment_date');
             $table->uuid('payment_method_id')->nullable();
@@ -43,16 +56,17 @@ return new class extends Migration
             $table->foreign('cheque_deposit_id')->references('id')->on('cheque_deposits')->onDelete('set null');
         });
 
-        Schema::create('cheque_deposit_items', function (Blueprint $table) {
+        Schema::create('receive_payment_allocations', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('cheque_deposit_id');
-            $table->uuid('receive_payment_id');
+            $table->foreignUuid('receive_payment_id')->constrained()->onDelete('cascade');
+            $table->uuid('credit_invoice_id');
             $table->decimal('amount', 15, 2)->default(0);
             $table->timestamps();
 
-            $table->foreign('cheque_deposit_id')->references('id')->on('cheque_deposits')->onDelete('cascade');
-            $table->foreign('receive_payment_id')->references('id')->on('receive_payments')->onDelete('cascade');
+            $table->foreign('credit_invoice_id')->references('id')->on('credit_invoices')->onDelete('cascade');
         });
+
+        
     }
 
     /**
@@ -60,8 +74,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('cheque_deposits');
         Schema::dropIfExists('cheque_deposit_items');
         Schema::dropIfExists('receive_payments');
-        Schema::dropIfExists('cheque_deposits');
+        Schema::dropIfExists('receive_payment_allocations');
     }
 };

@@ -15,6 +15,8 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('from_account_id');
             $table->uuid('to_account_id');
+            $table->uuid('currency_id')->nullable();
+            $table->decimal('exchange_rate', 15, 6)->nullable();
             $table->decimal('amount', 15, 2)->default(0);
             $table->date('date');
             $table->text('memo')->nullable();

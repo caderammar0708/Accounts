@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('bill_payments', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('supplier_id');
+            $table->uuid('currency_id')->nullable();
+            $table->decimal('exchange_rate', 15, 6)->nullable();
             $table->decimal('amount', 15, 2)->default(0);
             $table->date('payment_date');
             $table->uuid('payment_method_id')->nullable();
@@ -27,6 +29,17 @@ return new class extends Migration
             $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('cascade');
             $table->foreign('payment_account_id')->references('id')->on('chart_of_accs')->onDelete('cascade');
         });
+
+        Schema::create('bill_payment_allocations', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('bill_payment_id');
+            $table->uuid('bill_id');
+            $table->decimal('amount_applied', 15, 2);
+            $table->timestamps();
+
+            $table->foreign('bill_payment_id')->references('id')->on('bill_payments')->onDelete('cascade');
+            $table->foreign('bill_id')->references('id')->on('bills')->onDelete('cascade');
+        });
     }
 
     /**
@@ -35,5 +48,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('bill_payments');
+        Schema::dropIfExists('bill_payment_allocations');
     }
 };

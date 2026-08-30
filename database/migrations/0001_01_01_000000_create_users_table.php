@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('role')->default('user');
             $table->string('phone')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->boolean('mobile_access')->default(false);
             $table->rememberToken();
             $table->timestamps();
         });

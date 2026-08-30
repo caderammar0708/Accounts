@@ -22,6 +22,8 @@ return new class extends Migration
             $table->date('check_date')->nullable();
             $table->string('check_number')->nullable();
             $table->uuid('deposit_to_account_id')->nullable();
+            $table->uuid('currency_id')->nullable();
+            $table->decimal('exchange_rate', 15, 6)->default(1);
             $table->decimal('total_amount', 15, 2)->default(0);
             $table->string('discount_type')->default('percent');
             $table->decimal('discount_value', 12, 2)->default(0);
@@ -37,6 +39,20 @@ return new class extends Migration
             $table->foreign('payment_method_id')->references('id')->on('payment_methods')->onDelete('set null');
             $table->foreign('deposit_to_account_id')->references('id')->on('chart_of_accs')->onDelete('set null');
         });
+
+        Schema::create('sales_invoice_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('sales_invoice_id')->constrained()->onDelete('cascade');
+            $table->uuid('item_id');
+            $table->text('description')->nullable();
+            $table->decimal('quantity', 15, 4)->default(1);
+            $table->decimal('rate', 15, 2)->default(0);
+            $table->decimal('amount', 15, 2)->default(0);
+            $table->date('service_date')->nullable();
+            $table->timestamps();
+
+            $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
+        });
     }
 
     /**
@@ -45,5 +61,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('sales_invoices');
+        Schema::dropIfExists('sales_invoice_items');
     }
 };

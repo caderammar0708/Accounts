@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('credit_invoices', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('customer_id');
+            $table->uuid('source_id')->nullable();
+            $table->string('source_type')->nullable();
             $table->string('email')->nullable();
             $table->text('billing_address')->nullable();
             $table->text('shipping_address')->nullable();
@@ -33,6 +35,20 @@ return new class extends Migration
 
             $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
         });
+
+        Schema::create('credit_invoice_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('credit_invoice_id')->constrained()->onDelete('cascade');
+            $table->uuid('item_id');
+            $table->text('description')->nullable();
+            $table->decimal('quantity', 15, 4)->default(1);
+            $table->decimal('rate', 15, 2)->default(0);
+            $table->decimal('amount', 15, 2)->default(0);
+            $table->date('service_date')->nullable();
+            $table->timestamps();
+
+            $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
+        });
     }
 
     /**
@@ -41,5 +57,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('credit_invoices');
+        Schema::dropIfExists('credit_invoice_items');
     }
 };

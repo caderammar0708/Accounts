@@ -24,17 +24,12 @@ return new class extends Migration
             $table->date('books_lock_date')->nullable();
             $table->string('books_lock_pin')->nullable();
             $table->string('tax_form', 100)->default('Partnership or limited liability company');
-            $table->boolean('multi_currency_enabled')->default(false);
-            $table->uuid('home_currency_id')->nullable();
+            $table->boolean('branches_enabled')->default(false);
+            $table->string('business_type')->default('Normal');
             
             $table->boolean('pos_layout_enabled')->default(false);
-            $table->boolean('warranty_layout_enabled')->default(false);
-            $table->boolean('job_layout_enabled')->default(false);
             $table->boolean('customer_layout_modal')->default(false);
             $table->boolean('reports_display_as_buttons')->default(true);
-            $table->boolean('vehicles_enabled')->default(false);
-            
-            $table->foreign('home_currency_id')->references('id')->on('currencies')->onDelete('set null');
 
             $table->timestamps();
         });

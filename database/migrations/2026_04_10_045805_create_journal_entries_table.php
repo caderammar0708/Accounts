@@ -25,6 +25,8 @@ return new class extends Migration
 
             $table->string('transaction_type')->nullable();
             $table->nullableUuidMorphs('transactionable');
+            $table->uuid('currency_id')->nullable();
+            $table->decimal('exchange_rate', 15, 6)->nullable();
             $table->decimal('total_amount', 15, 2)->default(0);
             $table->string('status')->default('draft');
             $table->foreignUuid('created_by')->constrained('users');
@@ -47,6 +49,8 @@ return new class extends Migration
             
             $table->decimal('debit', 15, 2)->default(0);
             $table->decimal('credit', 15, 2)->default(0);
+            $table->boolean('is_cleared')->default(false);
+            $table->uuid('bank_reconciliation_id')->nullable();
             $table->text('memo')->nullable();
             $table->date('service_date')->nullable();
             $table->timestamps();

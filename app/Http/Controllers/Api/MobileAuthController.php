@@ -70,4 +70,14 @@ class MobileAuthController extends Controller
 
         return response()->json(['message' => 'Access granted.', 'user' => $user]);
     }
+
+    /**
+     * Logout and revoke token
+    */
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        
+        return response()->json(['message' => 'Successfully logged out']);
+    }
 }

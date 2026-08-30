@@ -25,6 +25,19 @@ return new class extends Migration
 
             $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
         });
+
+        Schema::create('invoice_return_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('invoice_return_id')->constrained()->onDelete('cascade');
+            $table->uuid('item_id');
+            $table->text('description')->nullable();
+            $table->decimal('quantity', 15, 4)->default(1);
+            $table->decimal('rate', 15, 2)->default(0);
+            $table->decimal('amount', 15, 2)->default(0);
+            $table->timestamps();
+
+            $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
+        });
     }
 
     /**
@@ -33,5 +46,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('invoice_returns');
+        Schema::dropIfExists('invoice_return_items');
     }
 };
