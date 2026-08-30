@@ -46,7 +46,7 @@
             "DB_DATABASE": "u487520070_halam",
             "DB_USERNAME": "u487520070_halam",
             "DB_PASSWORD": "Grow2025@",
-            "SANCTUM_STATEFUL_DOMAINS": "halam.jbooks.cloud"
+            "SANCTUM_STATEFUL_DOMAINS": "halam.jbooks.cloud,www.halam.jbooks.cloud"
         }
     },
     "jobalign": {
