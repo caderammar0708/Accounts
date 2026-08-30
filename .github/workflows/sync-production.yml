@@ -27,7 +27,7 @@ jobs:
       - name: Sync Tenant Branches
         run: |
           # Define the branches to update automatically
-          BRANCHES=("demo" "hallam-city-campus" "jobalign" "steel-audit" "tgl-kandy")
+          BRANCHES=("demo" "hallam-city-campus" "jobalign" "steel-audit" "tgl-kandy" "ausj" "testing" "steel-mobile" "aaafs" "aaass")
           
           for branch in "${BRANCHES[@]}"; do
             echo "--------------------------------"
