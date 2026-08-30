@@ -59,14 +59,14 @@
             "SANCTUM_STATEFUL_DOMAINS": "jobalign.jbooks.cloud"
         }
     },
-    "jobalign-test": {
+    "testing": {
         "prod": {
-            "APP_URL": "https://jobalign-test.jbooks.cloud/",
+            "APP_URL": "https://testing.jbooks.cloud/",
             "SSO_CLIENT_SECRET": "a8f9c123d4e56789b0a1c2d3e4f56789",
-            "DB_DATABASE": "u487520070_jobalign-test",
-            "DB_USERNAME": "u487520070_jobalign-test",
+            "DB_DATABASE": "u487520070_jb_testing",
+            "DB_USERNAME": "u487520070_jb_testing",
             "DB_PASSWORD": "Grow2025@",
-            "SANCTUM_STATEFUL_DOMAINS": "ausj.jbooks.cloud"
+            "SANCTUM_STATEFUL_DOMAINS": "testing.jbooks.cloud"
         }
     },
     "steel-audit": {

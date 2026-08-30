@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use App\Models\Accounting\ChartOfAcc;
+use App\Models\Accounting\Payment;
 
 use App\Models\Supplier;
 use App\Models\Customer;
