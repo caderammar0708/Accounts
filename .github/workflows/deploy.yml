@@ -4,15 +4,15 @@ on:
   push:
     branches:
       # - demo
-      - ausj
+      # - ausj
       # - aaafs
       # - aaass
-      - testing
+      # - testing
       # - jobalign
       # - hallam-city-campus
       # - steel-audit
       - steel-mobile
-      # - tgl-kandy
+      - tgl-kandy
   workflow_dispatch:
 
 jobs:

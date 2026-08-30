@@ -15,16 +15,22 @@ class CompanySettingsController extends Controller
 {
     private function handleModuleMigrations($module, $enabled, $dropTables = false)
     {
-        $path = 'database/migrations/modules/' . $module;
+        $path = database_path('migrations/modules/' . $module);
         
         if ($enabled) {
-            Artisan::call('migrate', [
+            $exitCode = Artisan::call('migrate', [
                 '--path' => $path,
+                '--realpath' => true,
                 '--force' => true,
             ]);
+            if ($exitCode !== 0) {
+                \Illuminate\Support\Facades\Log::error("Migration failed for $module. Output: " . Artisan::output());
+                throw ValidationException::withMessages(['business_type' => "Migration failed for $module. Check logs."]);
+            }
         } elseif ($dropTables) {
             Artisan::call('migrate:reset', [
                 '--path' => $path,
+                '--realpath' => true,
                 '--force' => true,
             ]);
         }
@@ -318,18 +324,16 @@ public function updateAccounting(Request $request)
 
         if ($type === 'Dealership') {
             $this->handleModuleMigrations('dealership', true);
+            $this->handleModuleMigrations('service_station', true);
             $settings->update([
                 'branches_enabled' => true,
                 'business_type' => 'Dealership',
+                'vehicles_enabled' => true,
+                'job_layout_enabled' => true,
+                'warranty_layout_enabled' => true,
             ]);
             if ($dropTables) {
                 $this->handleModuleMigrations('fuel_station', false, true);
-                $this->handleModuleMigrations('service_station', false, true);
-                $settings->update([
-                    'job_layout_enabled' => false,
-                    'warranty_layout_enabled' => false,
-                    'vehicles_enabled' => false,
-                ]);
             }
         } elseif ($type === 'Fuel Station') {
             $this->handleModuleMigrations('fuel_station', true);
