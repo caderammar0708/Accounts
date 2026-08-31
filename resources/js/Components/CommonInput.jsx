@@ -310,8 +310,9 @@ export default forwardRef(function CommonInput(
 
                     return (
                         <div 
-                            className={`relative flex items-center ${baseInputClasses} ${errorClasses} ${className} ${inputClass} cursor-pointer group`}
+                            className={`relative flex items-center ${baseInputClasses} ${errorClasses} ${className} ${inputClass} ${props.disabled ? 'opacity-60 cursor-not-allowed bg-slate-50' : 'cursor-pointer'} group`}
                             onClick={(e) => {
+                                if (props.disabled) return;
                                 if (e.target === inputRef.current) {
                                     return;
                                 }
@@ -329,7 +330,7 @@ export default forwardRef(function CommonInput(
                             }}
                         >
                             <div 
-                                className="flex-1 truncate select-text cursor-text z-10 flex items-center h-full"
+                                className={`flex-1 truncate select-text z-10 flex items-center h-full ${props.disabled ? 'cursor-not-allowed text-slate-400' : 'cursor-text'}`}
                                 onClick={(e) => {
                                     const sel = window.getSelection();
                                     if (sel && sel.toString().trim().length > 0) {
@@ -338,7 +339,7 @@ export default forwardRef(function CommonInput(
                                 }}
                             >
                                 <span 
-                                    className={`select-text cursor-text ${selectedLabel ? 'text-slate-900' : 'text-slate-400'}`}
+                                    className={`select-text ${props.disabled ? 'cursor-not-allowed text-slate-400' : 'cursor-text'} ${selectedLabel ? 'text-slate-900' : 'text-slate-400'}`}
                                     onMouseDown={(e) => e.stopPropagation()}
                                 >
                                     {selectedLabel || props.placeholder || '\u00A0'}
@@ -355,7 +356,7 @@ export default forwardRef(function CommonInput(
                                 {...props}
                                 value={normalizedValue}
                                 ref={inputRef}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-0 text-xs text-[12px]"
+                                className={`absolute inset-0 w-full h-full opacity-0 z-0 text-xs text-[12px] ${props.disabled ? 'cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
                                 style={{ fontSize: '12px' }}
                                 onChange={handleInputChange}
                             >

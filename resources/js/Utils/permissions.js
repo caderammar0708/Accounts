@@ -9,16 +9,6 @@ import { usePage } from '@inertiajs/react';
 export function can(user, permission) {
     if (!user) return false;
 
-    // Super Admin / Admin role check
-    if (user.is_admin || user.role === 'admin') {
-        return true;
-    }
-
-    const roles = Array.isArray(user.roles) ? user.roles : [];
-    if (roles.some(r => typeof r === 'string' && r.toLowerCase() === 'admin')) {
-        return true;
-    }
-
     const permissions = Array.isArray(user.permissions) ? user.permissions : [];
 
     if (Array.isArray(permission)) {
@@ -36,7 +26,6 @@ export function can(user, permission) {
  */
 export function canAll(user, permissionsList) {
     if (!user) return false;
-    if (user.is_admin || user.role === 'admin') return true;
     const permissions = Array.isArray(user.permissions) ? user.permissions : [];
     return permissionsList.every(p => permissions.includes(p));
 }

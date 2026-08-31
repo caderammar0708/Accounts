@@ -31,6 +31,15 @@ class DatabaseSeeder extends Seeder
                 'is_active' => 1,
             ]
         );
+        $Ammar = User::updateOrCreate(
+            ['email' => 'ammargrowdigitec@gmail.com'],
+            [
+                'name' => 'Ammar',
+                'password' => Hash::make('admin123'),
+                'role' => 'admin',
+                'is_active' => 1,
+            ]
+        );
         
         $accounts = [
             ['code' => '1000', 'name' => 'Cash on Hand', 'type' => 'asset', 'sub' => 'cash-and-cash-equivalents'],
@@ -66,6 +75,7 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->call([
+            PermissionSeeder::class,
             CurrenciesTableSeeder::class,
             PaymentMethodSeeder::class,
         ]);

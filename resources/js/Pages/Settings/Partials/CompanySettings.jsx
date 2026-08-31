@@ -8,9 +8,23 @@ import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
 import DangerButton from '@/Components/DangerButton';
 import Checkbox from '@/Components/Checkbox';
+import { can } from '@/Utils/permissions';
 
 export default function CompanySettings({ settings, currencies = [] }) {
-    const { errors } = usePage().props;
+    const { errors, auth } = usePage().props;
+    const user = auth?.user;
+
+    const canEditProfile = can(user, 'settings.company.profile');
+    const canEditLegal = can(user, 'settings.company.legal');
+    const canEditLogo = can(user, 'settings.company.logo');
+    const canEditAlerts = can(user, 'settings.company.alerts');
+    const canEditAccounting = can(user, 'settings.company.accounting');
+    const canEditCurrency = can(user, 'settings.company.currency');
+    const canChangeBusinessType = can(user, 'settings.layout.business_type');
+    const canChangePosLayout = can(user, 'settings.layout.pos');
+    const canChangeCustomerModal = can(user, 'settings.layout.customer_modal');
+    const canChangeLocations = can(user, 'settings.layout.locations');
+    const canChangeReportsStyle = can(user, 'settings.layout.reports_style');
 
     // 1. Logic for Company Info Text (Edit Mode)
     const [isEditing, setIsEditing] = useState(false);
@@ -200,7 +214,7 @@ const businessTypeConfirmationModalSubmit = () => {
                     accept="image/*"
                 />
 
-                <div onClick={selectFile} className="relative group cursor-pointer">
+                <div onClick={canEditLogo ? selectFile : undefined} className={`relative group ${canEditLogo ? 'cursor-pointer' : 'cursor-default'}`}>
                     <div className="w-20 h-20 bg-gray-100 rounded-lg border border-dashed border-gray-300 flex items-center justify-center overflow-hidden hover:border-green-600 transition-colors">
                         {settings?.logo_url ? (
                             <img
@@ -212,23 +226,27 @@ const businessTypeConfirmationModalSubmit = () => {
                             <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                         )}
 
-                        <div className={`absolute inset-0 bg-black flex items-center justify-center transition-all ${isUploading ? 'bg-opacity-40' : 'bg-opacity-0 group-hover:bg-opacity-10'}`}>
-                            {isUploading ? (
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                                <svg className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                            )}
+                        {canEditLogo && (
+                            <div className={`absolute inset-0 bg-black flex items-center justify-center transition-all ${isUploading ? 'bg-opacity-40' : 'bg-opacity-0 group-hover:bg-opacity-10'}`}>
+                                {isUploading ? (
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                    <svg className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    {canEditLogo && (
+                        <div
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                selectFile();
+                            }}
+                            className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow-md border border-gray-200"
+                        >
+                            <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                         </div>
-                    </div>
-                    <div
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            selectFile();
-                        }}
-                        className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow-md border border-gray-200"
-                    >
-                        <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                    </div>
+                    )}
                 </div>
 
                 {errors.logo && (
@@ -245,7 +263,9 @@ const businessTypeConfirmationModalSubmit = () => {
                                 <h2 className="text-sm font-bold text-gray-800">Company info</h2>
                                 <p className="text-gray-400 text-[10px]">This info may be used for billing purposes.</p>
                             </div>
-                            <CommonButton variant="ghost" size="xs" onClick={() => setIsEditing(true)}>Edit</CommonButton>
+                            {canEditProfile && (
+                                <CommonButton variant="ghost" size="xs" onClick={() => setIsEditing(true)}>Edit</CommonButton>
+                            )}
                         </div>
                         <div className="space-y-3">
                             <div className="grid grid-cols-12 border-b border-gray-100 pb-2">
@@ -327,16 +347,18 @@ const businessTypeConfirmationModalSubmit = () => {
                     <h2 className="text-sm font-bold text-gray-800">Accounting</h2>
                     <p className="text-gray-400 text-[10px]">These settings affect how your books are kept.</p>
                 </div>
-                <CommonButton 
-                    variant="ghost" 
-                    size="xs" 
-                    onClick={() => {
-                        setIsEditingAccounting(true);
-                        setIsLockEnabled(!!settings?.books_lock_date);
-                    }}
-                >
-                    Edit
-                </CommonButton>
+                {canEditAccounting && (
+                    <CommonButton 
+                        variant="ghost" 
+                        size="xs" 
+                        onClick={() => {
+                            setIsEditingAccounting(true);
+                            setIsLockEnabled(!!settings?.books_lock_date);
+                        }}
+                    >
+                        Edit
+                    </CommonButton>
+                )}
             </div>
             <div className="space-y-3">
                 <div className="grid grid-cols-12 border-b border-gray-100 pb-2">
@@ -527,7 +549,9 @@ const businessTypeConfirmationModalSubmit = () => {
                                 <h2 className="text-sm font-bold text-gray-800">Currency Settings</h2>
                                 <p className="text-gray-400 text-[10px]">Manage your default currency and enable multi-currency support.</p>
                             </div>
-                            <CommonButton variant="ghost" size="xs" onClick={() => setIsEditingCurrency(true)}>Edit</CommonButton>
+                            {canEditCurrency && (
+                                <CommonButton variant="ghost" size="xs" onClick={() => setIsEditingCurrency(true)}>Edit</CommonButton>
+                            )}
                         </div>
                         <div className="space-y-3">
                             <div className="grid grid-cols-12 border-b border-gray-100 pb-2">
@@ -588,7 +612,9 @@ const businessTypeConfirmationModalSubmit = () => {
                                 <h2 className="text-sm font-bold text-gray-800">Legal info</h2>
                                 <p className="text-gray-400 text-[10px]">This is the info your business uses for tax purposes.</p>
                             </div>
-                            <CommonButton variant="ghost" size="xs" onClick={() => setIsEditingLegal(true)}>Edit</CommonButton>
+                            {canEditLegal && (
+                                <CommonButton variant="ghost" size="xs" onClick={() => setIsEditingLegal(true)}>Edit</CommonButton>
+                            )}
                         </div>
                         <div className="space-y-3">
                             <div className="grid grid-cols-12 border-b border-gray-100 pb-2">
@@ -657,7 +683,9 @@ const businessTypeConfirmationModalSubmit = () => {
                     <div className="p-6">
                         <div className="flex justify-between items-center mb-3">
                             <h2 className="text-sm font-bold text-gray-800">Alerts & Notifications</h2>
-                            <CommonButton variant="ghost" size="xs" onClick={() => setIsEditingAlerts(true)}>Edit</CommonButton>
+                            {canEditAlerts && (
+                                <CommonButton variant="ghost" size="xs" onClick={() => setIsEditingAlerts(true)}>Edit</CommonButton>
+                            )}
                         </div>
                         <div className="space-y-3">
                             <div className="grid grid-cols-12 border-b border-gray-100 pb-2">
@@ -733,7 +761,8 @@ const businessTypeConfirmationModalSubmit = () => {
                                 <CommonInput
                                     type="select"
                                     value={settings?.business_type || 'Normal'}
-                                    onChange={handleBusinessTypeChange}
+                                    onChange={canChangeBusinessType ? handleBusinessTypeChange : undefined}
+                                    disabled={!canChangeBusinessType}
                                     options={[
                                         { label: 'Normal', value: 'Normal' },
                                         { label: 'Fuel Station', value: 'Fuel Station' },
@@ -757,12 +786,14 @@ const businessTypeConfirmationModalSubmit = () => {
                                 <h3 className="text-xs font-bold text-gray-800">POS Layout</h3>
                                 <p className="text-gray-400 text-[10px]">If enabled, only POS Billing will be shown in the sidebar and navbar.</p>
                             </div>
-                            <label className="relative inline-flex items-center cursor-pointer scale-90">
+                            <label className={`relative inline-flex items-center ${canChangePosLayout ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'} scale-90`}>
                                 <input
                                     type="checkbox"
                                     className="sr-only peer"
+                                    disabled={!canChangePosLayout}
                                     checked={settings?.pos_layout_enabled || false}
                                     onChange={(e) => {
+                                        if (!canChangePosLayout) return;
                                         router.post(route('layout.update'), {
                                             pos_layout_enabled: e.target.checked
                                         }, { preserveScroll: true });
@@ -780,14 +811,40 @@ const businessTypeConfirmationModalSubmit = () => {
                                 <h3 className="text-xs font-bold text-gray-800">Customer Modal Mode</h3>
                                 <p className="text-gray-400 text-[10px]">If disabled, Customer opens as a modal instead of a full page.</p>
                             </div>
-                            <label className="relative inline-flex items-center cursor-pointer scale-90">
+                            <label className={`relative inline-flex items-center ${canChangeCustomerModal ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'} scale-90`}>
                                 <input
                                     type="checkbox"
                                     className="sr-only peer"
+                                    disabled={!canChangeCustomerModal}
                                     checked={settings?.customer_layout_modal || false}
                                     onChange={(e) => {
+                                        if (!canChangeCustomerModal) return;
                                         router.post(route('layout.customer.update'), {
                                             customer_layout_modal: e.target.checked
+                                        }, { preserveScroll: true });
+                                    }}
+                                />
+                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3 pt-3">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h3 className="text-xs font-bold text-gray-800">Locations</h3>
+                                <p className="text-gray-400 text-[10px]">If enabled, Locations will be shown in the sidebar and settings.</p>
+                            </div>
+                            <label className={`relative inline-flex items-center ${canChangeLocations ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'} scale-90`}>
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    disabled={!canChangeLocations}
+                                    checked={settings?.branches_enabled ?? false}
+                                    onChange={(e) => {
+                                        if (!canChangeLocations) return;
+                                        router.post(route('layout.branches.update'), {
+                                            branches_enabled: e.target.checked
                                         }, { preserveScroll: true });
                                     }}
                                 />
@@ -802,12 +859,14 @@ const businessTypeConfirmationModalSubmit = () => {
                                 <h3 className="text-xs font-bold text-gray-800">Reports & Quick Action Style</h3>
                                 <p className="text-gray-400 text-[10px]">If enabled, Reports Center and Quick Action Menu items are shown as buttons; otherwise shown as links.</p>
                             </div>
-                            <label className="relative inline-flex items-center cursor-pointer scale-90">
+                            <label className={`relative inline-flex items-center ${canChangeReportsStyle ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'} scale-90`}>
                                 <input
                                     type="checkbox"
                                     className="sr-only peer"
+                                    disabled={!canChangeReportsStyle}
                                     checked={settings?.reports_display_as_buttons ?? true}
                                     onChange={(e) => {
+                                        if (!canChangeReportsStyle) return;
                                         router.post(route('layout.reports.update'), {
                                             reports_display_as_buttons: e.target.checked
                                         }, { preserveScroll: true });
@@ -817,26 +876,6 @@ const businessTypeConfirmationModalSubmit = () => {
                             </label>
                         </div>
                     </div>
-
-                    {settings?.business_type === 'Normal' && (
-                        <div className="space-y-3 pt-3">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <h3 className="text-xs font-bold text-gray-800">Locations</h3>
-                                    <p className="text-gray-400 text-[10px]">If enabled, Locations will be shown in the sidebar and settings.</p>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer scale-90">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only peer"
-                                        checked={settings?.branches_enabled ?? false}
-                                        onChange={(e) => handleToggleFeature('branches', settings?.branches_enabled, e)}
-                                    />
-                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
-                                </label>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
 

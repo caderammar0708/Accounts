@@ -86,6 +86,8 @@ class CompanySettingsController extends Controller
      */
     public function update(Request $request)
     {
+        abort_if(!$request->user()->can('settings.company.profile') && !$request->user()->can('settings.company'), 403, 'Unauthorized action.');
+
         $validated = $request->validate([
             'company_name' => 'required|string|max:255',
             'company_email' => 'nullable|email',
@@ -109,29 +111,34 @@ class CompanySettingsController extends Controller
     /**
      * Update Legal & Tax Info
      */
-public function updateLegal(Request $request)
-{
-    $validated = $request->validate([
-        'legal_name' => 'nullable|string|max:255',
-        'tax_id' => 'nullable|string|max:100',
-        'business_type' => 'nullable|string',
-        'legal_address' => 'nullable|string',
-    ]);
+    public function updateLegal(Request $request)
+    {
+        abort_if(!$request->user()->can('settings.company.legal') && !$request->user()->can('settings.company'), 403, 'Unauthorized action.');
 
-    $company = $this->getActiveCompany();
-    if ($company) {
-        $company->update($validated);
-    } else {
-        \App\Models\Company::create($validated);
+        $validated = $request->validate([
+            'legal_name' => 'nullable|string|max:255',
+            'tax_id' => 'nullable|string|max:100',
+            'business_type' => 'nullable|string',
+            'legal_address' => 'nullable|string',
+        ]);
+
+        $company = $this->getActiveCompany();
+        if ($company) {
+            $company->update($validated);
+        } else {
+            \App\Models\Company::create($validated);
+        }
+
+        return back()->with('message', 'Legal information updated successfully.');
     }
 
-    return back()->with('message', 'Legal information updated successfully.');
-}
     /**
      * Update Alerts Settings
      */
     public function updateAlerts(Request $request)
     {
+        abort_if(!$request->user()->can('settings.company.alerts') && !$request->user()->can('settings.company'), 403, 'Unauthorized action.');
+
         $validated = $request->validate([
             'low_stock_to_emails' => 'nullable|string',
             'low_stock_cc_emails' => 'nullable|string',
@@ -143,10 +150,10 @@ public function updateLegal(Request $request)
         return back()->with('message', 'Alerts settings updated successfully.');
     }
 
-// Update Accounting Settings
-
-public function updateAccounting(Request $request)
-{
+    // Update Accounting Settings
+    public function updateAccounting(Request $request)
+    {
+        abort_if(!$request->user()->can('settings.company.accounting') && !$request->user()->can('settings.company'), 403, 'Unauthorized action.');
     $validated = $request->validate([
         'acct_method' => 'required|string|max:50',
         'fin_year_start' => 'required|string|max:20',
@@ -202,6 +209,8 @@ public function updateAccounting(Request $request)
      */
     public function updateCurrency(Request $request)
     {
+        abort_if(!$request->user()->can('settings.company.currency') && !$request->user()->can('settings.company'), 403, 'Unauthorized action.');
+
         $validated = $request->validate([
             'multi_currency_enabled' => 'required|boolean',
             'home_currency_id' => 'nullable|exists:currencies,id',
@@ -222,6 +231,8 @@ public function updateAccounting(Request $request)
      */
     public function updateLayout(Request $request)
     {
+        abort_if(!$request->user()->can('settings.layout.pos') && !$request->user()->can('settings.company.layout') && !$request->user()->can('settings.company'), 403, 'Unauthorized action.');
+
         $validated = $request->validate([
             'pos_layout_enabled' => 'required|boolean',
         ]);
@@ -258,6 +269,8 @@ public function updateAccounting(Request $request)
 
     public function updateCustomerLayout(Request $request)
     {
+        abort_if(!$request->user()->can('settings.layout.customer_modal') && !$request->user()->can('settings.company.layout') && !$request->user()->can('settings.company'), 403, 'Unauthorized action.');
+
         $validated = $request->validate([
             'customer_layout_modal' => 'required|boolean',
         ]);
@@ -268,6 +281,8 @@ public function updateAccounting(Request $request)
 
     public function updateReportsDisplayStyle(Request $request)
     {
+        abort_if(!$request->user()->can('settings.layout.reports_style') && !$request->user()->can('settings.company.layout') && !$request->user()->can('settings.company'), 403, 'Unauthorized action.');
+
         $validated = $request->validate([
             'reports_display_as_buttons' => 'required|boolean',
         ]);
@@ -291,6 +306,8 @@ public function updateAccounting(Request $request)
 
     public function updateBranchesEnabled(Request $request)
     {
+        abort_if(!$request->user()->can('settings.layout.locations') && !$request->user()->can('settings.company.layout') && !$request->user()->can('settings.company'), 403, 'Unauthorized action.');
+
         $validated = $request->validate([
             'branches_enabled' => 'required|boolean',
             'drop_tables' => 'nullable|boolean',
@@ -303,6 +320,8 @@ public function updateAccounting(Request $request)
 
     public function updateBusinessType(Request $request)
     {
+        abort_if(!$request->user()->can('settings.layout.business_type') && !$request->user()->can('settings.company.layout') && !$request->user()->can('settings.company'), 403, 'Unauthorized action.');
+
         $validated = $request->validate([
             'business_type' => 'required|string|in:Normal,Fuel Station,Service Station,Dealership',
             'drop_tables' => 'nullable|boolean',
@@ -361,6 +380,9 @@ public function updateAccounting(Request $request)
                 $this->handleModuleMigrations('fuel_station', false, true);
             }
         } else { // Normal
+            $settings->update([
+                'branches_enabled' => false,
+            ]);
             if ($dropTables) {
                 $this->handleModuleMigrations('dealership', false, true);
                 $this->handleModuleMigrations('fuel_station', false, true);
@@ -381,6 +403,8 @@ public function updateAccounting(Request $request)
      */
     public function uploadLogo(Request $request)
     {
+        abort_if(!$request->user()->can('settings.company.logo') && !$request->user()->can('settings.company'), 403, 'Unauthorized action.');
+
         $request->validate([
             'logo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);

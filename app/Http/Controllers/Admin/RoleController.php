@@ -134,13 +134,26 @@ class RoleController extends Controller
                 ['name' => 'locations.edit', 'label' => 'Edit Locations'],
                 ['name' => 'locations.delete', 'label' => 'Delete Locations'],
             ],
+            'Company Settings' => [
+                ['name' => 'settings.company', 'label' => 'View & Access Company Settings'],
+                ['name' => 'settings.company.profile', 'label' => 'Manage Company Profile & Contact Info'],
+                ['name' => 'settings.company.legal', 'label' => 'Manage Legal Information & Tax ID'],
+                ['name' => 'settings.company.logo', 'label' => 'Upload & Update Company Logo'],
+                ['name' => 'settings.company.alerts', 'label' => 'Manage Low Stock Email Alerts'],
+                ['name' => 'settings.company.accounting', 'label' => 'Manage Accounting & Books Lock Date'],
+                ['name' => 'settings.company.currency', 'label' => 'Manage Currency & Multi-Currency'],
+                ['name' => 'settings.layout.business_type', 'label' => 'Configure Business Type'],
+                ['name' => 'settings.layout.pos', 'label' => 'Configure POS Layout Toggle'],
+                ['name' => 'settings.layout.customer_modal', 'label' => 'Configure Customer Modal Mode Toggle'],
+                ['name' => 'settings.layout.locations', 'label' => 'Configure Locations Layout Toggle'],
+                ['name' => 'settings.layout.reports_style', 'label' => 'Configure Reports & Quick Action Style Toggle'],
+                ['name' => 'settings.print', 'label' => 'Manage Print Settings & Templates'],
+            ],
             'Import Tools' => [
                 ['name' => 'import.view', 'label' => 'Access Import Tools'],
                 ['name' => 'import.execute', 'label' => 'Execute Data Imports'],
             ],
-            'Settings & Administration' => [
-                ['name' => 'settings.company', 'label' => 'Manage Company Settings'],
-                ['name' => 'settings.print', 'label' => 'Manage Print Settings'],
+            'User & Role Administration' => [
                 ['name' => 'users.view', 'label' => 'View Users'],
                 ['name' => 'users.create', 'label' => 'Create Users'],
                 ['name' => 'users.edit', 'label' => 'Edit Users'],
@@ -195,7 +208,7 @@ class RoleController extends Controller
         $request->validate([
             'name' => 'required|string|max:100|unique:roles,name',
             'permissions' => 'nullable|array',
-            'permissions.*' => 'string|exists:permissions,name',
+            'permissions.*' => 'string',
         ]);
 
         $role = Role::create([
@@ -204,6 +217,9 @@ class RoleController extends Controller
         ]);
 
         if (!empty($request->permissions)) {
+            foreach ($request->permissions as $permName) {
+                Permission::findOrCreate($permName, 'web');
+            }
             $role->syncPermissions($request->permissions);
         }
 
@@ -234,7 +250,7 @@ class RoleController extends Controller
         $request->validate([
             'name' => 'required|string|max:100|unique:roles,name,' . $role->id,
             'permissions' => 'nullable|array',
-            'permissions.*' => 'string|exists:permissions,name',
+            'permissions.*' => 'string',
         ]);
 
         $role->update([
@@ -242,6 +258,9 @@ class RoleController extends Controller
         ]);
 
         if (isset($request->permissions)) {
+            foreach ($request->permissions as $permName) {
+                Permission::findOrCreate($permName, 'web');
+            }
             $role->syncPermissions($request->permissions);
         }
 
@@ -255,8 +274,12 @@ class RoleController extends Controller
     {
         $request->validate([
             'permissions' => 'required|array',
-            'permissions.*' => 'string|exists:permissions,name',
+            'permissions.*' => 'string',
         ]);
+
+        foreach ($request->permissions as $permName) {
+            Permission::findOrCreate($permName, 'web');
+        }
 
         $role->syncPermissions($request->permissions);
 

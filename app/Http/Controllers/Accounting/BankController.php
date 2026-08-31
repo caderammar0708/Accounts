@@ -21,7 +21,18 @@ class BankController extends Controller
         $closed = BankImportLine::with(['import', 'assignedAccount'])->where('status', 'closed')->orderBy('transaction_date', 'desc')->get();
         
         $accounts = ChartOfAcc::where('is_active', true)->get(['id', 'name', 'account_type', 'account_code']);
-        $bankAccounts = ChartOfAcc::where('is_active', true)->where('sub_type', 'bank')->get(['id', 'name', 'account_type', 'account_code']);
+        $bankAccounts = ChartOfAcc::where('is_active', true)
+            ->where(function ($q) {
+                $q->where('sub_type', 'bank')
+                  ->orWhere('account_type', 'Bank')
+                  ->orWhere('account_type', 'like', '%bank%')
+                  ->orWhere('name', 'like', '%bank%');
+            })
+            ->get(['id', 'name', 'account_type', 'account_code']);
+
+        if ($bankAccounts->isEmpty()) {
+            $bankAccounts = $accounts;
+        }
 
         return Inertia::render('Transaction/Bank/Index', [
             'uncategorized' => $uncategorized,
@@ -53,7 +64,7 @@ class BankController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:csv,txt|max:2048',
+            'file' => 'required|mimes:csv,txt|max:5120',
             'bank_account_id' => 'required|exists:chart_of_accs,id',
         ]);
 
@@ -73,7 +84,7 @@ class BankController extends Controller
 
         DB::beginTransaction();
         try {
-            $company = auth()->user()->company;
+            $company = auth()->user()->company ?? auth()->user()->currentCompany();
             $import = BankImport::create([
                 'company_id' => $company ? $company->id : null,
                 'bank_account_id' => $request->bank_account_id,

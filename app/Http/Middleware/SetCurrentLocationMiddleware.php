@@ -17,7 +17,7 @@ class SetCurrentLocationMiddleware
 
         if ($user) {
             $companySetting = \App\Models\CompanySetting::current();
-            if ($companySetting && $companySetting->branches_enabled) {
+            if ($companySetting && ($companySetting->branches_enabled || $companySetting->business_type === 'Dealership')) {
                 if ($user->location_id) {
                     // Locked user: strictly set session location to assigned location
                     session(['current_location_id' => $user->location_id]);

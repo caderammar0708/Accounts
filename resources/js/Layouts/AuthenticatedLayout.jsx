@@ -59,7 +59,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
     const isDealership = businessType === 'Dealership';
     const isNormal = businessType === 'Normal';
 
-    const showLocationsAndStockShifts = isDealership || (isNormal && Boolean(page.props.auth.location));
+    const showLocationsAndStockShifts = isDealership || Boolean(page.props.auth.location);
 
     const navigation = [
         { name: 'Dashboard', href: route('dashboard'), icon: 'dashboard', permission: 'dashboard.view' },
