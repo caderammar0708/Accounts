@@ -6,13 +6,13 @@ on:
       - demo
       - ausj
       - aaafs
-      # - aaass
-      # - testing
-      # - jobalign
-      # - hallam-city-campus
-      # - steel-audit
+      - aaass
+      - testing
+      - jobalign
+      - hallam-city-campus
+      - steel-audit
       - steel-mobile
-      # - tgl-kandy
+      - tgl-kandy
   workflow_dispatch:
 
 jobs:
