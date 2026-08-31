@@ -44,6 +44,7 @@ class CleanupMigrationsTableSeeder extends Seeder
 
         // Manually insert specific migrations that were renamed to prevent them from re-running and failing
         $manualMigrations = [
+            '2026_03_31_000000_create_currencies_table',
             '2026_04_01_075556_create_permission_tables',
             '2026_04_01_153443_create_personal_access_tokens_table',
         ];
