@@ -10,6 +10,7 @@ export default function ItemCategorySidePanel({
     onClose,
     category = null,
     parents = [],
+    locations = [],
     onSuccess = null
 }) {
     const isEdit = !!category;
@@ -17,6 +18,7 @@ export default function ItemCategorySidePanel({
     const { data, setData, post, patch, processing, errors, reset, clearErrors } = useForm({
         name: '',
         parent_id: '',
+        location_id: null,
     });
 
     const handleClose = () => {
@@ -31,6 +33,7 @@ export default function ItemCategorySidePanel({
                 setData({
                     name: category.name || '',
                     parent_id: category.parent_id || '',
+                    location_id: category.location_id || null,
                 });
             } else {
                 reset();
@@ -70,7 +73,19 @@ export default function ItemCategorySidePanel({
                     required
                 />
 
-
+                <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-0.5">Location</label>
+                    <SearchableSelect
+                        options={[
+                            { value: null, label: 'Common (All Locations)' },
+                            ...locations.map(l => ({ value: l.id, label: l.name }))
+                        ]}
+                        value={data.location_id}
+                        onChange={val => setData('location_id', val)}
+                        placeholder="Select Location"
+                    />
+                    {errors.location_id && <p className="text-xs text-red-500 mt-1">{errors.location_id}</p>}
+                </div>
 
                 <div className="pt-6 flex items-center justify-end gap-3 border-t border-slate-100">
                     <CommonButton variant="ghost" onClick={handleClose} type="button">Cancel</CommonButton>

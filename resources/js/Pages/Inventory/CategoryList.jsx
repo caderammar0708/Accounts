@@ -4,7 +4,7 @@ import { useState } from 'react';
 import CommonButton from '@/Components/CommonButton';
 import ItemCategorySidePanel from '@/Components/ItemCategorySidePanel';
 
-export default function CategoryList({ categories }) {
+export default function CategoryList({ categories, locations }) {
     const { delete: destroy } = useForm();
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
@@ -111,6 +111,7 @@ export default function CategoryList({ categories }) {
                 onClose={() => setIsPanelOpen(false)}
                 category={selectedCategory}
                 parents={categories}
+                locations={locations}
             />
         </AuthenticatedLayout>
     );

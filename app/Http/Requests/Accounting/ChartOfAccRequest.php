@@ -64,6 +64,7 @@ class ChartOfAccRequest extends FormRequest
             'currency' => 'nullable|string|max:10',
             'parent_id' => 'nullable|uuid|exists:chart_of_accs,id',
             'is_locked' => 'nullable|boolean',
+            'location_id' => 'nullable|exists:locations,id',
         ];
     }
 }
