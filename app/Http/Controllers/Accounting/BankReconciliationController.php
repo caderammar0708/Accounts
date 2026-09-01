@@ -118,7 +118,7 @@ class BankReconciliationController extends Controller
         $lines = JournalEntryLine::with('journalEntry')
             ->where('chart_of_acc_id', $reconciliation->account_id)
             ->whereHas('journalEntry', function($q) use ($reconciliation) {
-                $q->where('date', '<=', $reconciliation->end_date);
+                $q->whereBetween('date', [$reconciliation->start_date, $reconciliation->end_date]);
             })
             ->where(function($q) use ($reconciliation) {
                 $q->where('is_cleared', false)

@@ -181,6 +181,10 @@ class ItemController extends Controller
         }
         $item->save();
 
+        if ($request->has('quantity_on_hand')) {
+            $this->syncOpeningBalance($item, $item->quantity_on_hand, $request->input('as_of_date'));
+        }
+
         if ($validated['type'] === 'bundle') {
             $bundleItems = $request->input('bundle_items', []);
             foreach ($bundleItems as $bi) {
@@ -282,6 +286,10 @@ class ItemController extends Controller
                 $item->quantity_on_hand = str_replace(',', '', $request->input('quantity_on_hand'));
             }
             $item->save();
+            
+            if ($request->has('quantity_on_hand')) {
+                $this->syncOpeningBalance($item, $item->quantity_on_hand, $request->input('as_of_date'));
+            }
 
             if ($validated['type'] === 'bundle') {
                 $item->bundleComponents()->delete();
@@ -376,5 +384,129 @@ class ItemController extends Controller
         $item->delete();
         $redirectUrl = $request->query('redirect_to', route('items.index'));
         return redirect()->to($redirectUrl)->with('success', 'Item deleted successfully');
+    }
+
+    private function syncOpeningBalance(Item $item, $quantity, $asOfDate)
+    {
+        if ($item->type !== 'inventory') {
+            return;
+        }
+
+        $qty = (float) $quantity;
+        if ($qty <= 0) {
+            $existing = \App\Models\Inventory\InventoryQuantityAdjustment::where('adjustment_reason', 'Opening Balance')
+                ->whereHas('items', function ($q) use ($item) {
+                    $q->where('item_id', $item->id);
+                })->first();
+                
+            if ($existing) {
+                \App\Models\Accounting\JournalEntry::where('transactionable_type', \App\Models\Inventory\InventoryQuantityAdjustment::class)
+                    ->where('transactionable_id', $existing->id)
+                    ->delete();
+                $existing->delete();
+            }
+            return;
+        }
+
+        $openingBalanceEquity = \App\Models\Accounting\ChartOfAcc::getOrCreateDefault('opening-balance-equity');
+        
+        $adjustment = \App\Models\Inventory\InventoryQuantityAdjustment::where('adjustment_reason', 'Opening Balance')
+            ->whereHas('items', function ($q) use ($item) {
+                $q->where('item_id', $item->id);
+            })->first();
+
+        $cost = (float) $item->purchase_price;
+        $totalAmount = $qty * $cost;
+        $adjDate = $asOfDate ? \Carbon\Carbon::parse($asOfDate) : \Carbon\Carbon::today();
+
+        if (!$adjustment) {
+            $adjustment = \App\Models\Inventory\InventoryQuantityAdjustment::create([
+                'adjustment_date' => $adjDate->format('Y-m-d'),
+                'reference_number' => 'OB-' . ($item->sku ?: substr($item->id, 0, 8)),
+                'adjustment_reason' => 'Opening Balance',
+                'inventory_adjustment_account_id' => $openingBalanceEquity->id,
+                'memo' => 'Opening balance for ' . $item->name,
+            ]);
+
+            $adjustment->items()->create([
+                'item_id' => $item->id,
+                'qty_on_hand' => 0,
+                'new_qty' => $qty,
+                'change_in_qty' => $qty,
+            ]);
+            
+            $this->createOpeningBalanceJournal($adjustment, $item, $totalAmount, $openingBalanceEquity->id);
+        } else {
+            $adjustment->update([
+                'adjustment_date' => $adjDate->format('Y-m-d'),
+            ]);
+            
+            $adjItem = $adjustment->items()->where('item_id', $item->id)->first();
+            if ($adjItem) {
+                $adjItem->update([
+                    'new_qty' => $qty,
+                    'change_in_qty' => $qty,
+                ]);
+            }
+
+            $je = \App\Models\Accounting\JournalEntry::where('transactionable_type', \App\Models\Inventory\InventoryQuantityAdjustment::class)
+                ->where('transactionable_id', $adjustment->id)->first();
+                
+            if ($je) {
+                $je->update([
+                    'date' => $adjDate->format('Y-m-d'),
+                    'total_amount' => $totalAmount,
+                ]);
+                
+                $je->lines()->delete(); 
+                $this->createJournalLines($je, $item, $totalAmount, $openingBalanceEquity->id);
+            } else {
+                $this->createOpeningBalanceJournal($adjustment, $item, $totalAmount, $openingBalanceEquity->id);
+            }
+        }
+    }
+    
+    private function createOpeningBalanceJournal($adjustment, $item, $totalAmount, $equityAccountId)
+    {
+        if ($totalAmount <= 0) return;
+        
+        $je = \App\Models\Accounting\JournalEntry::create([
+            'date' => $adjustment->adjustment_date,
+            'reference' => $adjustment->reference_number,
+            'description' => $adjustment->memo,
+            'transaction_type' => 'inventory_adjustment',
+            'total_amount' => $totalAmount,
+            'status' => 'posted',
+            'created_by' => \Illuminate\Support\Facades\Auth::id(),
+            'transactionable_id' => $adjustment->id,
+            'transactionable_type' => \App\Models\Inventory\InventoryQuantityAdjustment::class,
+        ]);
+        
+        $this->createJournalLines($je, $item, $totalAmount, $equityAccountId);
+    }
+    
+    private function createJournalLines($je, $item, $totalAmount, $equityAccountId)
+    {
+        if ($totalAmount <= 0) return;
+        
+        $inventoryAccountId = $item->inventory_account_id ?? 
+            (\App\Models\Accounting\ChartOfAcc::where('sub_type', 'inventory')->first()?->id ?? 
+             \App\Models\Accounting\ChartOfAcc::getOrCreateDefault('inventory')->id);
+             
+        $memo = 'Opening balance for ' . $item->name;
+        
+        $je->lines()->create([
+            'chart_of_acc_id' => $inventoryAccountId,
+            'debit' => $totalAmount,
+            'credit' => 0,
+            'memo' => $memo,
+        ]);
+        
+        $je->lines()->create([
+            'chart_of_acc_id' => $equityAccountId,
+            'debit' => 0,
+            'credit' => $totalAmount,
+            'memo' => $memo,
+        ]);
     }
 }

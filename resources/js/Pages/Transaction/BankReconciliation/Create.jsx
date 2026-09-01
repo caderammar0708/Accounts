@@ -4,6 +4,7 @@ import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import SearchableSelect from '@/Components/SearchableSelect';
 import CommonInput from '@/Components/CommonInput';
 import axios from 'axios';
+import CommonButton from '@/Components/CommonButton';
 
 export default function Create({ accounts }) {
     const { auth } = usePage().props;
@@ -134,13 +135,14 @@ export default function Create({ accounts }) {
                                 </div>
 
                                 <div className="flex justify-start pt-6 mt-4 border-t border-gray-100">
-                                    <button
+                                    <CommonButton
                                         type="submit"
                                         disabled={processing}
-                                        className="bg-primary hover:bg-primary-600 text-white font-bold py-2 px-6 rounded transition-colors"
+                                        processing={processing}
+                                        variant="primary"
                                     >
                                         Start Reconciling
-                                    </button>
+                                    </CommonButton>
                                 </div>
                             </form>
                         </div>

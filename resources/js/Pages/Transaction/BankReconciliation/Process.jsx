@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage } from '@inertiajs/react';
+import CommonButton from '@/Components/CommonButton';
 
 export default function Process({ reconciliation, lines }) {
     const { auth } = usePage().props;
@@ -51,17 +52,13 @@ export default function Process({ reconciliation, lines }) {
                         <p className="text-sm text-gray-500 mt-1">Period: Up to {reconciliation.end_date}</p>
                     </div>
                     {reconciliation.status === 'draft' && (
-                        <button
+                        <CommonButton
                             onClick={handleFinish}
                             disabled={!isBalanced}
-                            className={`font-bold py-2 px-6 rounded transition-colors ${
-                                isBalanced 
-                                ? 'bg-primary hover:bg-primary-600 text-white shadow-sm' 
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            }`}
+                            variant={isBalanced ? 'primary' : 'secondary'}
                         >
                             Finish Now
-                        </button>
+                        </CommonButton>
                     )}
                     {reconciliation.status === 'completed' && (
                         <span className="bg-green-100 text-green-800 px-4 py-2 rounded-full font-bold">

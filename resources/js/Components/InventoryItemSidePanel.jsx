@@ -432,7 +432,7 @@ export default function InventoryItemSidePanel({
 
         if (isEdit) {
             let changed = false;
-            
+
             const showSales = data.type === 'inventory' || data.type === 'bundle' || ((data.type === 'service' || data.type === 'non-inventory') && data.is_sold);
             const showPurchases = data.type === 'inventory' || ((data.type === 'service' || data.type === 'non-inventory') && data.is_purchased);
             const showInventory = data.type === 'inventory';
@@ -498,7 +498,7 @@ export default function InventoryItemSidePanel({
                                 placeholder="e.g. Professional Consulting"
                             />
 
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <div className="flex justify-between items-center mb-1">
                                         <label className="font-bold text-slate-600 ml-0.5 text-xs">SKU</label>
@@ -528,19 +528,20 @@ export default function InventoryItemSidePanel({
                                     />
                                     {errors.item_category_id && <p className="mt-1 text-xs text-red-600">{errors.item_category_id}</p>}
                                 </div>
-                                <div>
-                                    <label className="block text-[11px] font-bold text-slate-600 ml-0.5 text-xs mb-1">Location</label>
-                                    <SearchableSelect
-                                        options={[
-                                            { value: null, label: 'Common (All Locations)' },
-                                            ...localLocations.map(l => ({ value: l.id, label: l.name }))
-                                        ]}
-                                        value={data.location_id}
-                                        onChange={val => setData('location_id', val)}
-                                        placeholder="Select location"
-                                    />
-                                    {errors.location_id && <p className="mt-1 text-xs text-red-600">{errors.location_id}</p>}
-                                </div>
+                            </div>
+                            
+                            <div className="mt-4">
+                                <label className="block text-[11px] font-bold text-slate-600 ml-0.5 text-xs mb-1">Location</label>
+                                <SearchableSelect
+                                    options={[
+                                        { value: null, label: 'Common (All Locations)' },
+                                        ...localLocations.map(l => ({ value: l.id, label: l.name }))
+                                    ]}
+                                    value={data.location_id}
+                                    onChange={val => setData('location_id', val)}
+                                    placeholder="Select location"
+                                />
+                                {errors.location_id && <p className="mt-1 text-xs text-red-600">{errors.location_id}</p>}
                             </div>
                         </div>
 
