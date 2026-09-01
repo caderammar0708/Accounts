@@ -363,7 +363,7 @@ class ItemController extends Controller
         ]);
     }
 
-    public function destroy(Item $item)
+    public function destroy(Request $request, Item $item)
     {
         $item->delete();
         $redirectUrl = $request->query('redirect_to', route('items.index'));
