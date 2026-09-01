@@ -5,7 +5,7 @@ on:
     branches:
       # - demo
       # - ausj
-      - aaafs
+      # - aaafs
       # - aaass
       # - testing
       - jobalign
