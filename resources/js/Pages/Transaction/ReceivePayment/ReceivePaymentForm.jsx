@@ -613,19 +613,7 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                     isEdit={!!payment?.id || !!savedEntryId}
                 />
 
-                {/* ROW 3: Memo */}
-                <div className="w-[500px] mt-8 pt-4 border-t border-slate-100">
-                    <CommonInput
-                        type="textarea"
-                        label="Memo"
-                        placeholder="Add a memo..."
-                        value={data.memo}
-                        onChange={(e) => { setData("memo", e.target.value); setIsDirty(true); }}
-                        size="sm"
-                        className="h-24"
-                        error={errors.memo}
-                    />
-                </div>
+
 
                 {/* Outstanding Transactions Section */}
                 {data.customer && (
