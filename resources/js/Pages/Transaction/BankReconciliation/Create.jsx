@@ -63,9 +63,9 @@ export default function Create({ accounts }) {
 
             <div className="py-6">
                 <div className="max-w-3xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div className="bg-white overflow-visible shadow-sm sm:rounded-lg">
                         <div className="p-6 bg-white border-b border-gray-200">
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            <form onSubmit={handleSubmit} className="space-y-8">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Bank Account <span className="text-red-500">*</span>
@@ -133,7 +133,7 @@ export default function Create({ accounts }) {
                                     />
                                 </div>
 
-                                <div className="flex justify-end pt-4 border-t border-gray-100">
+                                <div className="flex justify-start pt-6 mt-4 border-t border-gray-100">
                                     <button
                                         type="submit"
                                         disabled={processing}

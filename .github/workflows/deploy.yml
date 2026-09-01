@@ -11,7 +11,7 @@ on:
       - jobalign
       # - hallam-city-campus
       # - steel-audit
-      # - steel-mobile
+      - steel-mobile
       # - tgl-kandy
   workflow_dispatch:
 

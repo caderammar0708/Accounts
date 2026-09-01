@@ -175,7 +175,11 @@ class ItemController extends Controller
             $validated['is_purchased'] = $request->boolean('is_purchased', false);
         }
 
-        $item = Item::create($validated);
+        $item = new Item($validated);
+        if ($request->has('quantity_on_hand')) {
+            $item->quantity_on_hand = str_replace(',', '', $request->input('quantity_on_hand'));
+        }
+        $item->save();
 
         if ($validated['type'] === 'bundle') {
             $bundleItems = $request->input('bundle_items', []);
@@ -273,7 +277,11 @@ class ItemController extends Controller
         $oldInventoryAccount = $item->inventory_account_id;
 
         DB::transaction(function () use ($item, $validated, $request, $oldIncomeAccount, $oldExpenseAccount, $oldInventoryAccount) {
-            $item->update($validated);
+            $item->fill($validated);
+            if ($request->has('quantity_on_hand')) {
+                $item->quantity_on_hand = str_replace(',', '', $request->input('quantity_on_hand'));
+            }
+            $item->save();
 
             if ($validated['type'] === 'bundle') {
                 $item->bundleComponents()->delete();
