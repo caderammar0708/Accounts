@@ -162,15 +162,18 @@ public function customerBalanceData($endDate = null)
         $lines = JournalEntryLine::query()
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
-            ->where('journal_entries.payee_type', Customer::class)
+            ->where(function ($q) {
+                $q->where('journal_entries.payee_type', Customer::class)
+                  ->orWhere('journal_entry_lines.payee_type', Customer::class);
+            })
             ->where('chart_of_accs.sub_type', 'accounts-receivable')
             ->where('journal_entries.date', '<=', $endDate)
             ->select(
-                'journal_entries.payee_id',
+                DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id) as payee_id'),
                 DB::raw('SUM(journal_entry_lines.debit) as total_debit'),
                 DB::raw('SUM(journal_entry_lines.credit) as total_credit')
             )
-            ->groupBy('journal_entries.payee_id')
+            ->groupBy(DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id)'))
             ->get()
             ->keyBy('payee_id');
 
@@ -202,15 +205,18 @@ public function customerBalanceData($endDate = null)
         $lines = JournalEntryLine::query()
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
-            ->where('journal_entries.payee_type', Supplier::class)
+            ->where(function ($q) {
+                $q->where('journal_entries.payee_type', Supplier::class)
+                  ->orWhere('journal_entry_lines.payee_type', Supplier::class);
+            })
             ->where('chart_of_accs.sub_type', 'accounts-payable')
             ->where('journal_entries.date', '<=', $endDate)
             ->select(
-                'journal_entries.payee_id',
+                DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id) as payee_id'),
                 DB::raw('SUM(journal_entry_lines.debit) as total_debit'),
                 DB::raw('SUM(journal_entry_lines.credit) as total_credit')
             )
-            ->groupBy('journal_entries.payee_id')
+            ->groupBy(DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id)'))
             ->get()
             ->keyBy('payee_id');
 

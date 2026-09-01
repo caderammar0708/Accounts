@@ -394,13 +394,13 @@ class ItemController extends Controller
 
         $qty = (float) $quantity;
         if ($qty <= 0) {
-            $existing = \App\Models\Inventory\InventoryQuantityAdjustment::where('adjustment_reason', 'Opening Balance')
+            $existing = \App\Models\Accounting\InventoryQuantityAdjustment::where('adjustment_reason', 'Opening Balance')
                 ->whereHas('items', function ($q) use ($item) {
                     $q->where('item_id', $item->id);
                 })->first();
                 
             if ($existing) {
-                \App\Models\Accounting\JournalEntry::where('transactionable_type', \App\Models\Inventory\InventoryQuantityAdjustment::class)
+                \App\Models\Accounting\JournalEntry::where('transactionable_type', \App\Models\Accounting\InventoryQuantityAdjustment::class)
                     ->where('transactionable_id', $existing->id)
                     ->delete();
                 $existing->delete();
@@ -410,7 +410,7 @@ class ItemController extends Controller
 
         $openingBalanceEquity = \App\Models\Accounting\ChartOfAcc::getOrCreateDefault('opening-balance-equity');
         
-        $adjustment = \App\Models\Inventory\InventoryQuantityAdjustment::where('adjustment_reason', 'Opening Balance')
+        $adjustment = \App\Models\Accounting\InventoryQuantityAdjustment::where('adjustment_reason', 'Opening Balance')
             ->whereHas('items', function ($q) use ($item) {
                 $q->where('item_id', $item->id);
             })->first();
@@ -420,7 +420,7 @@ class ItemController extends Controller
         $adjDate = $asOfDate ? \Carbon\Carbon::parse($asOfDate) : \Carbon\Carbon::today();
 
         if (!$adjustment) {
-            $adjustment = \App\Models\Inventory\InventoryQuantityAdjustment::create([
+            $adjustment = \App\Models\Accounting\InventoryQuantityAdjustment::create([
                 'adjustment_date' => $adjDate->format('Y-m-d'),
                 'reference_number' => 'OB-' . ($item->sku ?: substr($item->id, 0, 8)),
                 'adjustment_reason' => 'Opening Balance',
@@ -449,7 +449,7 @@ class ItemController extends Controller
                 ]);
             }
 
-            $je = \App\Models\Accounting\JournalEntry::where('transactionable_type', \App\Models\Inventory\InventoryQuantityAdjustment::class)
+            $je = \App\Models\Accounting\JournalEntry::where('transactionable_type', \App\Models\Accounting\InventoryQuantityAdjustment::class)
                 ->where('transactionable_id', $adjustment->id)->first();
                 
             if ($je) {
@@ -479,7 +479,7 @@ class ItemController extends Controller
             'status' => 'posted',
             'created_by' => \Illuminate\Support\Facades\Auth::id(),
             'transactionable_id' => $adjustment->id,
-            'transactionable_type' => \App\Models\Inventory\InventoryQuantityAdjustment::class,
+            'transactionable_type' => \App\Models\Accounting\InventoryQuantityAdjustment::class,
         ]);
         
         $this->createJournalLines($je, $item, $totalAmount, $equityAccountId);
