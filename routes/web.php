@@ -183,7 +183,9 @@ Route::middleware('auth')->group(function () {
         ->as('bank-reconciliation.')->prefix('bank-reconciliation')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/create', 'create')->name('create');
+        Route::get('/opening-balance', 'getOpeningBalance')->name('opening-balance');
         Route::post('/', 'store')->name('store');
+        Route::delete('/{reconciliation}', 'destroy')->name('destroy');
         Route::get('/{reconciliation}/process', 'process')->name('process');
         Route::post('/{reconciliation}/lines/{line}/toggle', 'toggleClear')->name('toggleClear');
         Route::post('/{reconciliation}/finish', 'finish')->name('finish');

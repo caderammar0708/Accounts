@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import SearchableSelect from '@/Components/SearchableSelect';
 import CommonInput from '@/Components/CommonInput';
+import axios from 'axios';
 
 export default function Create({ accounts }) {
     const { auth } = usePage().props;
@@ -10,6 +11,7 @@ export default function Create({ accounts }) {
 
     const { data, setData, post, processing, errors, transform } = useForm({
         account_id: '',
+        start_date: '',
         end_date: '',
         opening_balance: '0.00',
         ending_balance: '0.00',
@@ -19,6 +21,16 @@ export default function Create({ accounts }) {
         value: a.id,
         label: `${a.account_code ? a.account_code + ' - ' : ''}${a.name}`
     }));
+
+    useEffect(() => {
+        if (data.account_id && data.start_date) {
+            axios.get(route('bank-reconciliation.opening-balance'), {
+                params: { account_id: data.account_id, start_date: data.start_date }
+            }).then(res => {
+                setData('opening_balance', res.data.opening_balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            }).catch(err => console.error(err));
+        }
+    }, [data.account_id, data.start_date]);
 
     const handleBalanceChange = (field, e) => {
         const raw = e.target.value;
@@ -49,24 +61,11 @@ export default function Create({ accounts }) {
         >
             <Head title="Start Bank Reconciliation" />
 
-            <div className="py-12">
+            <div className="py-6">
                 <div className="max-w-3xl mx-auto sm:px-6 lg:px-8">
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div className="p-6 bg-white border-b border-gray-200">
-                            {/* Back to List inside top-left of the card */}
-                            <div className="mb-6 pb-3 border-b border-gray-100 flex items-center justify-between">
-                                <Link
-                                    href={route('bank-reconciliation.index')}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded transition-colors"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                    </svg>
-                                    Back to List
-                                </Link>
-                            </div>
-
-                            <form onSubmit={handleSubmit} className="space-y-6">
+                            <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Bank Account <span className="text-red-500">*</span>
@@ -80,7 +79,17 @@ export default function Create({ accounts }) {
                                     {errors.account_id && <p className="mt-1 text-sm text-red-600">{errors.account_id}</p>}
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <CommonInput
+                                        label="Statement Start Date"
+                                        type="date"
+                                        name="start_date"
+                                        value={data.start_date}
+                                        onChange={(e) => setData('start_date', e.target.value)}
+                                        error={errors.start_date}
+                                        required
+                                    />
+                                    
                                     <CommonInput
                                         label="Statement End Date"
                                         type="date"
@@ -92,7 +101,7 @@ export default function Create({ accounts }) {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <CommonInput
                                         label="Opening Balance"
                                         type="text"
