@@ -211,14 +211,14 @@ export default function Index({ auth, dipReadings, tanks, filters }) {
                             )}
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Notes (Optional)</label>
-                                <textarea
-                                    className="w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                    rows="3"
+                                <CommonInput
+                                    type="textarea"
+                                    label="Notes (Optional)"
+                                    rows={2}
                                     value={data.notes}
                                     onChange={(e) => setData('notes', e.target.value)}
-                                ></textarea>
-                                {errors.notes && <div className="text-red-500 text-xs mt-1">{errors.notes}</div>}
+                                    error={errors.notes}
+                                />
                             </div>
                         </div>
 

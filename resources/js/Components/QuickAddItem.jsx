@@ -198,16 +198,15 @@ export default function QuickAddItem({ isOpen, onClose, onSuccess }) {
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Description</label>
-                        <textarea
-                            value={data.description}
-                            onChange={e => setData('description', e.target.value)}
-                            rows="3"
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm leading-snug focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all resize-none outline-none"
-                            placeholder="Brief description for credit_invoices..."
-                        />
-                    </div>
+                    <CommonInput
+                        type="textarea"
+                        label="Description"
+                        value={data.description}
+                        onChange={e => setData('description', e.target.value)}
+                        rows={2}
+                        placeholder="Brief description for credit_invoices..."
+                        error={errors.description}
+                    />
                 </div>
 
                 <div className="mt-auto pt-6 flex items-center justify-end gap-3 border-t border-slate-100">

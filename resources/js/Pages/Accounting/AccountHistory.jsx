@@ -455,11 +455,12 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                                             </td>
                                             {/* Description */}
                                             <td className="px-2 py-2 align-top">
-                                                <textarea
+                                                <CommonInput
+                                                    type="textarea"
                                                     value={editForm.memo}
                                                     onChange={e => setEditForm(prev => ({ ...prev, memo: e.target.value }))}
-                                                    rows="2"
-                                                    className="w-full px-2 py-1 border border-slate-300 rounded text-[11px] leading-snug focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white resize-none"
+                                                    rows={2}
+                                                    className="w-full text-[11px] leading-snug"
                                                 />
                                             </td>
                                             {/* Amount 1 (Debit) */}

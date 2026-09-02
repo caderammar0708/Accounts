@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useForm } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import CommonInput from "@/Components/CommonInput";
 
 export default function SupplierForm() {
     const { data, setData, post, processing, errors } = useForm({
@@ -115,13 +116,13 @@ export default function SupplierForm() {
                             </div>
 
                             <div className="col-span-2">
-                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Address</label>
-                                <textarea
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all font-sans text-sm leading-snug"
-                                    rows="3"
+                                <CommonInput
+                                    type="textarea"
+                                    label="Address"
+                                    rows={2}
                                     value={data.address}
                                     onChange={(e) => setData("address", e.target.value)}
-                                ></textarea>
+                                />
                             </div>
 
                             <div className="col-span-1">

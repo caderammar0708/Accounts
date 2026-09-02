@@ -4,6 +4,7 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import CommonButton from '@/Components/CommonButton';
 import Modal from '@/Components/Modal';
 import SearchableSelect from '@/Components/SearchableSelect';
+import CommonInput from '@/Components/CommonInput';
 
 export default function Show({ auth, warranty, resolvedInvoices = [] }) {
     const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
@@ -164,12 +165,12 @@ export default function Show({ auth, warranty, resolvedInvoices = [] }) {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700">Issue Description</label>
-                        <textarea
+                        <CommonInput
+                            type="textarea"
+                            label="Issue Description"
                             value={claimData.issue_description}
                             onChange={(e) => setClaimData('issue_description', e.target.value)}
-                            rows="3"
-                            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm leading-snug"
+                            rows={2}
                             required
                         />
                     </div>
@@ -213,12 +214,12 @@ export default function Show({ auth, warranty, resolvedInvoices = [] }) {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700">Resolution</label>
-                        <textarea
+                        <CommonInput
+                            type="textarea"
+                            label="Resolution"
                             value={resolutionData.resolution}
                             onChange={(e) => setResolutionData('resolution', e.target.value)}
-                            rows="3"
-                            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm leading-snug"
+                            rows={2}
                         />
                     </div>
 

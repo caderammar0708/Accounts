@@ -247,14 +247,14 @@ export default function SupplierIndex({ suppliers = [] }) {
                         <section>
                             <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-50 pb-2">Address</h3>
                             <div className="mt-4">
-                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Address</label>
-                                <textarea
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all font-sans text-sm leading-snug"
-                                    rows="3"
+                                <CommonInput
+                                    type="textarea"
+                                    label="Address"
+                                    rows={2}
                                     value={data.address}
                                     onChange={(e) => setData("address", e.target.value)}
-                                ></textarea>
-                                {errors.address && <p className="text-red-500 text-xs mt-1 font-bold">{errors.address}</p>}
+                                    error={errors.address}
+                                />
                             </div>
                         </section>
 

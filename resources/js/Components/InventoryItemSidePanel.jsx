@@ -724,17 +724,15 @@ export default function InventoryItemSidePanel({
                         </div>
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="font-bold text-slate-600 ml-0.5 text-xs">Sales Description</label>
-                        <textarea
-                            value={data.description}
-                            onChange={e => setData('description', e.target.value)}
-                            rows="2"
-                            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded-sm text-xs leading-snug focus:border-green-500 focus:ring-2 focus:ring-green-500/20 shadow-sm transition-all resize-none"
-                            placeholder="Description for credit_invoices..."
-                        />
-                        {errors.description && <p className="mt-1 text-xs text-red-600">{errors.description}</p>}
-                    </div>
+                    <CommonInput
+                        type="textarea"
+                        label="Sales Description"
+                        value={data.description}
+                        onChange={e => setData('description', e.target.value)}
+                        rows={2}
+                        placeholder="Description for credit_invoices..."
+                        error={errors.description}
+                    />
                 </FormSection>
 
                 {/* 4. Purchasing Information Section */}
@@ -779,17 +777,15 @@ export default function InventoryItemSidePanel({
 
 
 
-                    <div className="space-y-1">
-                        <label className="font-bold text-slate-600 ml-0.5 text-xs">Purchase Description</label>
-                        <textarea
-                            value={data.purchase_description}
-                            onChange={e => setData('purchase_description', e.target.value)}
-                            rows="2"
-                            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded-sm text-xs leading-snug focus:border-green-500 focus:ring-2 focus:ring-green-500/20 shadow-sm transition-all resize-none"
-                            placeholder="Description for purchase orders/bills..."
-                        />
-                        {errors.purchase_description && <p className="mt-1 text-xs text-red-600">{errors.purchase_description}</p>}
-                    </div>
+                    <CommonInput
+                        type="textarea"
+                        label="Purchase Description"
+                        value={data.purchase_description}
+                        onChange={e => setData('purchase_description', e.target.value)}
+                        rows={2}
+                        placeholder="Description for purchase orders/bills..."
+                        error={errors.purchase_description}
+                    />
                 </FormSection>
 
                 {/* 5. Bundle Items Section */}

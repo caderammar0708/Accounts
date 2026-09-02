@@ -1,6 +1,7 @@
 import React from 'react';
 import { usePage } from '@inertiajs/react';
 import AttachmentUpload from '@/Components/AttachmentUpload';
+import CommonInput from '@/Components/CommonInput';
 
 export default function BottomSection({ form, setForm }) {
     const { auth } = usePage().props;
@@ -8,16 +9,14 @@ export default function BottomSection({ form, setForm }) {
 
     return (
         <div className={`grid ${isAttachmentsEnabled ? 'grid-cols-2' : 'grid-cols-1 max-w-xl'} gap-10 pt-4`}>
-            <div>
-                <label className="text-xs font-medium text-slate-600">Memo</label>
-                <textarea
-                    className="w-full border border-slate-300 rounded-lg text-sm p-2.5 mt-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                    rows={3}
-                    value={form.memo || ''}
-                    onChange={(e) => setForm({ ...form, memo: e.target.value })}
-                    placeholder="Enter memo..."
-                />
-            </div>
+            <CommonInput
+                type="textarea"
+                label="Memo"
+                rows={2}
+                value={form.memo || ''}
+                onChange={(e) => setForm({ ...form, memo: e.target.value })}
+                placeholder="Enter memo..."
+            />
 
             {isAttachmentsEnabled && (
                 <div>
