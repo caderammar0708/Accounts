@@ -2,8 +2,9 @@ import { useForm, Head, Link } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import CommonInput from '@/Components/CommonInput';
 import CommonButton from '@/Components/CommonButton';
+import SearchableSelect from '@/Components/SearchableSelect';
 
-export default function CustomerForm({ auth, customer, nextCustomerNumber }) {
+export default function CustomerForm({ auth, customer, nextCustomerNumber, locations = [] }) {
     const isEdit = !!customer;
     const displayNumber = isEdit ? customer.customer_number : nextCustomerNumber;
 
@@ -21,6 +22,7 @@ export default function CustomerForm({ auth, customer, nextCustomerNumber }) {
         nic: customer?.nic || '',
         passport: customer?.passport || '',
         address: customer?.address || '',
+        location_id: customer?.location_id || null,
     };
 
     if (!isEdit) {
@@ -178,6 +180,24 @@ export default function CustomerForm({ auth, customer, nextCustomerNumber }) {
                                     />
                                 </div>
                             </section>
+
+                            {Boolean(auth?.location) && (
+                                <section className="p-6">
+                                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-6 border-b border-slate-100 pb-2">Location</h2>
+                                    <div className="max-w-md">
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-0.5 mb-1 block">Assigned Location</label>
+                                        <SearchableSelect
+                                            options={[
+                                                { value: null, label: 'Global (All Locations)' },
+                                                ...locations.map(l => ({ value: l.id, label: l.name }))
+                                            ]}
+                                            value={data.location_id}
+                                            onChange={val => setData('location_id', val)}
+                                            placeholder="Select location"
+                                        />
+                                    </div>
+                                </section>
+                            )}
 
                         </div>
                         <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">

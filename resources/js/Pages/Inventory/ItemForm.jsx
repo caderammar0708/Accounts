@@ -398,7 +398,7 @@ export default function ItemForm({
                                         />
                                         {errors.item_category_id && <p className="mt-1 text-xs text-red-600">{errors.item_category_id}</p>}
                                     </div>
-                                    {Boolean(auth?.company?.branches_enabled) && (
+                                    {Boolean(auth?.location) && (
                                         <div>
                                             <label className="block text-[11px] font-bold text-slate-600 ml-0.5 text-xs mb-1">Location</label>
                                             <SearchableSelect

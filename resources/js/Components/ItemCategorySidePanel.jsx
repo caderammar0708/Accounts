@@ -74,7 +74,7 @@ export default function ItemCategorySidePanel({
                     required
                 />
 
-                {Boolean(auth?.company?.branches_enabled) && (
+                {Boolean(auth?.location) && (
                     <div className="space-y-1">
                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-0.5">Location</label>
                         <SearchableSelect

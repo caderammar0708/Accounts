@@ -1,13 +1,15 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { useForm, Head } from '@inertiajs/react';
+import { useForm, Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import SlideOver from '@/Components/SlideOver';
 import CommonInput from '@/Components/CommonInput';
 import CommonButton from '@/Components/CommonButton';
 import AddressForm from '@/Components/AddressForm';
 import ContactsTabs from '@/Components/ContactsTabs';
+import SearchableSelect from '@/Components/SearchableSelect';
 
-export default function SupplierIndex({ suppliers = [] }) {
+export default function SupplierIndex({ suppliers = [], locations = [] }) {
+    const { auth } = usePage().props;
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
@@ -21,7 +23,8 @@ export default function SupplierIndex({ suppliers = [] }) {
         email: '',
         phone_number: '',
         address: '',
-        opening_balance: ''
+        opening_balance: '',
+        location_id: null
     });
 
     const handleOpenCreate = () => {
@@ -258,6 +261,26 @@ export default function SupplierIndex({ suppliers = [] }) {
                             </div>
                         </section>
 
+
+
+
+                        {Boolean(auth?.location) && (
+                            <section>
+                                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-50 pb-2">Location</h3>
+                                <div className="mt-4">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-0.5 mb-1 block">Assigned Location</label>
+                                    <SearchableSelect
+                                        options={[
+                                            { value: null, label: 'Global (All Locations)' },
+                                            ...locations.map(l => ({ value: l.id, label: l.name }))
+                                        ]}
+                                        value={data.location_id}
+                                        onChange={val => setData('location_id', val)}
+                                        placeholder="Select location"
+                                    />
+                                </div>
+                            </section>
+                        )}
 
                     </div>
 

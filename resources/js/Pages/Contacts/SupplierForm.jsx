@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useForm } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import CommonInput from "@/Components/CommonInput";
+import SearchableSelect from '@/Components/SearchableSelect';
 
-export default function SupplierForm() {
+export default function SupplierForm({ auth, locations = [] }) {
     const { data, setData, post, processing, errors } = useForm({
         display_name: "",
         company_name: "",
@@ -16,6 +17,7 @@ export default function SupplierForm() {
         address: "",
         opening_balance: "",
         opening_balance_date: "",
+        location_id: null,
     });
 
     const submit = (e) => {
@@ -149,7 +151,25 @@ export default function SupplierForm() {
                             </div>
                         </div>
 
-                        <div className="pt-6 border-t border-slate-100 flex justify-end gap-4">
+                        {Boolean(auth?.location) && (
+                            <div className="mt-8 border-t border-slate-100 pt-6">
+                                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4">Location</h2>
+                                <div className="max-w-md">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-0.5 mb-1 block">Assigned Location</label>
+                                    <SearchableSelect
+                                        options={[
+                                            { value: null, label: 'Global (All Locations)' },
+                                            ...locations.map(l => ({ value: l.id, label: l.name }))
+                                        ]}
+                                        value={data.location_id}
+                                        onChange={val => setData('location_id', val)}
+                                        placeholder="Select location"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="pt-6 border-t border-slate-100 flex justify-end gap-4 mt-8">
                             <button
                                 type="button"
                                 onClick={() => window.history.back()}
