@@ -18,7 +18,7 @@ Route::prefix('v1')->group(function () {
      Route::post('/logout', [\App\Http\Controllers\Api\MobileAuthController::class, 'logout'])->middleware('auth:sanctum');
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum,web'])->group(function () {
     Route::get('/exchange-rate', [\App\Http\Controllers\Api\ExchangeRateController::class, 'getRate'])->name('api.exchange-rate');
     Route::get('/payees', [LookupController::class, 'payees'])->name('api.payees');
     Route::get('/currencies', [LookupController::class, 'currencies'])->name('api.currencies');
