@@ -218,6 +218,7 @@ class InventoryReportController extends Controller
         if (!is_array($itemIds)) {
             $itemIds = [];
         }
+        $itemIds = array_values(array_filter($itemIds, fn($id) => !empty($id)));
 
         $itemsQuery = \App\Models\Item::query()
             ->where('track_inventory', true)

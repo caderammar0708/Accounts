@@ -36,6 +36,14 @@ class CompanySetting extends Model
         'pos_layout_enabled',
         'customer_layout_modal',
         'reports_display_as_buttons',
+        'attachments_enabled',
     ];
 
+    protected $casts = [
+        'branches_enabled' => 'boolean',
+        'pos_layout_enabled' => 'boolean',
+        'customer_layout_modal' => 'boolean',
+        'reports_display_as_buttons' => 'boolean',
+        'attachments_enabled' => 'boolean',
+    ];
 }

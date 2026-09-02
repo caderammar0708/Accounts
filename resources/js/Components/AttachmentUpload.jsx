@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { usePage } from '@inertiajs/react';
 import axios from 'axios';
 import { showToast } from '@/Components/ToastNotification';
 
@@ -9,8 +10,15 @@ export default function AttachmentUpload({
     maxFileSizeMB = 10,
     allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt'],
     compact = false,
-    label = 'Attachments'
+    label = 'Attachments',
+    forceShow = false
 }) {
+    const { auth } = usePage().props;
+    const isAttachmentsEnabled = forceShow || (auth?.attachments_enabled ?? true);
+
+    if (!isAttachmentsEnabled) {
+        return null;
+    }
     const fileInputRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
     const [uploadingFiles, setUploadingFiles] = useState([]); // [{ id, name, size, progress, error }]

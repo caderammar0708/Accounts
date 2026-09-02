@@ -613,20 +613,6 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                     isEdit={!!payment?.id || !!savedEntryId}
                 />
 
-                {/* ROW 3: Memo */}
-                <div className="w-[500px] mt-8 pt-4 border-t border-slate-100">
-                    <CommonInput
-                        type="textarea"
-                        label="Memo"
-                        placeholder="Add a memo..."
-                        value={data.memo}
-                        onChange={(e) => { setData("memo", e.target.value); setIsDirty(true); }}
-                        size="sm"
-                        className="h-24"
-                        error={errors.memo}
-                    />
-                </div>
-
                 {/* Outstanding Transactions Section */}
                 {data.customer && (
                     <div className="pt-6 border-t border-slate-100 space-y-4 animate-in fade-in duration-300">
@@ -780,7 +766,7 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                 )}
             </div>
 
-            <div className="grid grid-cols-2 gap-10 mt-8 pb-12">
+            <div className={`grid ${auth?.attachments_enabled !== false ? 'grid-cols-2' : 'grid-cols-1'} gap-10 mt-8 pb-12`}>
                 <div className="w-[400px]">
                     <CommonInput
                         type="textarea"
@@ -793,19 +779,21 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                         error={errors.memo}
                     />
                 </div>
-                <div className="w-[400px]">
-                    <AttachmentUpload
-                        attachments={data.attachments}
-                        onChange={(newAttachments, newIds) => {
-                            setData(prev => ({
-                                ...prev,
-                                attachments: newAttachments,
-                                attachment_ids: newIds
-                            }));
-                            setIsDirty(true);
-                        }}
-                    />
-                </div>
+                {auth?.attachments_enabled !== false && (
+                    <div className="w-[400px]">
+                        <AttachmentUpload
+                            attachments={data.attachments}
+                            onChange={(newAttachments, newIds) => {
+                                setData(prev => ({
+                                    ...prev,
+                                    attachments: newAttachments,
+                                    attachment_ids: newIds
+                                }));
+                                setIsDirty(true);
+                            }}
+                        />
+                    </div>
+                )}
             </div>
 
             <QuickAddPayee

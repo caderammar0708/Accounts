@@ -150,6 +150,7 @@ class PermissionSeeder extends Seeder
                 'settings.layout.customer_modal' => 'Configure Customer Modal Mode Toggle',
                 'settings.layout.locations' => 'Configure Locations Layout Toggle',
                 'settings.layout.reports_style' => 'Configure Reports & Quick Action Style Toggle',
+                'settings.layout.attachments' => 'Configure Attachments Toggle',
                 'settings.print' => 'Manage Print Settings & Templates',
             ],
             'Import Tools' => [

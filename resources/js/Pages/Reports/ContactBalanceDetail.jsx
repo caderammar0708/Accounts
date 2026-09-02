@@ -8,6 +8,18 @@ import ReportDateFilter from '@/Components/ReportDateFilter';
 export default function ContactBalanceDetail({ contact, contactType, lines = [], filters = {} }) {
     const { auth } = usePage().props;
     const currencyPrefix = auth.company?.home_currency_prefix || auth.company?.home_currency || '';
+    const dateFormat = useDateFormat();
+    const [sortField, setSortField] = useState('date');
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const handleSort = (field) => {
+        if (sortField === field) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
 
     const handleFilterChange = (newFilters) => {
         const routeName = contactType === 'Customer' ? 'reports.customer-detail' : 'reports.supplier-detail';
@@ -24,7 +36,7 @@ export default function ContactBalanceDetail({ contact, contactType, lines = [],
     const transactions = useMemo(() => {
         let currentBalance = parseFloat(contact.opening_balance || 0); // Start with opening balance if available
 
-        return lines.map(line => {
+        const calculated = lines.map(line => {
             const debit = parseFloat(line.debit || 0);
             const credit = parseFloat(line.credit || 0);
 
@@ -42,8 +54,35 @@ export default function ContactBalanceDetail({ contact, contactType, lines = [],
                 amount: amount,
                 running_balance: currentBalance
             };
-        }).reverse();
-    }, [lines, contactType, contact.opening_balance]);
+        });
+
+        return calculated.sort((a, b) => {
+            let comparison = 0;
+            if (sortField === 'date') {
+                comparison = (a.date || '').localeCompare(b.date || '');
+                if (comparison === 0) {
+                    comparison = (a.id || '').localeCompare(b.id || '');
+                }
+            } else if (sortField === 'transaction_type') {
+                const typeA = (a.transaction_type || '').toLowerCase();
+                const typeB = (b.transaction_type || '').toLowerCase();
+                comparison = typeA.localeCompare(typeB);
+                if (comparison === 0) {
+                    comparison = (a.date || '').localeCompare(b.date || '');
+                }
+            } else if (sortField === 'reference') {
+                comparison = (a.reference || '').localeCompare(b.reference || '', undefined, { numeric: true });
+            } else if (sortField === 'due_date') {
+                comparison = (a.due_date || '').localeCompare(b.due_date || '');
+            } else if (sortField === 'amount') {
+                comparison = parseFloat(a.amount || 0) - parseFloat(b.amount || 0);
+            } else if (sortField === 'balance') {
+                comparison = parseFloat(a.running_balance || 0) - parseFloat(b.running_balance || 0);
+            }
+
+            return sortDirection === 'desc' ? -comparison : comparison;
+        });
+    }, [lines, contactType, contact.opening_balance, sortField, sortDirection]);
 
     const filterElements = (
         <ReportDateFilter
@@ -53,6 +92,24 @@ export default function ContactBalanceDetail({ contact, contactType, lines = [],
     );
 
     const displayName = contact.display_name || contact.company_name;
+
+    const SortableHeader = ({ field, label, align = 'left', className = '' }) => {
+        const isActive = sortField === field;
+        return (
+            <th 
+                onClick={() => handleSort(field)}
+                className={`py-2.5 px-3 font-semibold text-gray-900 cursor-pointer select-none hover:bg-slate-100 hover:text-primary transition-colors group ${className} ${align === 'right' ? 'text-right' : 'text-left'}`}
+                title={`Click to sort by ${label} (${isActive && sortDirection === 'asc' ? 'descending' : 'ascending'})`}
+            >
+                <div className={`inline-flex items-center gap-1.5 ${align === 'right' ? 'justify-end w-full' : ''}`}>
+                    <span>{label}</span>
+                    <span className={`inline-flex text-[11px] leading-none ${isActive ? 'text-primary font-bold' : 'text-slate-300 opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                        {isActive ? (sortDirection === 'asc' ? '▲' : '▼') : '▲'}
+                    </span>
+                </div>
+            </th>
+        );
+    };
 
     return (
         <ReportLayout
@@ -79,12 +136,12 @@ export default function ContactBalanceDetail({ contact, contactType, lines = [],
                 <table className="w-full text-[13px] text-left border-collapse table-fixed">
                     <thead>
                         <tr className="border-y-2 border-gray-300">
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-[15%]">Date</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-[20%]">Transaction type</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-[15%]">Number</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-[15%]">Due date</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[15%]">Amount</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[20%]">Balance</th>
+                            <SortableHeader field="date" label="Date" className="w-[15%]" />
+                            <SortableHeader field="transaction_type" label="Transaction type" className="w-[20%]" />
+                            <SortableHeader field="reference" label="Number" className="w-[15%]" />
+                            <SortableHeader field="due_date" label="Due date" className="w-[15%]" />
+                            <SortableHeader field="amount" label="Amount" align="right" className="w-[15%]" />
+                            <SortableHeader field="balance" label="Balance" align="right" className="w-[20%]" />
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">

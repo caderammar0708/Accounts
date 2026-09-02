@@ -99,6 +99,7 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
                 'pos_layout_enabled'      => (bool) $companySetting?->pos_layout_enabled,
                 'reports_display_as_buttons' => (bool) ($companySetting?->reports_display_as_buttons ?? true),
+                'attachments_enabled'     => (bool) ($companySetting?->attachments_enabled ?? true),
             ],
             'appName' => config('app.name'),
             'flash' => [

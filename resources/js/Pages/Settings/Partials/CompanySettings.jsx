@@ -25,6 +25,7 @@ export default function CompanySettings({ settings, currencies = [] }) {
     const canChangeCustomerModal = can(user, 'settings.layout.customer_modal');
     const canChangeLocations = can(user, 'settings.layout.locations');
     const canChangeReportsStyle = can(user, 'settings.layout.reports_style');
+    const canChangeAttachments = can(user, 'settings.layout.attachments') || can(user, 'settings.company.layout') || can(user, 'settings.company') || user?.is_admin;
 
     // 1. Logic for Company Info Text (Edit Mode)
     const [isEditing, setIsEditing] = useState(false);
@@ -869,6 +870,30 @@ const businessTypeConfirmationModalSubmit = () => {
                                         if (!canChangeReportsStyle) return;
                                         router.post(route('layout.reports.update'), {
                                             reports_display_as_buttons: e.target.checked
+                                        }, { preserveScroll: true });
+                                    }}
+                                />
+                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3 pt-3">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h3 className="text-xs font-bold text-gray-800">Attachments</h3>
+                                <p className="text-gray-400 text-[10px]">If enabled, attachments upload will be shown in all transaction forms.</p>
+                            </div>
+                            <label className={`relative inline-flex items-center ${canChangeAttachments ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'} scale-90`}>
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    disabled={!canChangeAttachments}
+                                    checked={settings?.attachments_enabled ?? true}
+                                    onChange={(e) => {
+                                        if (!canChangeAttachments) return;
+                                        router.post(route('layout.attachments.update'), {
+                                            attachments_enabled: e.target.checked
                                         }, { preserveScroll: true });
                                     }}
                                 />

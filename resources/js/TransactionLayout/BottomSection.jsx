@@ -1,9 +1,13 @@
 import React from 'react';
+import { usePage } from '@inertiajs/react';
 import AttachmentUpload from '@/Components/AttachmentUpload';
 
 export default function BottomSection({ form, setForm }) {
+    const { auth } = usePage().props;
+    const isAttachmentsEnabled = auth?.attachments_enabled !== false;
+
     return (
-        <div className="grid grid-cols-2 gap-10 pt-4">
+        <div className={`grid ${isAttachmentsEnabled ? 'grid-cols-2' : 'grid-cols-1 max-w-xl'} gap-10 pt-4`}>
             <div>
                 <label className="text-xs font-medium text-slate-600">Memo</label>
                 <textarea
@@ -15,18 +19,20 @@ export default function BottomSection({ form, setForm }) {
                 />
             </div>
 
-            <div>
-                <AttachmentUpload
-                    attachments={form.attachments || []}
-                    onChange={(newAttachments, newIds) => {
-                        setForm({
-                            ...form,
-                            attachments: newAttachments,
-                            attachment_ids: newIds
-                        });
-                    }}
-                />
-            </div>
+            {isAttachmentsEnabled && (
+                <div>
+                    <AttachmentUpload
+                        attachments={form.attachments || []}
+                        onChange={(newAttachments, newIds) => {
+                            setForm({
+                                ...form,
+                                attachments: newAttachments,
+                                attachment_ids: newIds
+                            });
+                        }}
+                    />
+                </div>
+            )}
         </div>
     );
 }

@@ -8,6 +8,17 @@ import ReportDateFilter from '@/Components/ReportDateFilter';
 
 export default function InventoryDetail({ item, lines, filters, auth }) {
     const dateFormat = useDateFormat();
+    const [sortField, setSortField] = useState('date');
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const handleSort = (field) => {
+        if (sortField === field) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
 
     let runningQty = parseFloat(item.opening_qty || 0);
     const linesWithTotal = lines.map(line => {
@@ -16,6 +27,33 @@ export default function InventoryDetail({ item, lines, filters, auth }) {
             ...line,
             running_qty: runningQty
         };
+    });
+
+    const sortedLines = [...linesWithTotal].sort((a, b) => {
+        let comparison = 0;
+        if (sortField === 'date') {
+            comparison = (a.date || '').localeCompare(b.date || '');
+            if (comparison === 0) {
+                comparison = (a.id || '').localeCompare(b.id || '');
+            }
+        } else if (sortField === 'transaction_type') {
+            const typeA = (a.transaction_type || '').toLowerCase();
+            const typeB = (b.transaction_type || '').toLowerCase();
+            comparison = typeA.localeCompare(typeB);
+            if (comparison === 0) {
+                comparison = (a.date || '').localeCompare(b.date || '');
+            }
+        } else if (sortField === 'reference') {
+            comparison = (a.reference || '').localeCompare(b.reference || '', undefined, { numeric: true });
+        } else if (sortField === 'memo') {
+            comparison = (a.memo || '').localeCompare(b.memo || '');
+        } else if (sortField === 'qty_change') {
+            comparison = parseFloat(a.qty_change || 0) - parseFloat(b.qty_change || 0);
+        } else if (sortField === 'running_qty') {
+            comparison = parseFloat(a.running_qty || 0) - parseFloat(b.running_qty || 0);
+        }
+
+        return sortDirection === 'desc' ? -comparison : comparison;
     });
 
     const handleFilterChange = (newFilters) => {
@@ -40,7 +78,7 @@ export default function InventoryDetail({ item, lines, filters, auth }) {
         // Headers
         csvContent += `"Date","Transaction Type","Ref #","Memo","Qty Change","Total Qty"\n`;
 
-        linesWithTotal.forEach(line => {
+        sortedLines.forEach(line => {
             csvContent += `"${formatDate(line.date, dateFormat)}","${line.transaction_type}","${line.reference || ''}","${line.memo || ''}",${line.qty_change},${line.running_qty}\n`;
         });
 
@@ -63,6 +101,24 @@ export default function InventoryDetail({ item, lines, filters, auth }) {
             />
         </div>
     );
+
+    const SortableHeader = ({ field, label, align = 'left', className = '' }) => {
+        const isActive = sortField === field;
+        return (
+            <th 
+                onClick={() => handleSort(field)}
+                className={`py-2.5 px-3 font-semibold text-gray-900 cursor-pointer select-none hover:bg-slate-100 hover:text-primary transition-colors group ${className} ${align === 'right' ? 'text-right' : 'text-left'}`}
+                title={`Click to sort by ${label} (${isActive && sortDirection === 'asc' ? 'descending' : 'ascending'})`}
+            >
+                <div className={`inline-flex items-center gap-1.5 ${align === 'right' ? 'justify-end w-full' : ''}`}>
+                    <span>{label}</span>
+                    <span className={`inline-flex text-[11px] leading-none ${isActive ? 'text-primary font-bold' : 'text-slate-300 opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                        {isActive ? (sortDirection === 'asc' ? '▲' : '▼') : '▲'}
+                    </span>
+                </div>
+            </th>
+        );
+    };
 
     return (
         <ReportLayout
@@ -91,12 +147,12 @@ export default function InventoryDetail({ item, lines, filters, auth }) {
                 <table className="w-full text-[13px] text-left border-collapse">
                     <thead>
                         <tr className="border-y-2 border-gray-300">
-                            <th className="py-2.5 px-3 font-semibold text-gray-900">Date</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900">Transaction Type</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900">Ref #</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-1/3">Memo / Description</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right">Qty Change</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right">Total Qty</th>
+                            <SortableHeader field="date" label="Date" />
+                            <SortableHeader field="transaction_type" label="Transaction Type" />
+                            <SortableHeader field="reference" label="Ref #" />
+                            <SortableHeader field="memo" label="Memo / Description" className="w-1/3" />
+                            <SortableHeader field="qty_change" label="Qty Change" align="right" />
+                            <SortableHeader field="running_qty" label="Total Qty" align="right" />
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">

@@ -85,6 +85,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/reports-display-style', 'updateReportsDisplayStyle')->name('layout.reports.update');
             Route::post('/vehicles-layout', 'updateVehiclesEnabled')->name('layout.vehicles.update');
             Route::post('/branches-layout', 'updateBranchesEnabled')->name('layout.branches.update');
+            Route::post('/attachments-layout', 'updateAttachmentsEnabled')->name('layout.attachments.update');
             Route::post('/business-type-layout', 'updateBusinessType')->name('layout.business_type.update');
             Route::post('/alerts', 'updateAlerts')->name('alerts.update');
             Route::post('/time', 'updateTime')->name('time.settings.update');

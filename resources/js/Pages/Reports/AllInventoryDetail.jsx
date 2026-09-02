@@ -4,6 +4,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useDateFormat, formatDate } from '@/Utils/dateFormat';
 import { getEditRoute } from '@/Utils/routeUtils';
 import ReportDateFilter from '@/Components/ReportDateFilter';
+import ItemMultiSelectFilter from '@/Components/ItemMultiSelectFilter';
 
 export default function AllInventoryDetail({ reportData = [], filters = {}, allInventoryItems = [] }) {
     const { auth } = usePage().props;
@@ -11,6 +12,17 @@ export default function AllInventoryDetail({ reportData = [], filters = {}, allI
     const dateFormat = useDateFormat();
 
     const [collapsedGroups, setCollapsedGroups] = useState(new Set());
+    const [sortField, setSortField] = useState('date');
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const handleSort = (field) => {
+        if (sortField === field) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
 
     const toggleGroup = (id) => {
         setCollapsedGroups(prev => {
@@ -24,8 +36,6 @@ export default function AllInventoryDetail({ reportData = [], filters = {}, allI
         });
     };
 
-
-
     const handleFilterChange = (newFilters) => {
         router.get(route('reports.inventory-detail-all'), {
             start_date: newFilters.start_date,
@@ -38,11 +48,12 @@ export default function AllInventoryDetail({ reportData = [], filters = {}, allI
         });
     };
 
-    const handleItemsChange = (e) => {
-        const selectedOptions = Array.from(e.target.selectedOptions).map(opt => opt.value);
+    const handleItemsChange = (selectedIds) => {
         router.get(route('reports.inventory-detail-all'), {
-            ...filters,
-            item_ids: selectedOptions,
+            start_date: filters.start_date,
+            end_date: filters.end_date,
+            type: filters.type,
+            item_ids: selectedIds && selectedIds.length > 0 ? selectedIds : undefined,
         }, {
             preserveState: true,
             preserveScroll: true,
@@ -55,24 +66,15 @@ export default function AllInventoryDetail({ reportData = [], filters = {}, allI
                 currentFilter={{ start_date: filters.start_date, end_date: filters.end_date, type: filters.type }}
                 onFilterChange={handleFilterChange}
             />
-            <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Items</label>
-                <select
-                    multiple
-                    value={filters.item_ids || []}
-                    onChange={handleItemsChange}
-                    className="h-[30px] text-xs border-slate-300 rounded-sm focus:ring-green-500 focus:border-green-500 py-0 px-2 bg-white"
-                >
-                    <option value="" disabled>Select Items</option>
-                    {allInventoryItems && allInventoryItems.map(item => (
-                        <option key={item.id} value={item.id}>{item.name}</option>
-                    ))}
-                </select>
-            </div>
+            <ItemMultiSelectFilter
+                items={allInventoryItems || []}
+                selectedIds={Array.isArray(filters.item_ids) ? filters.item_ids : []}
+                onChange={handleItemsChange}
+            />
         </div>
     );
 
-    // Process data to calculate running balances per item
+    // Process data to calculate running balances per item and apply sorting
     const processedData = useMemo(() => {
         return reportData.map(group => {
             let currentQty = group.item.opening_qty || 0;
@@ -91,14 +93,46 @@ export default function AllInventoryDetail({ reportData = [], filters = {}, allI
                 };
             });
 
+            // Sort lines within the item group
+            const sortedLines = [...linesWithBalance].sort((a, b) => {
+                let comparison = 0;
+                if (sortField === 'date') {
+                    comparison = (a.date || '').localeCompare(b.date || '');
+                    if (comparison === 0) {
+                        comparison = (a.id || '').localeCompare(b.id || '');
+                    }
+                } else if (sortField === 'transaction_type') {
+                    const typeA = (a.transaction_type || '').toLowerCase();
+                    const typeB = (b.transaction_type || '').toLowerCase();
+                    comparison = typeA.localeCompare(typeB);
+                    if (comparison === 0) {
+                        comparison = (a.date || '').localeCompare(b.date || '');
+                    }
+                } else if (sortField === 'reference') {
+                    comparison = (a.reference || '').localeCompare(b.reference || '', undefined, { numeric: true });
+                } else if (sortField === 'memo') {
+                    comparison = (a.memo || '').localeCompare(b.memo || '');
+                } else if (sortField === 'qty') {
+                    comparison = (a.qty_change || 0) - (b.qty_change || 0);
+                } else if (sortField === 'rate') {
+                    comparison = (a.rate || 0) - (b.rate || 0);
+                } else if (sortField === 'running_qty') {
+                    comparison = (a.running_qty || 0) - (b.running_qty || 0);
+                } else if (sortField === 'running_value') {
+                    comparison = (a.running_value || 0) - (b.running_value || 0);
+                }
+
+                return sortDirection === 'desc' ? -comparison : comparison;
+            });
+
             return {
                 ...group,
-                lines: linesWithBalance,
+                lines: sortedLines,
                 final_qty: currentQty,
                 final_value: currentValue
             };
         });
-    }, [reportData]);
+    }, [reportData, sortField, sortDirection]);
 
     // Calculate Grand Total
     const grandTotalValue = useMemo(() => {
@@ -114,6 +148,24 @@ export default function AllInventoryDetail({ reportData = [], filters = {}, allI
     const formatQty = (val) => {
         if (val < 0) return <span className="text-red-600">-{Math.abs(val).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>;
         return <span>{Number(val).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>;
+    };
+
+    const SortableHeader = ({ field, label, align = 'left', className = '' }) => {
+        const isActive = sortField === field;
+        return (
+            <th 
+                onClick={() => handleSort(field)}
+                className={`py-2.5 px-3 font-semibold text-gray-900 cursor-pointer select-none hover:bg-slate-100 hover:text-primary transition-colors group ${className} ${align === 'right' ? 'text-right' : 'text-left'}`}
+                title={`Click to sort by ${label} (${isActive && sortDirection === 'asc' ? 'descending' : 'ascending'})`}
+            >
+                <div className={`inline-flex items-center gap-1.5 ${align === 'right' ? 'justify-end w-full' : ''}`}>
+                    <span>{label}</span>
+                    <span className={`inline-flex text-[11px] leading-none ${isActive ? 'text-primary font-bold' : 'text-slate-300 opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                        {isActive ? (sortDirection === 'asc' ? '▲' : '▼') : '▲'}
+                    </span>
+                </div>
+            </th>
+        );
     };
 
     return (
@@ -141,14 +193,14 @@ export default function AllInventoryDetail({ reportData = [], filters = {}, allI
                 <table className="w-full text-[13px] text-left border-collapse table-fixed">
                     <thead>
                         <tr className="border-y-2 border-gray-300">
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-[12%]">Date</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-[15%]">Transaction Type</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-[10%]">Number</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 w-[18%]">Name / Memo</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[10%]">Qty</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[10%]">Rate / Cost</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[10%]">Qty on Hand</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right w-[15%]">Asset Value</th>
+                            <SortableHeader field="date" label="Date" className="w-[12%]" />
+                            <SortableHeader field="transaction_type" label="Transaction Type" className="w-[15%]" />
+                            <SortableHeader field="reference" label="Number" className="w-[10%]" />
+                            <SortableHeader field="memo" label="Name / Memo" className="w-[18%]" />
+                            <SortableHeader field="qty" label="Qty" align="right" className="w-[10%]" />
+                            <SortableHeader field="rate" label="Rate / Cost" align="right" className="w-[10%]" />
+                            <SortableHeader field="running_qty" label="Qty on Hand" align="right" className="w-[10%]" />
+                            <SortableHeader field="running_value" label="Asset Value" align="right" className="w-[15%]" />
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">

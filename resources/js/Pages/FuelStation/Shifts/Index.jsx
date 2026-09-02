@@ -42,32 +42,45 @@ export default function Index({ activeShifts, pendingShifts = [], closedShifts, 
 
             <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
 
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900 tracking-tight">Pump Shifts</h1>
                         <p className="text-xs text-slate-500 mt-0.5">Manage operator shifts, opening/closing readings, and cash collections.</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">From:</span>
                             <input
                                 type="date"
-                                className="border-0 p-1 text-xs text-slate-700 focus:ring-0 cursor-pointer w-[110px]"
+                                className="border-0 p-0.5 text-xs text-slate-700 focus:ring-0 cursor-pointer w-[115px] bg-transparent"
                                 value={dateFilters.start_date}
                                 onChange={(e) => handleFilterChange('start_date', e.target.value)}
                                 onClick={(e) => e.target.showPicker && e.target.showPicker()}
                             />
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-2">To:</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">To:</span>
                             <input
                                 type="date"
-                                className="border-0 p-1 text-xs text-slate-700 focus:ring-0 cursor-pointer w-[110px]"
+                                className="border-0 p-0.5 text-xs text-slate-700 focus:ring-0 cursor-pointer w-[115px] bg-transparent"
                                 value={dateFilters.end_date}
                                 onChange={(e) => handleFilterChange('end_date', e.target.value)}
                                 onClick={(e) => e.target.showPicker && e.target.showPicker()}
                             />
+                            {(dateFilters.start_date || dateFilters.end_date) && (
+                                <button
+                                    type="button"
+                                    onClick={() => setDateFilters({ start_date: '', end_date: '' })}
+                                    className="text-slate-400 hover:text-slate-600 text-xs px-1 font-bold"
+                                    title="Clear dates"
+                                >
+                                    ✕
+                                </button>
+                            )}
                         </div>
-                        <Link href={route('shifts.create')}>
-                            <CommonButton variant="primary" className="px-3 py-1.5 text-xs">
+                        <Link href={route('shifts.create')} className="inline-flex">
+                            <CommonButton variant="primary" className="h-9 px-4 text-xs font-semibold bg-[#00713D] hover:bg-[#005a30] text-white flex items-center gap-1.5 shadow-2xs whitespace-nowrap">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                </svg>
                                 Start New Shift
                             </CommonButton>
                         </Link>

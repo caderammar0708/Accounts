@@ -318,6 +318,19 @@ class CompanySettingsController extends Controller
         return back()->with('message', 'Branches setting updated successfully.');
     }
 
+    public function updateAttachmentsEnabled(Request $request)
+    {
+        abort_if(!$request->user()->can('settings.layout.attachments') && !$request->user()->can('settings.company.layout') && !$request->user()->can('settings.company') && !$request->user()->is_admin, 403, 'Unauthorized action.');
+
+        $validated = $request->validate([
+            'attachments_enabled' => 'required|boolean',
+        ]);
+
+        $this->getSettings()->update(['attachments_enabled' => $validated['attachments_enabled']]);
+        
+        return back()->with('message', 'Attachments setting updated successfully.');
+    }
+
     public function updateBusinessType(Request $request)
     {
         abort_if(!$request->user()->can('settings.layout.business_type') && !$request->user()->can('settings.company.layout') && !$request->user()->can('settings.company'), 403, 'Unauthorized action.');
