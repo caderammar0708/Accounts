@@ -21,7 +21,10 @@ class ReportsDetailController extends Controller
         $query = JournalEntryLine::query()
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
-            ->where('journal_entries.payee_type', Customer::class)
+            ->where(function ($q) {
+                $q->where('journal_entries.payee_type', Customer::class)
+                  ->orWhere('journal_entry_lines.payee_type', Customer::class);
+            })
             ->where('chart_of_accs.sub_type', 'accounts-receivable');
 
         if ($startDate && $endDate) {
@@ -40,7 +43,7 @@ class ReportsDetailController extends Controller
                 'journal_entries.reference',
                 'journal_entries.transaction_type',
                 'journal_entries.due_date',
-                'journal_entries.payee_id',
+                DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id) as payee_id'),
                 'journal_entries.id as journal_entry_id',
                 'journal_entries.description as memo'
             )
@@ -70,7 +73,10 @@ class ReportsDetailController extends Controller
         $query = JournalEntryLine::query()
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
-            ->where('journal_entries.payee_type', Supplier::class)
+            ->where(function ($q) {
+                $q->where('journal_entries.payee_type', Supplier::class)
+                  ->orWhere('journal_entry_lines.payee_type', Supplier::class);
+            })
             ->where('chart_of_accs.sub_type', 'accounts-payable');
 
         if ($startDate && $endDate) {
@@ -89,7 +95,7 @@ class ReportsDetailController extends Controller
                 'journal_entries.reference',
                 'journal_entries.transaction_type',
                 'journal_entries.due_date',
-                'journal_entries.payee_id',
+                DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id) as payee_id'),
                 'journal_entries.id as journal_entry_id',
                 'journal_entries.description as memo'
             )

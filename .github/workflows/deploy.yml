@@ -3,15 +3,15 @@ name: Deploy JBooks App
 on:
   push:
     branches:
-      - demo
-      - ausj
-      - aaafs
+      # - demo
+      # - ausj
+      # - aaafs
       # - aaass
       # - testing
-      # - jobalign
+      - jobalign
       # - hallam-city-campus
       # - steel-audit
-      - steel-mobile
+      # - steel-mobile
       # - tgl-kandy
   workflow_dispatch:
 

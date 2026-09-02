@@ -43,4 +43,9 @@ class PumpShift extends Model
     {
         return $this->hasMany(PumpShiftCreditSale::class);
     }
+
+    public function receivePayments()
+    {
+        return $this->hasMany(PumpShiftReceivePayment::class);
+    }
 }

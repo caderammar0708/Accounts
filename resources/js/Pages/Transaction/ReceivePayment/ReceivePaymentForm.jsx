@@ -406,7 +406,7 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                     setData({
                         customer: "", email: "", paymentDate: cachedDate,
                         paymentMethod: getDefaultCashPaymentMethod() || "", referenceNo: nextRef,
-                        depositTo: "", amountReceived: "0.00", memo: "", 
+                        depositTo: "", amountReceived: "0.00", memo: "",
                         exchange_rate: 1, currency_id: "", action: 'save',
                         books_pin: ''
                     });
@@ -563,13 +563,13 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                                 setIsAccountModalOpen(true);
                             }}
                             value={data.depositTo}
-                            onChange={(val) => { 
+                            onChange={(val) => {
                                 setData(prev => ({
                                     ...prev,
                                     depositTo: val,
                                     currency_id: accountOptions.find(a => String(a.value) === String(val))?.currency_id || prev.currency_id
                                 }));
-                                setIsDirty(true); 
+                                setIsDirty(true);
                             }}
                             placeholder="Select Account"
                             size="sm"
@@ -612,6 +612,8 @@ export default function ReceivePaymentForm({ paymentMethods = [], payment = null
                     transactionDate={data.paymentDate}
                     isEdit={!!payment?.id || !!savedEntryId}
                 />
+
+
 
                 {/* Outstanding Transactions Section */}
                 {data.customer && (

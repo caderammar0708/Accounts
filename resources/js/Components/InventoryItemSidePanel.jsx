@@ -54,6 +54,7 @@ export default function InventoryItemSidePanel({
     inventoryAccounts: initialInventoryAccounts = [],
     suppliers: initialSuppliers = [],
     allItems: initialAllItems = [],
+    locations: initialLocations = [],
     onSuccess = null
 }) {
     const { auth } = usePage().props;
@@ -66,6 +67,7 @@ export default function InventoryItemSidePanel({
     const [localExpenseAccounts, setLocalExpenseAccounts] = useState(initialExpenseAccounts);
     const [localSuppliers, setLocalSuppliers] = useState(initialSuppliers);
     const [localAllItems, setLocalAllItems] = useState(initialAllItems);
+    const [localLocations, setLocalLocations] = useState(initialLocations);
     const [isLoadingOptions, setIsLoadingOptions] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
@@ -108,6 +110,7 @@ export default function InventoryItemSidePanel({
         description: '',
         sale_price: '0.00',
         item_category_id: '',
+        location_id: '',
         income_account_id: initialDefaults.income_account_id,
         expense_account_id: initialDefaults.expense_account_id,
         purchase_price: '0.00',
@@ -171,6 +174,7 @@ export default function InventoryItemSidePanel({
                     setLocalInventoryAccounts(dataOptions.inventoryAccounts || []);
                     setLocalSuppliers(dataOptions.suppliers || []);
                     setLocalAllItems(dataOptions.allItems || []);
+                    setLocalLocations(dataOptions.locations || []);
 
                     // If creating a new item, set default accounts dynamically from the fetched list
                     if (!item) {
@@ -216,6 +220,7 @@ export default function InventoryItemSidePanel({
                     description: item.description || '',
                     sale_price: item.sale_price ? parseFloat(item.sale_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00',
                     item_category_id: item.item_category_id || '',
+                    location_id: item.location_id || '',
                     income_account_id: item.income_account_id || '',
                     expense_account_id: item.expense_account_id || '',
                     purchase_price: item.purchase_price ? parseFloat(item.purchase_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00',
@@ -242,6 +247,7 @@ export default function InventoryItemSidePanel({
                     description: '',
                     sale_price: '0.00',
                     item_category_id: '',
+                    location_id: '',
                     income_account_id: '',
                     expense_account_id: '',
                     purchase_price: '0.00',
@@ -426,7 +432,7 @@ export default function InventoryItemSidePanel({
 
         if (isEdit) {
             let changed = false;
-            
+
             const showSales = data.type === 'inventory' || data.type === 'bundle' || ((data.type === 'service' || data.type === 'non-inventory') && data.is_sold);
             const showPurchases = data.type === 'inventory' || ((data.type === 'service' || data.type === 'non-inventory') && data.is_purchased);
             const showInventory = data.type === 'inventory';
@@ -522,6 +528,20 @@ export default function InventoryItemSidePanel({
                                     />
                                     {errors.item_category_id && <p className="mt-1 text-xs text-red-600">{errors.item_category_id}</p>}
                                 </div>
+                            </div>
+                            
+                            <div className="mt-4">
+                                <label className="block text-[11px] font-bold text-slate-600 ml-0.5 text-xs mb-1">Location</label>
+                                <SearchableSelect
+                                    options={[
+                                        { value: null, label: 'Common (All Locations)' },
+                                        ...localLocations.map(l => ({ value: l.id, label: l.name }))
+                                    ]}
+                                    value={data.location_id}
+                                    onChange={val => setData('location_id', val)}
+                                    placeholder="Select location"
+                                />
+                                {errors.location_id && <p className="mt-1 text-xs text-red-600">{errors.location_id}</p>}
                             </div>
                         </div>
 

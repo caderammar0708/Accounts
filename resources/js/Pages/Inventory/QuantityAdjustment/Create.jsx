@@ -21,7 +21,7 @@ const FormSection = ({ title, children, show = true }) => {
     );
 };
 
-export default function CreateAdjustment({ items, accounts, nextReference }) {
+export default function CreateAdjustment({ items, accounts, existingReasons = [], nextReference }) {
     const { auth } = usePage().props;
     const { data, setData, post, processing, errors, transform } = useForm({
         adjustment_date: localStorage.getItem('last_transaction_date') || new Date().toISOString().split('T')[0],
@@ -39,13 +39,18 @@ export default function CreateAdjustment({ items, accounts, nextReference }) {
 
     const { isPinModalOpen, setIsPinModalOpen, pendingAction, setPendingAction } = useBooksLock(errors);
 
-    const reasons = [
-        { value: 'Damaged Goods', label: 'Damaged Goods' },
-        { value: 'Stocktaking', label: 'Stocktaking' },
-        { value: 'Theft', label: 'Theft' },
-        { value: 'Promotional', label: 'Promotional' },
-        { value: 'Other', label: 'Other' }
+    const defaultReasons = [
+        'Damaged Goods',
+        'Stocktaking',
+        'Theft',
+        'Promotional',
+        'Other'
     ];
+    
+    // Combine defaults and db reasons, removing duplicates
+    const allReasons = [...new Set([...defaultReasons, ...existingReasons])];
+    
+    const reasons = allReasons.map(r => ({ value: r, label: r }));
 
     const addLine = () => {
         setData('items', [
@@ -179,6 +184,7 @@ export default function CreateAdjustment({ items, accounts, nextReference }) {
                                 value={data.adjustment_reason}
                                 onChange={val => setData('adjustment_reason', val)}
                                 placeholder="Select reason"
+                                allowCustom={true}
                             />
                             {errors.adjustment_reason && <div className="text-red-500 text-xs mt-1 font-bold">{errors.adjustment_reason}</div>}
                         </div>
