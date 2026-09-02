@@ -32,7 +32,7 @@ const Toggle = ({ checked, onChange, label, description, disabled }) => (
     </label>
 );
 
-export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultType = 'asset', account = null, initialParentAccount = null, currencies = [], multiCurrencyEnabled, homeCurrencyId, initialName = '' }) {
+export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultType = 'asset', account = null, initialParentAccount = null, currencies = [], multiCurrencyEnabled, homeCurrencyId, initialName = '', locations = [] }) {
     const isEdit = !!account;
     const { auth } = usePage().props;
     const company = auth?.company;
@@ -57,6 +57,7 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
         currency_id: defaultCurrency,
         is_subaccount: false,
         parent_id: '',
+        location_id: null,
         is_locked: false,
         is_system: false,
     });
@@ -83,6 +84,7 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
                     currency_id: account.currency_id || defaultCurrency,
                     is_subaccount: !!account.parent_id,
                     parent_id: account.parent_id || '',
+                    location_id: account.location_id || null,
                     is_locked: !!account.is_locked,
                     is_system: !!account.is_system,
                 });
@@ -99,6 +101,7 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
                     opening_balance_date: initialDate,
                     is_subaccount: !!initialParentAccount,
                     parent_id: initialParentAccount ? initialParentAccount.id : '',
+                    location_id: null,
                     is_locked: false,
                     is_system: false,
                 }));
@@ -311,6 +314,21 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
                         required
                         disabled={data.is_locked}
                     />
+                </div>
+
+                <div className="pt-4 border-t border-slate-150 space-y-1">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-0.5">Location</label>
+                    <SearchableSelect
+                        options={[
+                            { value: null, label: 'Common (All Locations)' },
+                            ...locations.map(l => ({ value: l.id, label: l.name }))
+                        ]}
+                        value={data.location_id}
+                        onChange={val => setData('location_id', val)}
+                        placeholder="Select Location"
+                        disabled={data.is_locked}
+                    />
+                    {errors.location_id && <p className="text-xs text-red-500 mt-1">{errors.location_id}</p>}
                 </div>
 
                 <div className="pt-4 border-t border-slate-150">

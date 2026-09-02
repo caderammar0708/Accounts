@@ -13,7 +13,8 @@ class ItemCategoryController extends Controller
     {
         $categories = ItemCategory::with('parent')->get();
         return Inertia::render('Inventory/CategoryList', [
-            'categories' => $categories
+            'categories' => $categories,
+            'locations' => \App\Models\Location::all()
         ]);
     }
 
@@ -30,6 +31,7 @@ class ItemCategoryController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'parent_id' => 'nullable|exists:item_categories,id',
+            'location_id' => 'nullable|exists:locations,id',
         ]);
 
         ItemCategory::create($validated);
@@ -51,6 +53,7 @@ class ItemCategoryController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'parent_id' => 'nullable|exists:item_categories,id',
+            'location_id' => 'nullable|exists:locations,id',
         ]);
 
         $itemCategory->update($validated);

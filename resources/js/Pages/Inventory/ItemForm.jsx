@@ -51,6 +51,7 @@ export default function ItemForm({
     inventoryAccounts: initialInventoryAccounts = [],
     suppliers: initialSuppliers = [],
     allItems: initialAllItems = [],
+    locations = [],
     nextSku = ''
 }) {
     const { auth } = usePage().props;
@@ -113,6 +114,7 @@ export default function ItemForm({
         as_of_date: item?.as_of_date || '',
         reorder_point: item?.reorder_point ? parseFloat(item.reorder_point).toLocaleString('en-US') : '0',
         inventory_account_id: item?.inventory_account_id || initialDefaults.inventory_account_id,
+        location_id: item?.location_id || null,
         is_sold: item?.is_sold !== undefined ? !!item.is_sold : true,
         is_purchased: item?.is_purchased !== undefined ? !!item.is_purchased : false,
         bundle_items: item?.bundle_components ? item.bundle_components.map(bc => ({
@@ -395,6 +397,19 @@ export default function ItemForm({
                                             placeholder="Select category"
                                         />
                                         {errors.item_category_id && <p className="mt-1 text-xs text-red-600">{errors.item_category_id}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-600 ml-0.5 text-xs mb-1">Location</label>
+                                        <SearchableSelect
+                                            options={[
+                                                { value: null, label: 'Common (All Locations)' },
+                                                ...locations.map(l => ({ value: l.id, label: l.name }))
+                                            ]}
+                                            value={data.location_id}
+                                            onChange={val => setData('location_id', val)}
+                                            placeholder="Select Location"
+                                        />
+                                        {errors.location_id && <p className="mt-1 text-xs text-red-600">{errors.location_id}</p>}
                                     </div>
                                 </div>
                             </div>

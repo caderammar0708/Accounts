@@ -82,6 +82,7 @@ class ItemController extends Controller
             'inventoryAccounts' => ChartOfAcc::whereIn('account_type', ['asset', 'other_current_asset', 'fixed_asset', 'current_asset', 'inventory'])->get(),
             'suppliers' => Supplier::all(),
             'allItems' => Item::all(),
+            'locations' => \App\Models\Location::all(),
         ];
     }
 
@@ -152,6 +153,7 @@ class ItemController extends Controller
             'bundle_items' => 'nullable|array',
             'bundle_items.*.item_id' => 'required_with:bundle_items|exists:items,id',
             'bundle_items.*.quantity' => 'required_with:bundle_items|numeric|min:0.01',
+            'location_id' => 'nullable|exists:locations,id',
         ]);
 
                         $validated['track_inventory'] = ($request->input('type') === 'inventory');
@@ -233,6 +235,7 @@ class ItemController extends Controller
             'bundle_items' => 'nullable|array',
             'bundle_items.*.item_id' => 'required_with:bundle_items|exists:items,id',
             'bundle_items.*.quantity' => 'required_with:bundle_items|numeric|min:0.01',
+            'location_id' => 'nullable|exists:locations,id',
         ]);
 
         $validated['track_inventory'] = ($request->input('type') === 'inventory');

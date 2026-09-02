@@ -47,6 +47,7 @@ class ChartOfAccController extends Controller
             'multi_currency_enabled' => \App\Models\Company::current()?->multi_currency_enabled,
             'home_currency_id' => \App\Models\Company::current()?->home_currency_id,
             'lastOpeningBalanceDate' => session('last_opening_balance_date', date('Y-m-d')),
+            'locations' => \App\Models\Location::all(),
         ]);
     }
 
@@ -71,6 +72,7 @@ class ChartOfAccController extends Controller
             'currency_id' => $request->input('currency_id') ?: \App\Models\Company::current()?->home_currency_id ?: null,
             'parent_id' => $request->input('is_subaccount') ? $request->input('parent_id') : null,
             'is_locked' => $request->boolean('is_locked', false),
+            'location_id' => $request->input('location_id'),
         ]);
 
         // If opening balance > 0, create a Journal Entry
@@ -205,6 +207,7 @@ class ChartOfAccController extends Controller
             'currency_id' => $request->input('currency_id') ?: \App\Models\Company::current()?->home_currency_id ?: null,
             'parent_id' => $request->input('is_subaccount') ? $request->input('parent_id') : null,
             'is_locked' => $request->boolean('is_locked', false),
+            'location_id' => $request->input('location_id'),
         ]);
 
         return redirect()->route('chart-of-account.index')->with('success', 'Chart of account updated successfully.');

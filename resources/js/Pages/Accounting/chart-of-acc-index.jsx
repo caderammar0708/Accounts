@@ -5,7 +5,7 @@ import CommonButton from '@/Components/CommonButton';
 import Dropdown from '@/Components/Dropdown';
 import QuickAddAccount from '@/Components/QuickAddAccount';
 
-export default function ChartOfAccIndex({ auth, chartOfAccounts = [], currencies = [], multi_currency_enabled, home_currency_id }) {
+export default function ChartOfAccIndex({ auth, chartOfAccounts = [], currencies = [], multi_currency_enabled, home_currency_id, locations = [] }) {
     const company = auth.company;
 
     const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -264,6 +264,7 @@ export default function ChartOfAccIndex({ auth, chartOfAccounts = [], currencies
                 currencies={currencies}
                 multiCurrencyEnabled={multi_currency_enabled}
                 homeCurrencyId={home_currency_id}
+                locations={locations}
             />
         </AuthenticatedLayout>
     );
