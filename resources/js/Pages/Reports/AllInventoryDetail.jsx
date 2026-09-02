@@ -146,8 +146,10 @@ export default function AllInventoryDetail({ reportData = [], filters = {}, allI
     }; 
 
     const formatQty = (val) => {
-        if (val < 0) return <span className="text-red-600">-{Math.abs(val).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>;
-        return <span>{Number(val).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>;
+        const num = parseFloat(val || 0);
+        const formatted = Math.abs(num).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+        if (num < 0) return <span className="text-red-600">-{formatted}</span>;
+        return <span>{formatted}</span>;
     };
 
     const SortableHeader = ({ field, label, align = 'left', className = '' }) => {

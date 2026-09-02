@@ -156,41 +156,48 @@ export default function InventoryDetail({ item, lines, filters, auth }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                        {linesWithTotal.length === 0 ? (
+                        {sortedLines.length === 0 ? (
                             <tr>
                                 <td colSpan="6" className="py-8 text-center text-gray-500">No inventory transactions found for this period.</td>
                             </tr>
                         ) : (
-                            linesWithTotal.map((line) => (
-                                <tr 
-                                    key={line.id} 
-                                    className="hover:bg-gray-50 transition-colors group cursor-pointer"
-                                    onClick={() => line.journal_entry_id && router.get(route(getEditRoute(line.transaction_type), line.journal_entry_id))}
-                                >
-                                    <td className="py-2 px-3 text-gray-600 whitespace-nowrap">
-                                        {formatDate(line.date, dateFormat)}
-                                    </td>
-                                    <td className="py-2 px-3 text-gray-900 capitalize group-hover:text-primary transition-colors">
-                                        {line.transaction_type.replace('_', ' ')}
-                                    </td>
-                                    <td className="py-2 px-3 text-gray-600">
-                                        {line.reference || '-'}
-                                    </td>
-                                    <td className="py-2 px-3 text-gray-600">
-                                        {line.memo || '-'}
-                                    </td>
-                                    <td className="py-2 px-3 text-right tabular-nums font-medium">
-                                        <span className={line.qty_change < 0 ? 'text-red-600' : 'text-gray-900'}>
-                                            {parseFloat(line.qty_change || 0).toLocaleString('en-US', { maximumFractionDigits: 4 })}
-                                        </span>
-                                    </td>
-                                    <td className="py-2 px-3 text-right tabular-nums font-medium">
-                                        <span className={line.running_qty < 0 ? 'text-red-600' : 'text-gray-900'}>
-                                            {parseFloat(line.running_qty || 0).toLocaleString('en-US', { maximumFractionDigits: 4 })}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))
+                            sortedLines.map((line) => {
+                                const qtyChange = parseFloat(line.qty_change || 0);
+                                const runningQty = parseFloat(line.running_qty || 0);
+                                const formattedQtyChange = Math.abs(qtyChange).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+                                const formattedRunningQty = Math.abs(runningQty).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+
+                                return (
+                                    <tr 
+                                        key={line.id} 
+                                        className="hover:bg-gray-50 transition-colors group cursor-pointer"
+                                        onClick={() => line.journal_entry_id && router.get(route(getEditRoute(line.transaction_type), line.journal_entry_id))}
+                                    >
+                                        <td className="py-2 px-3 text-gray-600 whitespace-nowrap">
+                                            {formatDate(line.date, dateFormat)}
+                                        </td>
+                                        <td className="py-2 px-3 text-gray-900 capitalize group-hover:text-primary transition-colors">
+                                            {line.transaction_type.replace('_', ' ')}
+                                        </td>
+                                        <td className="py-2 px-3 text-gray-600">
+                                            {line.reference || '-'}
+                                        </td>
+                                        <td className="py-2 px-3 text-gray-600">
+                                            {line.memo || '-'}
+                                        </td>
+                                        <td className="py-2 px-3 text-right tabular-nums font-medium">
+                                            <span className={qtyChange < 0 ? 'text-red-600' : 'text-gray-900'}>
+                                                {qtyChange < 0 ? `-${formattedQtyChange}` : formattedQtyChange}
+                                            </span>
+                                        </td>
+                                        <td className="py-2 px-3 text-right tabular-nums font-medium">
+                                            <span className={runningQty < 0 ? 'text-red-600' : 'text-gray-900'}>
+                                                {runningQty < 0 ? `-${formattedRunningQty}` : formattedRunningQty}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>
