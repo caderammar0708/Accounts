@@ -11,7 +11,10 @@ class ItemCategoryController extends Controller
 {
     public function index()
     {
-        $categories = ItemCategory::with('parent')->get();
+        $categories = ItemCategory::with('parent')
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('name', 'asc')
+            ->get();
         return Inertia::render('Inventory/CategoryList', [
             'categories' => $categories,
             'locations' => \App\Models\Location::all()
@@ -65,5 +68,22 @@ class ItemCategoryController extends Controller
     {
         $itemCategory->delete();
         return redirect()->route('item-categories.index')->with('success', 'Category deleted successfully');
+    }
+
+    public function reorder(Request $request)
+    {
+        $request->validate([
+            'categories' => 'required|array',
+            'categories.*.id' => 'required|uuid',
+            'categories.*.sort_order' => 'required|integer',
+        ]);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request) {
+            foreach ($request->categories as $categoryData) {
+                ItemCategory::where('id', $categoryData['id'])->update(['sort_order' => $categoryData['sort_order']]);
+            }
+        });
+
+        return response()->json(['success' => true]);
     }
 }

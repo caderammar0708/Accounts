@@ -55,9 +55,11 @@ class ItemController extends Controller
             }
         }
 
-        // To group by category, we order by category name then item name
+        // To group by category, we order by category sort_order and name then item sort_order and name
         $query->leftJoin('item_categories', 'items.item_category_id', '=', 'item_categories.id')
+            ->orderBy('item_categories.sort_order', 'asc')
             ->orderBy('item_categories.name', 'asc')
+            ->orderBy('items.sort_order', 'asc')
             ->orderBy('items.name', 'asc')
             ->select('items.*');
 

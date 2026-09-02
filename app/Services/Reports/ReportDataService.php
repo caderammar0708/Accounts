@@ -243,8 +243,13 @@ public function customerBalanceData($endDate = null)
     public function inventorySummaryData($startDate = null, $endDate = null)
     {
         $itemsQuery = Item::with('category')
+            ->leftJoin('item_categories', 'items.item_category_id', '=', 'item_categories.id')
             ->where('track_inventory', true)
-            ->orderBy('name')
+            ->orderBy('item_categories.sort_order', 'asc')
+            ->orderBy('item_categories.name', 'asc')
+            ->orderBy('items.sort_order', 'asc')
+            ->orderBy('items.name', 'asc')
+            ->select('items.*')
             ->get();
 
         if ($endDate && $endDate < date('Y-m-d')) {
@@ -386,6 +391,7 @@ public function customerBalanceData($endDate = null)
                 'items.id as item_id',
                 'items.name as item_name',
                 'items.sku as item_sku',
+                'items.sort_order as item_sort_order',
                 'customers.display_name as customer_name',
                 'journal_entries.id as journal_entry_id'
             )
@@ -399,6 +405,7 @@ public function customerBalanceData($endDate = null)
                     'id' => $itemId,
                     'name' => $firstLine->item_name,
                     'sku' => $firstLine->item_sku,
+                    'sort_order' => (int) $firstLine->item_sort_order,
                     'total_qty' => $lines->sum('quantity'),
                     'total_amount' => $lines->sum('amount'),
                 ],
@@ -416,7 +423,12 @@ public function customerBalanceData($endDate = null)
                     ];
                 })->values(),
             ];
-        })->values();
+        })
+        ->sortBy([
+            [function ($itemGroup) { return $itemGroup['item']['sort_order'] ?? 0; }, 'asc'],
+            [function ($itemGroup) { return $itemGroup['item']['name'] ?? ''; }, 'asc']
+        ])
+        ->values();
     }
 
     public function salesByCustomerData($startDate = null, $endDate = null)
@@ -432,6 +444,7 @@ public function customerBalanceData($endDate = null)
         }
 
         return $query->select(
+                'customers.id as customer_id',
                 'customers.display_name as customer_name',
                 DB::raw('COUNT(credit_invoices.id) as invoice_count'),
                 DB::raw('SUM(credit_invoices.total_amount) as total_amount')
@@ -441,7 +454,86 @@ public function customerBalanceData($endDate = null)
             ->get();
     }
 
-    public function purchaseByItemData($startDate = null, $endDate = null)
+    public function purchaseByItemSummaryData($startDate = null, $endDate = null)
+    {
+        $billsQuery = DB::table('bill_items')
+            ->join('bills', 'bill_items.bill_id', '=', 'bills.id')
+            ->join('items', 'bill_items.item_id', '=', 'items.id')
+            ->leftJoin('item_categories', 'items.item_category_id', '=', 'item_categories.id')
+            ->where('bills.status', 'posted');
+
+        if ($startDate) {
+            $billsQuery->whereBetween('bills.bill_date', [$startDate, $endDate ?: date('Y-m-d')]);
+        } else {
+            $billsQuery->where('bills.bill_date', '<=', $endDate ?: date('Y-m-d'));
+        }
+
+        $billsData = $billsQuery->select(
+                'bill_items.quantity',
+                'bill_items.amount',
+                'bills.bill_date as date',
+                'items.id as item_id',
+                'items.name as item_name',
+                'items.sku as item_sku',
+                'items.sort_order as item_sort_order',
+                'item_categories.name as category_name',
+                'item_categories.sort_order as category_sort_order'
+            )->get();
+
+        $expensesQuery = DB::table('payment_items')
+            ->join('payments', 'payment_items.payment_id', '=', 'payments.id')
+            ->join('items', 'payment_items.item_id', '=', 'items.id')
+            ->leftJoin('item_categories', 'items.item_category_id', '=', 'item_categories.id')
+            ->where('payments.status', 'posted');
+
+        if ($startDate) {
+            $expensesQuery->whereBetween('payments.payment_date', [$startDate, $endDate ?: date('Y-m-d')]);
+        } else {
+            $expensesQuery->where('payments.payment_date', '<=', $endDate ?: date('Y-m-d'));
+        }
+
+        $expensesData = $expensesQuery->select(
+                'payment_items.quantity',
+                'payment_items.amount',
+                'payments.payment_date as date',
+                'items.id as item_id',
+                'items.name as item_name',
+                'items.sku as item_sku',
+                'items.sort_order as item_sort_order',
+                'item_categories.name as category_name',
+                'item_categories.sort_order as category_sort_order'
+            )->get();
+
+        $allLines = $billsData->concat($expensesData);
+
+        $itemsGrouped = $allLines->groupBy('item_id')->map(function ($lines, $itemId) {
+            $firstLine = $lines->first();
+            return [
+                'id' => $itemId,
+                'name' => $firstLine->item_name,
+                'sku' => $firstLine->item_sku,
+                'category_name' => $firstLine->category_name ?: 'Uncategorized',
+                'item_sort_order' => (int) $firstLine->item_sort_order,
+                'category_sort_order' => (int) $firstLine->category_sort_order,
+                'total_qty' => (float) $lines->sum('quantity'),
+                'total_amount' => (float) $lines->sum('amount'),
+            ];
+        })
+        ->sortBy([['category_sort_order', 'asc'], ['category_name', 'asc'], ['item_sort_order', 'asc'], ['name', 'asc']])
+        ->values();
+
+        return $itemsGrouped->groupBy('category_name')->map(function ($items, $categoryName) {
+            return [
+                'category' => $categoryName,
+                'items' => $items->map(function ($item) {
+                    unset($item['category_name']);
+                    return $item;
+                })->values(),
+            ];
+        })->values();
+    }
+
+    public function purchaseByItemDetailData($startDate = null, $endDate = null, $itemIds = null)
     {
         $billsQuery = DB::table('bill_items')
             ->join('bills', 'bill_items.bill_id', '=', 'bills.id')
@@ -459,6 +551,15 @@ public function customerBalanceData($endDate = null)
             $billsQuery->where('bills.bill_date', '<=', $endDate ?: date('Y-m-d'));
         }
 
+        if ($itemIds) {
+            if (is_string($itemIds)) {
+                $itemIds = explode(',', $itemIds);
+            }
+            if (is_array($itemIds) && !empty($itemIds)) {
+                $billsQuery->whereIn('bill_items.item_id', $itemIds);
+            }
+        }
+
         $billsData = $billsQuery->select(
                 'bill_items.id as line_id',
                 'bill_items.quantity',
@@ -469,6 +570,7 @@ public function customerBalanceData($endDate = null)
                 'items.id as item_id',
                 'items.name as item_name',
                 'items.sku as item_sku',
+                'items.sort_order as item_sort_order',
                 'suppliers.display_name as supplier_name',
                 'journal_entries.id as journal_entry_id',
                 DB::raw("'Bill' as transaction_type")
@@ -490,16 +592,26 @@ public function customerBalanceData($endDate = null)
             $expensesQuery->where('payments.payment_date', '<=', $endDate ?: date('Y-m-d'));
         }
 
+        if ($itemIds) {
+            if (is_string($itemIds)) {
+                $itemIds = explode(',', $itemIds);
+            }
+            if (is_array($itemIds) && !empty($itemIds)) {
+                $expensesQuery->whereIn('payment_items.item_id', $itemIds);
+            }
+        }
+
         $expensesData = $expensesQuery->select(
                 'payment_items.id as line_id',
                 'payment_items.quantity',
                 'payment_items.rate',
                 'payment_items.amount',
-                'payments.expense_number as reference',
+                'payments.reference_no as reference',
                 'payments.payment_date as date',
                 'items.id as item_id',
                 'items.name as item_name',
                 'items.sku as item_sku',
+                'items.sort_order as item_sort_order',
                 'suppliers.display_name as supplier_name',
                 'journal_entries.id as journal_entry_id',
                 DB::raw("'Payment' as transaction_type")
@@ -514,8 +626,9 @@ public function customerBalanceData($endDate = null)
                     'id' => $itemId,
                     'name' => $firstLine->item_name,
                     'sku' => $firstLine->item_sku,
-                    'total_qty' => $lines->sum('quantity'),
-                    'total_amount' => $lines->sum('amount'),
+                    'sort_order' => (int) $firstLine->item_sort_order,
+                    'total_qty' => (float) $lines->sum('quantity'),
+                    'total_amount' => (float) $lines->sum('amount'),
                 ],
                 'lines' => $lines->map(function ($line) {
                     return [
@@ -531,7 +644,12 @@ public function customerBalanceData($endDate = null)
                     ];
                 })->values(),
             ];
-        })->values();
+        })
+        ->sortBy([
+            [function ($itemGroup) { return $itemGroup['item']['sort_order'] ?? 0; }, 'asc'],
+            [function ($itemGroup) { return $itemGroup['item']['name'] ?? ''; }, 'asc']
+        ])
+        ->values();
     }
 
     public function purchaseBySupplierData($startDate = null, $endDate = null)

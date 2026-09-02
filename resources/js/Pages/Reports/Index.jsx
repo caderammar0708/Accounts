@@ -33,7 +33,8 @@ export default function ReportsIndex() {
                 { name: 'Supplier Balance Summary', href: route('reports.supplier-balance') },
                 { name: 'Supplier Balance Details', href: route('reports.supplier-balance-detail') },
                 { name: 'Purchase by Supplier', href: route('reports.purchase-by-supplier') },
-                { name: 'Purchase by Item', href: route('reports.purchase-by-item') },
+                { name: 'Purchase by Item Summary', href: route('reports.purchase-by-item-summary') },
+                { name: 'Purchase by Item Details', href: route('reports.purchase-by-item-detail') },
             ]
         },
         {

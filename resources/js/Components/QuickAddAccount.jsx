@@ -316,20 +316,22 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
                     />
                 </div>
 
-                <div className="pt-4 border-t border-slate-150 space-y-1">
-                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-0.5">Location</label>
-                    <SearchableSelect
-                        options={[
-                            { value: null, label: 'Common (All Locations)' },
-                            ...locations.map(l => ({ value: l.id, label: l.name }))
-                        ]}
-                        value={data.location_id}
-                        onChange={val => setData('location_id', val)}
-                        placeholder="Select Location"
-                        disabled={data.is_locked}
-                    />
-                    {errors.location_id && <p className="text-xs text-red-500 mt-1">{errors.location_id}</p>}
-                </div>
+                {Boolean(company?.branches_enabled) && (
+                    <div className="pt-4 border-t border-slate-150 space-y-1">
+                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-0.5">Location</label>
+                        <SearchableSelect
+                            options={[
+                                { value: null, label: 'Common (All Locations)' },
+                                ...locations.map(l => ({ value: l.id, label: l.name }))
+                            ]}
+                            value={data.location_id}
+                            onChange={val => setData('location_id', val)}
+                            placeholder="Select Location"
+                            disabled={data.is_locked}
+                        />
+                        {errors.location_id && <p className="text-xs text-red-500 mt-1">{errors.location_id}</p>}
+                    </div>
+                )}
 
                 <div className="pt-4 border-t border-slate-150">
                     <Toggle

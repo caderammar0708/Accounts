@@ -56,7 +56,8 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
         Route::get('/inventory-summary', [ReportsController::class, 'inventorySummary'])->name('api.reports.inventory-summary');
         Route::get('/sales-by-item', [ReportsController::class, 'salesByItem'])->name('api.reports.sales-by-item');
         Route::get('/sales-by-customer', [ReportsController::class, 'salesByCustomer'])->name('api.reports.sales-by-customer');
-        Route::get('/purchase-by-item', [ReportsController::class, 'purchaseByItem'])->name('api.reports.purchase-by-item');
+        Route::get('/purchase-by-item-summary', [ReportsController::class, 'purchaseByItemSummary'])->name('api.reports.purchase-by-item-summary');
+        Route::get('/purchase-by-item-detail', [ReportsController::class, 'purchaseByItemDetail'])->name('api.reports.purchase-by-item-detail');
         Route::get('/purchase-by-supplier', [ReportsController::class, 'purchaseBySupplier'])->name('api.reports.purchase-by-supplier');
     });
 });

@@ -117,8 +117,8 @@ export default function ReportLayout({ children, title, filters, onFilterChange,
                 </div>
 
                 {/* Report Content */}
-                <div id="report-content" className="p-8 max-w-[1200px] mx-auto print:p-0 print:max-w-none">
-                    <div className="bg-white border border-gray-200 shadow-sm p-10 pt-12 min-h-[800px]">
+                <div id="report-content" className="p-4 sm:p-8 w-full max-w-full mx-auto print:p-0 print:max-w-none">
+                    <div className="bg-white border border-gray-200 shadow-sm p-4 sm:p-10 pt-12 min-h-[800px]">
                         {children}
                     </div>
                 </div>

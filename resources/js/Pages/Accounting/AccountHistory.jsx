@@ -26,10 +26,58 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
         });
     };
     // Calculate running balance
-    const transactions = useMemo(() => {
-        let currentBalance = parseFloat(opening_balance || 0);
+    const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'asc' });
 
-        return (lines || []).map(line => {
+    const requestSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIcon = (columnName) => {
+        if (!sortConfig || sortConfig.key !== columnName) {
+            return <span className="inline-block ml-1 text-gray-300 text-[10px]">↕</span>;
+        }
+        return sortConfig.direction === 'asc' ? (
+            <span className="inline-block ml-1 text-gray-500 text-[10px]">▲</span>
+        ) : (
+            <span className="inline-block ml-1 text-gray-500 text-[10px]">▼</span>
+        );
+    };
+
+    const transactions = useMemo(() => {
+        let currentBalance = 0; // Start from 0 as requested
+
+        // First sort the lines
+        let sortedLines = [...(lines || [])];
+        if (sortConfig !== null) {
+            sortedLines.sort((a, b) => {
+                let valA = a[sortConfig.key];
+                let valB = b[sortConfig.key];
+
+                if (sortConfig.key === 'date') {
+                    valA = a.journal_entry?.date || '';
+                    valB = b.journal_entry?.date || '';
+                } else if (sortConfig.key === 'reference') {
+                    valA = a.journal_entry?.reference || '';
+                    valB = b.journal_entry?.reference || '';
+                } else if (sortConfig.key === 'description') {
+                    valA = a.journal_entry?.description || '';
+                    valB = b.journal_entry?.description || '';
+                } else if (sortConfig.key === 'debit' || sortConfig.key === 'credit') {
+                    valA = parseFloat(valA || 0);
+                    valB = parseFloat(valB || 0);
+                }
+
+                if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        return sortedLines.map(line => {
             const debit = parseFloat(line.debit || 0);
             const credit = parseFloat(line.credit || 0);
 
@@ -48,7 +96,15 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                 running_balance: currentBalance
             };
         });
-    }, [account, lines, opening_balance]);
+    }, [account, lines, sortConfig]);
+
+    const totals = useMemo(() => {
+        return transactions.reduce((acc, tx) => {
+            acc.debit += parseFloat(tx.debit || 0);
+            acc.credit += parseFloat(tx.credit || 0);
+            return acc;
+        }, { debit: 0, credit: 0 });
+    }, [transactions]);
 
     const isNormalDebit = ['asset', 'expense'].includes(account.account_type);
 
@@ -219,12 +275,6 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
         // Headers
         csvContent += `"Date","Ref No.","Payee / Account","Memo","Debit","Credit","Balance"\n`;
 
-        // Opening Balance
-        if (parseFloat(opening_balance || 0) !== 0) {
-            const ob = parseFloat(opening_balance || 0).toFixed(2);
-            csvContent += `"${filters.start_date || ''}","-","Opening Balance","Balance prior to ${filters.start_date || ''}","","","${ob}"\n`;
-        }
-
         // Transactions
         transactions.forEach(tx => {
             const date = tx.journal_entry?.date || '';
@@ -244,6 +294,10 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
 
             csvContent += `"${date}","${ref}","${payeeAccountStr.replace(/"/g, '""')}","${memoStr.replace(/"/g, '""')}",${debit},${credit},${balance}\n`;
         });
+
+        // Totals
+        const finalBalance = transactions.length > 0 ? transactions[transactions.length - 1].running_balance : 0;
+        csvContent += `\n"TOTAL","","","",${totals.debit.toFixed(2)},${totals.credit.toFixed(2)},${finalBalance.toFixed(2)}\n`;
 
         // Create download blob
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -294,37 +348,45 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                 <table className="min-w-full text-[13px] text-left border-collapse">
                     <thead>
                         <tr className="border-y-2 border-gray-300">
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 whitespace-nowrap min-w-[100px]">Date</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 whitespace-nowrap min-w-[110px]">Ref No.</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[180px]">Payee / Account</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[180px]">Memo</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[110px]">Debit</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[110px]">Credit</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px]">Balance</th>
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 text-center whitespace-nowrap min-w-[80px]"></th>
+                            <th 
+                                className="py-1.5 px-3 font-semibold text-gray-900 whitespace-nowrap min-w-[100px] cursor-pointer select-none"
+                                onClick={() => requestSort('date')}
+                            >
+                                Date {getSortIcon('date')}
+                            </th>
+                            <th 
+                                className="py-1.5 px-3 font-semibold text-gray-900 whitespace-nowrap min-w-[110px] cursor-pointer select-none"
+                                onClick={() => requestSort('reference')}
+                            >
+                                Ref No. {getSortIcon('reference')}
+                            </th>
+                            <th className="py-1.5 px-3 font-semibold text-gray-900 min-w-[180px]">
+                                Payee / Account
+                            </th>
+                            <th 
+                                className="py-1.5 px-3 font-semibold text-gray-900 min-w-[180px] cursor-pointer select-none"
+                                onClick={() => requestSort('description')}
+                            >
+                                Memo {getSortIcon('description')}
+                            </th>
+                            <th 
+                                className="py-1.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[110px] cursor-pointer select-none"
+                                onClick={() => requestSort('debit')}
+                            >
+                                Debit {getSortIcon('debit')}
+                            </th>
+                            <th 
+                                className="py-1.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[110px] cursor-pointer select-none"
+                                onClick={() => requestSort('credit')}
+                            >
+                                Credit {getSortIcon('credit')}
+                            </th>
+                            <th className="py-1.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px]">Balance</th>
+                            <th className="py-1.5 px-3 font-semibold text-gray-900 text-center whitespace-nowrap min-w-[80px]"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                        {parseFloat(opening_balance || 0) !== 0 && (
-                            <tr className="bg-slate-50/70 border-b border-slate-200">
-                                <td className="px-4 py-3 text-[11px] text-slate-500 font-mono italic">
-                                    {filters.start_date}
-                                </td>
-                                <td className="px-4 py-3 text-[11px] text-slate-400 font-mono">-</td>
-                                <td className="px-4 py-3 text-[11px] font-bold text-slate-700 italic">
-                                    Opening Balance
-                                </td>
-                                <td className="px-4 py-3 text-[11px] text-slate-400 italic">
-                                    Balance prior to {filters.start_date}
-                                </td>
-                                <td className="px-4 py-3 text-[11px] text-slate-400 text-right font-mono">-</td>
-                                <td className="px-4 py-3 text-[11px] text-slate-400 text-right font-mono">-</td>
-                                <td className="px-4 py-3 text-[11px] font-bold text-primary-600 text-right font-mono whitespace-nowrap">
-                                    {currencyPrefix ? `${currencyPrefix} ` : ''}{parseFloat(opening_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                </td>
-                                <td className="px-4 py-3 text-center whitespace-nowrap"></td>
-                            </tr>
-                        )}
+
                         {transactions.map((tx) => {
                             const isEditing = editingTxId === tx.id;
                             const isSplit = (tx.journal_entry?.lines || []).length > 2;
@@ -341,7 +403,7 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                                         {/* Editing Row */}
                                         <tr className="bg-primary-50/20 hover:bg-primary-50/30 transition-colors">
                                             {/* Date */}
-                                            <td className="px-2 py-4 align-top">
+                                            <td className="px-2 py-2 align-top">
                                                 <input
                                                     type="date"
                                                     value={editForm.date}
@@ -350,7 +412,7 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                                                 />
                                             </td>
                                             {/* Ref No */}
-                                            <td className="px-2 py-4 align-top">
+                                            <td className="px-2 py-2 align-top">
                                                 <input
                                                     type="text"
                                                     value={editForm.reference}
@@ -360,7 +422,7 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                                                 />
                                             </td>
                                             {/* Payee / Account */}
-                                            <td className="px-2 py-4 align-top space-y-2">
+                                            <td className="px-2 py-2 align-top space-y-2">
                                                 <div>
                                                     <select
                                                         value={editForm.payee_id}
@@ -392,7 +454,7 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                                                 </div>
                                             </td>
                                             {/* Description */}
-                                            <td className="px-2 py-4 align-top">
+                                            <td className="px-2 py-2 align-top">
                                                 <textarea
                                                     value={editForm.memo}
                                                     onChange={e => setEditForm(prev => ({ ...prev, memo: e.target.value }))}
@@ -401,7 +463,7 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                                                 />
                                             </td>
                                             {/* Amount 1 (Debit) */}
-                                            <td className="px-2 py-4 align-top">
+                                            <td className="px-2 py-2 align-top">
                                                 {(parseFloat(tx.debit) > 0 || (parseFloat(tx.debit) === 0 && parseFloat(tx.credit) === 0 && isNormalDebit)) ? (
                                                     <div className="space-y-1">
                                                         <input
@@ -420,7 +482,7 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                                                 )}
                                             </td>
                                             {/* Amount 2 (Credit) */}
-                                            <td className="px-2 py-4 align-top">
+                                            <td className="px-2 py-2 align-top">
                                                 {(parseFloat(tx.credit) > 0 || (parseFloat(tx.debit) === 0 && parseFloat(tx.credit) === 0 && !isNormalDebit)) ? (
                                                     <div className="space-y-1">
                                                         <input
@@ -439,11 +501,11 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                                                 )}
                                             </td>
                                             {/* Balance */}
-                                            <td className="px-4 py-4 align-top text-right text-[11px] font-bold text-slate-500 font-mono">
+                                            <td className="px-4 py-2 align-top text-right text-[11px] font-bold text-slate-500 font-mono">
                                                 {tx.running_balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </td>
                                             {/* Empty Actions cell */}
-                                            <td className="px-4 py-4 align-top"></td>
+                                            <td className="px-4 py-2 align-top"></td>
                                         </tr>
                                         {/* Bottom Actions Bar Row */}
                                         <tr className="bg-primary-50/30">
@@ -486,11 +548,11 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                             return (
                                 <tr key={tx.id} className={`transition-colors group ${isVoided ? 'bg-slate-50/60 opacity-60' : 'hover:bg-slate-50/50'}`}>
                                     {/* Date */}
-                                    <td className="px-4 py-3 text-[11px] text-slate-600 font-mono whitespace-nowrap">
+                                    <td className="px-4 py-1.5 text-[11px] text-slate-600 font-mono whitespace-nowrap">
                                         {tx.journal_entry?.date}
                                     </td>
                                     {/* Ref No */}
-                                    <td className="px-4 py-3 text-[11px] font-bold text-slate-800 font-mono whitespace-nowrap">
+                                    <td className="px-4 py-1.5 text-[11px] font-bold text-slate-800 font-mono whitespace-nowrap">
                                         <div className="flex items-center gap-1.5">
                                             <span>{tx.journal_entry?.reference || '-'}</span>
                                             {isVoided && (
@@ -501,7 +563,7 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                                         </div>
                                     </td>
                                     {/* Payee / Account */}
-                                    <td className="px-4 py-3 text-[11px] text-slate-600">
+                                    <td className="px-4 py-1.5 text-[11px] text-slate-600">
                                         <div className="flex flex-col">
                                             <span className="font-bold text-slate-800">{getPayeeLabel(tx.payee_id || tx.journal_entry?.payee_id)}</span>
                                             <span className={`text-[10px] font-semibold mt-0.5 ${isSplit ? 'text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded w-max' : 'text-slate-400'}`}>
@@ -510,26 +572,26 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                                         </div>
                                     </td>
                                     {/* Memo / Description */}
-                                    <td className="px-4 py-3 text-[11px] text-slate-600">
+                                    <td className="px-4 py-1.5 text-[11px] text-slate-600">
                                         <div className="flex flex-col">
                                             <span className="font-bold text-slate-700">{tx.journal_entry?.description}</span>
                                             {tx.memo && <span className="text-[10px] text-slate-400 italic mt-0.5">{tx.memo}</span>}
                                         </div>
                                     </td>
                                     {/* Debit Amount */}
-                                    <td className="px-4 py-3 text-[11px] font-bold text-slate-900 text-right font-mono whitespace-nowrap">
+                                    <td className="px-4 py-1.5 text-[11px] font-bold text-slate-900 text-right font-mono whitespace-nowrap">
                                         {parseFloat(tx.debit) > 0 ? parseFloat(tx.debit).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
                                     </td>
                                     {/* Credit Amount */}
-                                    <td className="px-4 py-3 text-[11px] font-bold text-slate-900 text-right font-mono whitespace-nowrap">
+                                    <td className="px-4 py-1.5 text-[11px] font-bold text-slate-900 text-right font-mono whitespace-nowrap">
                                         {parseFloat(tx.credit) > 0 ? parseFloat(tx.credit).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
                                     </td>
                                     {/* Balance */}
-                                    <td className="px-4 py-3 text-[11px] font-bold text-primary-600 text-right font-mono whitespace-nowrap">
+                                    <td className="px-4 py-1.5 text-[11px] font-bold text-primary-600 text-right font-mono whitespace-nowrap">
                                         {currencyPrefix ? `${currencyPrefix} ` : ''}{tx.running_balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                     </td>
                                     {/* Action */}
-                                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                                    <td className="px-4 py-1.5 text-center whitespace-nowrap">
                                         <CommonButton
                                             variant="ghost"
                                             size="xs"
@@ -547,6 +609,21 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                                 <td colSpan={8} className="px-4 py-12 text-center text-[11px] text-slate-400 font-medium">
                                     No transactions found for this account.
                                 </td>
+                            </tr>
+                        )}
+                        {transactions.length > 0 && (
+                            <tr className="border-t-2 border-b-2 border-gray-400 font-bold bg-white">
+                                <td colSpan={4} className="py-3 px-3 text-gray-900 uppercase">TOTAL</td>
+                                <td className="py-3 px-3 text-right whitespace-nowrap text-gray-900 font-mono">
+                                    {totals.debit > 0 ? totals.debit.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                                </td>
+                                <td className="py-3 px-3 text-right whitespace-nowrap text-gray-900 font-mono">
+                                    {totals.credit > 0 ? totals.credit.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                                </td>
+                                <td className="py-3 px-3 text-right whitespace-nowrap text-primary-600 font-mono">
+                                    {currencyPrefix ? `${currencyPrefix} ` : ''}{transactions[transactions.length - 1].running_balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </td>
+                                <td></td>
                             </tr>
                         )}
                     </tbody>

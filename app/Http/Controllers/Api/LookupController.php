@@ -229,6 +229,7 @@ class LookupController extends Controller
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('sku', 'like', "%{$search}%");
             })
+            ->orderBy('sort_order')
             ->orderBy('name')
             ->get()
             ->map(function($item) {
@@ -250,6 +251,7 @@ class LookupController extends Controller
     public function categories(Request $request)
     {
         $categories = \App\Models\ItemCategory::select('id', 'name')
+            ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
 
