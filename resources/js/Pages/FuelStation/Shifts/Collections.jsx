@@ -120,6 +120,7 @@ export default function Collections({ shift, accounts, customers }) {
     };
 
     const handleAmountBlur = (type, index, value) => {
+        if (!document.hasFocus()) return; // Skip auto-format if window loses focus (e.g., Alt+Tab)
         const cleanValue = String(value).replace(/,/g, '');
         const val = parseFloat(cleanValue);
         if (!isNaN(val)) {
@@ -140,7 +141,7 @@ export default function Collections({ shift, accounts, customers }) {
     };
 
     const submitDraft = () => {
-        post(route('shifts.collections.draft', shift.id));
+        post(route('shifts.draft', shift.id));
     };
 
     const submitReopen = () => {
