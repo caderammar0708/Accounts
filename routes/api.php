@@ -14,8 +14,42 @@ Route::get('/user', function (Request $request) {
 Route::prefix('v1')->group(function () {
     Route::post('/login-sso', [\App\Http\Controllers\Api\MobileAuthController::class, 'loginSso']);
     Route::get('/check-access', [\App\Http\Controllers\Api\MobileAuthController::class, 'checkAccess'])->middleware('auth:sanctum');
+    Route::post('/logout', [\App\Http\Controllers\Api\MobileAuthController::class, 'logout'])->middleware('auth:sanctum');
 
-     Route::post('/logout', [\App\Http\Controllers\Api\MobileAuthController::class, 'logout'])->middleware('auth:sanctum');
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/attendance/today', [\App\Http\Controllers\Api\AttendanceController::class, 'todayStatus']);
+        Route::get('/attendance/history', [\App\Http\Controllers\Api\AttendanceController::class, 'history']);
+        Route::post('/attendance/check-in', [\App\Http\Controllers\Api\AttendanceController::class, 'checkIn']);
+        Route::post('/attendance/check-out', [\App\Http\Controllers\Api\AttendanceController::class, 'checkOut']);
+        Route::post('/attendance/lunch-out', [\App\Http\Controllers\Api\AttendanceController::class, 'lunchOut']);
+        Route::post('/attendance/lunch-in', [\App\Http\Controllers\Api\AttendanceController::class, 'lunchIn']);
+        Route::post('/attendance/outside-out', [\App\Http\Controllers\Api\AttendanceController::class, 'outsideOut']);
+        Route::post('/attendance/outside-in', [\App\Http\Controllers\Api\AttendanceController::class, 'outsideIn']);
+        Route::post('/attendance/cancel-outside-log/{id}', [\App\Http\Controllers\Api\AttendanceController::class, 'cancelOutsideLog']);
+        Route::post('/attendance/prayer-break', [\App\Http\Controllers\Api\AttendanceController::class, 'applyPrayerBreak']);
+        Route::post('/attendance/time-adjustment', [\App\Http\Controllers\Api\AttendanceController::class, 'requestTimeAdjustment']);
+
+        Route::post('/leave-request', [\App\Http\Controllers\Api\LeaveRequestController::class, 'store']);
+        Route::get('/leave/history', [\App\Http\Controllers\Api\LeaveRequestController::class, 'history']);
+        Route::get('/leave/balance', [\App\Http\Controllers\Api\LeaveRequestController::class, 'balance']);
+        Route::get('/leave/types', [\App\Http\Controllers\Api\LeaveRequestController::class, 'types']);
+
+        Route::get('/manager/dashboard', [\App\Http\Controllers\Api\ManagerController::class, 'dashboard']);
+        Route::get('/manager/leaves', [\App\Http\Controllers\Api\ManagerController::class, 'getPendingLeaves']);
+        Route::get('/manager/short-leaves', [\App\Http\Controllers\Api\ManagerController::class, 'getPendingShortLeaves']);
+        Route::get('/manager/outside-logs', [\App\Http\Controllers\Api\ManagerController::class, 'getPendingOutsideLogs']);
+        Route::get('/manager/remote-attendances', [\App\Http\Controllers\Api\ManagerController::class, 'getPendingRemoteAttendances']);
+        Route::get('/manager/prayer-breaks', [\App\Http\Controllers\Api\ManagerController::class, 'getPendingPrayerBreaks']);
+        Route::get('/manager/time-adjustments', [\App\Http\Controllers\Api\ManagerController::class, 'getPendingTimeAdjustments']);
+        Route::post('/manager/approve-remote-attendance/{id}', [\App\Http\Controllers\Api\ManagerController::class, 'approveRemoteAttendance']);
+        Route::post('/manager/approve-leave-request/{id}', [\App\Http\Controllers\Api\ManagerController::class, 'approveLeaveRequest']);
+        Route::post('/manager/approve-outside-log/{id}', [\App\Http\Controllers\Api\ManagerController::class, 'approveOutsideLog']);
+        Route::post('/manager/approve-prayer-break/{id}', [\App\Http\Controllers\Api\ManagerController::class, 'approvePrayerBreak']);
+        Route::post('/manager/approve-time-adjustment/{id}', [\App\Http\Controllers\Api\ManagerController::class, 'approveTimeAdjustment']);
+
+        Route::get('/payroll', [\App\Http\Controllers\Api\PayrollController::class, 'index']);
+        Route::get('/payroll/{id}', [\App\Http\Controllers\Api\PayrollController::class, 'show']);
+    });
 });
 
 Route::middleware(['auth:sanctum,web'])->group(function () {

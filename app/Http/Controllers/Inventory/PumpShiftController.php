@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\FuelStation\PumpShift;
 use App\Models\FuelStation\PumpShiftNozzle;
-use App\Models\Employee;
+use App\Models\HR\Employee;
 use App\Models\FuelStation\Pump;
 use App\Models\FuelStation\Nozzle;
 use App\Models\Accounting\ChartOfAcc;

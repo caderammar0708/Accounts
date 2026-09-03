@@ -29,6 +29,14 @@ export default function Sidebar({ navigation, user, onQuickMenuOpen }) {
     };
 
     const [openMenu, setOpenMenu] = useState(getInitialOpenMenu);
+    const [expandedMenus, setExpandedMenus] = useState({});
+
+    const toggleSubmenu = (menuName) => {
+        setExpandedMenus(prev => ({
+            ...prev,
+            [menuName]: !prev[menuName]
+        }));
+    };
 
     useEffect(() => {
         sessionStorage.setItem('sidebar_open_menu', openMenu === null ? 'null' : openMenu);
@@ -99,7 +107,68 @@ export default function Sidebar({ navigation, user, onQuickMenuOpen }) {
 
                             const hasAccess = item.permission ? can(user, item.permission) : (!item.adminOnly || can(user, 'dashboard.view'));
 
-                            return hasAccess && (
+                            if (!hasAccess) return null;
+
+                            if (item.submenus) {
+                                const isExpanded = expandedMenus[item.name];
+                                const hasActiveSubmenu = item.submenus.some(sub => 
+                                    (sub.activeRoutes && Array.isArray(sub.activeRoutes) && sub.activeRoutes.some(r => route().current(r))) ||
+                                    (sub.activePattern && Array.isArray(sub.activePattern) && sub.activePattern.some(pattern => route().current(pattern))) ||
+                                    (sub.href && sub.href.split('/').pop() && route().current(`${sub.href.split('/').pop()}.*`))
+                                );
+                                
+                                return (
+                                    <div key={item.name} className="space-y-1">
+                                        <button
+                                            onClick={() => toggleSubmenu(item.name)}
+                                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 group ${
+                                                hasActiveSubmenu || isExpanded
+                                                ? 'bg-white/10 text-white font-bold'
+                                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md transition-colors ${hasActiveSubmenu || isExpanded ? 'text-white' : 'group-hover:text-white'}`}>
+                                                    <SidebarIcon name={item.icon} />
+                                                </span>
+                                                <span className="text-xs font-bold leading-none whitespace-nowrap">{item.name}</span>
+                                            </div>
+                                            <svg className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                        
+                                        {isExpanded && (
+                                            <div className="pl-11 pr-3 space-y-1 mt-1">
+                                                {item.submenus.map((sub, idx) => {
+                                                    const subRouteName = sub.href ? sub.href.split('/').pop() : '';
+                                                    const isSubActive = (sub.activeRoutes && Array.isArray(sub.activeRoutes) && sub.activeRoutes.some(r => route().current(r))) ||
+                                                        (sub.activePattern && Array.isArray(sub.activePattern) && sub.activePattern.some(pattern => route().current(pattern))) ||
+                                                        (subRouteName && (route().current(`${subRouteName}.*`) || route().current(subRouteName) || route().current(`${subRouteName}.index`)));
+                                                    
+                                                    const hasSubAccess = sub.permission ? can(user, sub.permission) : true;
+                                                    
+                                                    return hasSubAccess && (
+                                                        <Link
+                                                            key={`${sub.name}-${idx}`}
+                                                            href={sub.href}
+                                                            className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
+                                                                isSubActive
+                                                                ? 'text-white font-bold bg-white/5'
+                                                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                                            }`}
+                                                        >
+                                                            <span className="text-[11px] font-semibold leading-none">{sub.name}</span>
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            }
+
+                            return (
                                 <Link
                                     key={`${item.name}-${item.href}`}
                                     href={item.href}

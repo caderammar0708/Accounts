@@ -331,6 +331,22 @@ class CompanySettingsController extends Controller
         return back()->with('message', 'Attachments setting updated successfully.');
     }
 
+    public function updateHrModuleEnabled(Request $request)
+    {
+        abort_if(!$request->user()->can('settings.company.layout') && !$request->user()->can('settings.company') && !$request->user()->is_admin, 403, 'Unauthorized action.');
+
+        $validated = $request->validate([
+            'hr_module_enabled' => 'required|boolean',
+            'drop_tables' => 'nullable|boolean',
+        ]);
+
+        $this->getSettings()->update(['hr_module_enabled' => $validated['hr_module_enabled']]);
+        
+        $this->handleModuleMigrations('hr', $validated['hr_module_enabled'], $request->boolean('drop_tables'));
+
+        return back()->with('message', 'HR Module setting updated successfully.');
+    }
+
     public function updateBusinessType(Request $request)
     {
         abort_if(!$request->user()->can('settings.layout.business_type') && !$request->user()->can('settings.company.layout') && !$request->user()->can('settings.company'), 403, 'Unauthorized action.');

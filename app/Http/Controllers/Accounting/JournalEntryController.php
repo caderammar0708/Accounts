@@ -10,7 +10,7 @@ use App\Models\Accounting\JournalEntryLine;
 use App\Models\Accounting\ChartOfAcc;
 use App\Models\Supplier;
 use App\Models\Customer;
-use App\Models\Employee;
+use App\Models\HR\Employee;
 use App\Http\Requests\Accounting\JournalEntryRequest;
 use App\Http\Requests\Accounting\QuickJournalEntryRequest;
 use Inertia\Inertia;

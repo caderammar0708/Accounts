@@ -58,6 +58,7 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
     const isServiceStation = businessType === 'Service Station';
     const isDealership = businessType === 'Dealership';
     const isNormal = businessType === 'Normal';
+    const isHrEnabled = page.props.auth.hr_module_enabled;
 
     const showLocationsAndStockShifts = isDealership || Boolean(page.props.auth.location);
 
@@ -83,6 +84,20 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
         ] : []),
         { name: 'Chart of Accounts', href: route('chart-of-account.index'), icon: 'accounting', permission: 'chart-of-accounts.view' },
         { name: 'Reports', href: route('reports.index'), icon: 'reports', permission: 'reports.view' },
+        ...(isHrEnabled ? [{ name: 'Holiday Calendar', href: '/calendar', icon: 'dashboard', permission: 'manage-leave-requests' }] : []),
+        ...(isHrEnabled ? [{
+            name: 'Payroll & Leave',
+            icon: 'accounting',
+            permission: 'manage-payroll',
+            submenus: [
+                { name: 'Payroll', href: route('payroll.index'), permission: 'view-payroll' },
+                { name: 'Salary Operations', href: route('salary-revision.index'), permission: 'manage-payroll' },
+                { name: 'Leaves', href: route('leave-request.index'), permission: 'manage-leave-requests' },
+                { name: 'Approvals', href: route('approvals.index'), permission: 'manage-system' },
+                { name: 'Attendance', href: route('attendance.index'), permission: 'view-attendance-report' },
+            ]
+        }] : []),
+
         ...(showLocationsAndStockShifts ? [{ name: 'Locations', href: route('locations.index'), icon: 'locations', activeRoutes: ['locations.*'] }] : []),
         { name: 'Bank Reconciliation', href: route('bank-reconciliation.index'), icon: 'reconciliation', permission: 'bank-reconciliation.view' },
     ];
@@ -220,6 +235,9 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
                                 <Dropdown.Content align="right" width="48" contentClasses="py-1 bg-white ring-1 ring-black ring-opacity-5 rounded-xl shadow-xl overflow-hidden mt-2">
                                     {(user?.is_admin || can(user, 'settings.company')) && (
                                         <Dropdown.Link href={route('settings.company')}>Company Settings</Dropdown.Link>
+                                    )}
+                                    {(user?.is_admin || can(user, 'settings.hr')) && (
+                                        <Dropdown.Link href={route('settings.hr.remote-checkin')}>HR Settings</Dropdown.Link>
                                     )}
                                     {(user?.is_admin || can(user, 'settings.print')) && (
                                         <Dropdown.Link href={route('settings.print')}>Print Settings</Dropdown.Link>

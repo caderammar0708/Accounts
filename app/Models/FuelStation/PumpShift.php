@@ -4,7 +4,7 @@ namespace App\Models\FuelStation;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use App\Models\Employee;
+use App\Models\HR\Employee;
 
 class PumpShift extends Model
 {

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Supplier;
 use App\Models\Customer;
-use App\Models\Employee;
+use App\Models\HR\Employee;
 
 class LookupController extends Controller
 {

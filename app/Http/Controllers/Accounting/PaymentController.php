@@ -10,7 +10,7 @@ use App\Models\Accounting\Payment;
 
 use App\Models\Supplier;
 use App\Models\Customer;
-use App\Models\Employee;
+use App\Models\HR\Employee;
 use App\Models\Accounting\JournalEntry;
 use App\Models\Accounting\JournalEntryLine;
 use App\Http\Requests\Accounting\PaymentRequest;

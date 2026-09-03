@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Supplier;
-use App\Models\Employee;
+use App\Models\HR\Employee;
 use App\Models\Accounting\ChartOfAcc;
 use App\Models\Accounting\BankImport;
 use App\Models\Accounting\BankImportLine;

@@ -9,7 +9,7 @@ use App\Models\Inventory\StockShift;
 use App\Models\Inventory\StockShiftItem;
 use App\Models\Inventory\StockShiftCollection;
 use App\Models\Inventory\StockShiftCreditSale;
-use App\Models\Employee;
+use App\Models\HR\Employee;
 use App\Models\Location;
 use App\Models\Item;
 use App\Models\Customer;

@@ -9,18 +9,26 @@ use App\Http\Controllers\Garage\JobCardController;
 
 // Accounting Controllers
 use App\Http\Controllers\Accounting\PaymentController;
-use App\Http\Controllers\Accounting\PayBillController;
-use App\Http\Controllers\Accounting\JournalEntryController;
+use App\Http\Controllers\Accounting\TaxRateController;
 use App\Http\Controllers\Accounting\TransferController;
-use App\Http\Controllers\Accounting\CreditInvoiceController;
-use App\Http\Controllers\Accounting\BillController;
-use App\Http\Controllers\Accounting\ReceivePaymentController;
-use App\Http\Controllers\Accounting\SalesInvoiceController;
+use App\Http\Controllers\Payroll\AttendanceController;
+use App\Http\Controllers\Payroll\LeaveRequestController;
+use App\Http\Controllers\Payroll\LeaveTypeController;
+use App\Http\Controllers\Payroll\PayrollController;
+use App\Http\Controllers\Payroll\LeaveBalanceController;
+use App\Http\Controllers\Payroll\AdvanceSalaryController;
+use App\Http\Controllers\Admin\ApprovalController;
 use App\Http\Controllers\Accounting\BankDepositController;
 use App\Http\Controllers\Accounting\InvoiceReturnController;
 use App\Http\Controllers\Accounting\BillReturnController;
 use App\Http\Controllers\Accounting\ChequeController;
 use App\Http\Controllers\Accounting\ChartOfAccController;
+use App\Http\Controllers\Accounting\PayBillController;
+use App\Http\Controllers\Accounting\JournalEntryController;
+use App\Http\Controllers\Accounting\CreditInvoiceController;
+use App\Http\Controllers\Accounting\BillController;
+use App\Http\Controllers\Accounting\ReceivePaymentController;
+use App\Http\Controllers\Accounting\SalesInvoiceController;
 use App\Http\Controllers\Accounting\ReportController;
 use App\Http\Controllers\Accounting\BankController;
 use App\Http\Controllers\Accounting\BankReconciliationController;
@@ -85,6 +93,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/reports-display-style', 'updateReportsDisplayStyle')->name('layout.reports.update');
             Route::post('/vehicles-layout', 'updateVehiclesEnabled')->name('layout.vehicles.update');
             Route::post('/branches-layout', 'updateBranchesEnabled')->name('layout.branches.update');
+            Route::post('/hr-module', 'updateHrModuleEnabled')->name('layout.hr.update');
             Route::post('/attachments-layout', 'updateAttachmentsEnabled')->name('layout.attachments.update');
             Route::post('/business-type-layout', 'updateBusinessType')->name('layout.business_type.update');
             Route::post('/alerts', 'updateAlerts')->name('alerts.update');
@@ -98,7 +107,28 @@ Route::middleware('auth')->group(function () {
         Route::delete('/print/{printSetting}', [PrintSettingController::class, 'destroy'])->name('print.settings.destroy');
         // Quick routes for settings-managed resources
         Route::post('/payment-methods', [\App\Http\Controllers\Settings\PaymentMethodController::class, 'store'])->name('payment-methods.store');
+        
+        // HR Settings
+        Route::controller(\App\Http\Controllers\Settings\HRSettingsController::class)->prefix('hr')->name('settings.hr.')->group(function () {
+            Route::get('/remote-checkin', 'remoteCheckin')->name('remote-checkin');
+            Route::post('/remote-checkin', 'updateRemoteCheckin')->name('remote-checkin.update');
+            Route::get('/leave-notification', 'leaveNotification')->name('leave-notification');
+            Route::post('/leave-notification', 'updateLeaveNotification')->name('leave-notification.update');
+            Route::get('/payroll', 'payroll')->name('payroll');
+            Route::post('/payroll', 'updatePayroll')->name('payroll.update');
+            Route::get('/qr', 'qr')->name('qr');
+            Route::post('/qr', 'updateQr')->name('qr.update');
+        });
+
+        Route::prefix('hr')->name('settings.hr.')->group(function () {
+            Route::resource('attendance-locations', \App\Http\Controllers\Settings\AttendanceLocationController::class)->except(['show']);
+            Route::resource('shifts', \App\Http\Controllers\Settings\ShiftController::class)->except(['show']);
+            Route::resource('leave-types', \App\Http\Controllers\Settings\LeaveTypeController::class)->except(['show']);
+        });
     });
+
+    // HR & Payroll
+    Route::get('/calendar', [\App\Http\Controllers\HR\CalendarController::class, 'index'])->name('calendar.index');
 
     // Import Tools
     Route::controller(ImportController::class)->as('import.')->prefix('import')->group(function () {
@@ -130,6 +160,16 @@ Route::middleware('auth')->group(function () {
     Route::resource('customers', CustomerController::class);
     Route::resource('suppliers', SupplierController::class);
     Route::resource('employees', EmployeeController::class);
+    Route::get('employees/{employee}/salary', [EmployeeController::class, 'editSalary'])->name('employees.salary.edit');
+    Route::put('employees/{employee}/salary', [EmployeeController::class, 'updateSalary'])->name('employees.salary.update');
+    
+    Route::get('employees/{employee}/attendance', [EmployeeController::class, 'editAttendance'])->name('employees.attendance.edit');
+    
+    Route::get('employees/{employee}/documents', [EmployeeController::class, 'editDocuments'])->name('employees.documents.edit');
+    Route::put('employees/{employee}/documents', [EmployeeController::class, 'updateDocuments'])->name('employees.documents.update');
+    
+    Route::get('employees/{employee}/security', [EmployeeController::class, 'editSecurity'])->name('employees.security.edit');
+    Route::put('employees/{employee}/security', [EmployeeController::class, 'updateSecurity'])->name('employees.security.update');
     Route::resource('job-cards', JobCardController::class);
     Route::resource('vehicles', VehicleController::class);
 
@@ -426,6 +466,42 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{attachment}', 'destroy')->name('destroy');
         Route::get('/{attachment}/download', 'download')->name('download');
     });
+
+    // HR & Payroll
+    Route::resource('payroll', PayrollController::class);
+    Route::get('payroll/{payroll}/export', [PayrollController::class, 'export'])->name('payroll.export');
+    Route::get('payroll/{payroll}/export-epf', [PayrollController::class, 'exportEpf'])->name('payroll.export.epf');
+    Route::get('payroll/{payroll}/export-etf', [PayrollController::class, 'exportEtf'])->name('payroll.export.etf');
+    Route::get('payroll/{payroll}/export-tax', [PayrollController::class, 'exportTax'])->name('payroll.export.tax');
+    Route::post('payroll/{payroll}/pay', [PayrollController::class, 'pay'])->name('payroll.pay');
+    
+    Route::put('payslip/{payslip}/adjustments', [PayrollController::class, 'updatePayslipAdjustments'])->name('payslip.adjustments.update');
+    Route::get('payslip/{payslip}/pdf', [PayrollController::class, 'downloadPdf'])->name('payslip.pdf');
+    
+    Route::resource('leave-type', LeaveTypeController::class);
+    Route::post('leave-type/{id}/restore', [LeaveTypeController::class, 'restore'])->name('leave-type.restore');
+    
+    Route::resource('leave-request', LeaveRequestController::class);
+    Route::put('leave-request/{leave_request}/status', [LeaveRequestController::class, 'updateStatus'])->name('leave-request.update-status');
+    
+    Route::get('leave-balance', [LeaveBalanceController::class, 'index'])->name('leave-balance.index');
+    Route::post('leave-balance/assign', [LeaveBalanceController::class, 'assign'])->name('leave-balance.assign');
+    Route::get('leave-balance/export', [LeaveBalanceController::class, 'export'])->name('leave-balance.export');
+    
+    Route::resource('advance-salary', AdvanceSalaryController::class)->only(['index', 'store', 'destroy']);
+    
+    Route::get('salary-revision', [PayrollController::class, 'salaryRevisionIndex'])->name('salary-revision.index');
+    
+    Route::get('attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
+    Route::resource('attendance', AttendanceController::class);
+    Route::put('attendance/outside-log/{id}/status', [AttendanceController::class, 'updateOutsideLogStatus'])->name('attendance.outside-log.update-status');
+
+    Route::prefix('approvals')->name('approvals.')->controller(ApprovalController::class)->group(function () {
+        Route::put('/short-leave/{id}/status', 'updateShortLeaveStatus')->name('short-leave.status');
+        Route::put('/time-adjustment/{id}/status', 'updateTimeAdjustmentStatus')->name('time-adjustment.status');
+        Route::get('/', 'index')->name('index');
+    });
+    
 });
 
 // SSO Routes

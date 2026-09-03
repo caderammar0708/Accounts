@@ -165,6 +165,9 @@ const submitFeatureToggle = (feature, enabled, dropData = false) => {
     } else if (feature === 'branches') {
         routeName = 'layout.branches.update';
         payload = { branches_enabled: enabled, drop_tables: dropData };
+    } else if (feature === 'hr') {
+        routeName = 'layout.hr.update';
+        payload = { hr_module_enabled: enabled, drop_tables: dropData };
     } else if (feature === 'fuel_station') {
         routeName = 'layout.fuel_station.update';
         payload = { fuel_station_enabled: enabled, drop_tables: dropData };
@@ -847,6 +850,26 @@ const businessTypeConfirmationModalSubmit = () => {
                                         router.post(route('layout.branches.update'), {
                                             branches_enabled: e.target.checked
                                         }, { preserveScroll: true });
+                                    }}
+                                />
+                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3 pt-3">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h3 className="text-xs font-bold text-gray-800">HR Module</h3>
+                                <p className="text-gray-400 text-[10px]">If enabled, HR features like Payroll, Leave Management, and Attendance will be active.</p>
+                            </div>
+                            <label className={`relative inline-flex items-center cursor-pointer scale-90`}>
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={settings?.hr_module_enabled ?? true}
+                                    onChange={(e) => {
+                                        handleToggleFeature('hr', settings?.hr_module_enabled, e);
                                     }}
                                 />
                                 <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
