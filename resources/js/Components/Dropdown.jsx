@@ -4,16 +4,31 @@ import { createContext, useContext, useState } from 'react';
 
 const DropDownContext = createContext();
 
-const Dropdown = ({ children }) => {
-    const [open, setOpen] = useState(false);
+const Dropdown = ({ children, open: controlledOpen, onToggle, className = '' }) => {
+    const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+    const isControlled = controlledOpen !== undefined;
+    const open = isControlled ? controlledOpen : uncontrolledOpen;
+
+    const setOpen = (val) => {
+        if (typeof val === 'function') {
+            const next = val(open);
+            if (onToggle) onToggle(next);
+            if (!isControlled) setUncontrolledOpen(next);
+        } else {
+            if (onToggle) onToggle(val);
+            if (!isControlled) setUncontrolledOpen(val);
+        }
+    };
 
     const toggleOpen = () => {
-        setOpen((previousState) => !previousState);
+        const next = !open;
+        if (onToggle) onToggle(next);
+        if (!isControlled) setUncontrolledOpen(next);
     };
 
     return (
         <DropDownContext.Provider value={{ open, setOpen, toggleOpen }}>
-            <div className="relative">{children}</div>
+            <div className={`relative ${className}`}>{children}</div>
         </DropDownContext.Provider>
     );
 };

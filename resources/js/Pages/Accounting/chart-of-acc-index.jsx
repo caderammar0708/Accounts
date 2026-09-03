@@ -13,6 +13,7 @@ export default function ChartOfAccIndex({ auth, chartOfAccounts = [], currencies
     const [initialParent, setInitialParent] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState('all');
+    const [activeDropdownId, setActiveDropdownId] = useState(null);
 
     const handleOpenCreate = (parentAccount = null) => {
         const isActualAccount = parentAccount && typeof parentAccount === 'object' && 'id' in parentAccount;
@@ -113,21 +114,22 @@ export default function ChartOfAccIndex({ auth, chartOfAccounts = [], currencies
                     </div>
 
                     {/* Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                    <div className="overflow-x-auto min-h-[350px]">
+                        <table className="w-full min-w-[920px] text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200">
-                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Name / Code</th>
-                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Type</th>
-                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Detail Type</th>
-                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Description</th>
-                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Balance</th>
-                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Action</th>
+                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest min-w-[220px]">Name / Code</th>
+                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-28 min-w-[100px]">Type</th>
+                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-40 min-w-[140px]">Detail Type</th>
+                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest min-w-[180px]">Description</th>
+                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right w-36 min-w-[120px]">Balance</th>
+                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center sticky right-0 bg-slate-50 z-20 w-32 min-w-[125px] whitespace-nowrap border-l border-slate-200 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {filteredAccounts.map((account, index) => {
                                     const isLastItems = index >= filteredAccounts.length - 2 && filteredAccounts.length > 3;
+                                    const isDropdownOpen = activeDropdownId === account.id;
                                     return (
                                         <tr key={account.id} className="hover:bg-slate-50/50 transition-colors group">
                                             <td className="px-4 py-2.5" style={{ paddingLeft: account.parent_id ? '28px' : '16px' }}>
@@ -170,8 +172,8 @@ export default function ChartOfAccIndex({ auth, chartOfAccounts = [], currencies
                                                     ''
                                                 )}
                                             </td>
-                                            <td className="px-4 py-2.5">
-                                                <div className="flex items-center justify-center gap-1">
+                                            <td className={`px-4 py-2.5 sticky right-0 ${isDropdownOpen ? 'z-30' : 'z-10'} bg-white group-hover:bg-slate-50 transition-colors w-32 min-w-[125px] whitespace-nowrap border-l border-slate-100 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]`}>
+                                                <div className="flex items-center justify-center gap-1.5">
                                                     {['asset', 'equity', 'liability'].includes(account.account_type) ? (
                                                         <CommonButton
                                                             variant="ghost"
@@ -179,14 +181,6 @@ export default function ChartOfAccIndex({ auth, chartOfAccounts = [], currencies
                                                             href={route('chart-of-account.history', account.id)}
                                                         >
                                                             View
-                                                        </CommonButton>
-                                                    ) : ['income', 'expense'].includes(account.account_type) ? (
-                                                        <CommonButton
-                                                            variant="ghost"
-                                                            size="xs"
-                                                            href={route('chart-of-account.history', account.id)}
-                                                        >
-                                                            Run Report
                                                         </CommonButton>
                                                     ) : (
                                                         <CommonButton
@@ -198,7 +192,10 @@ export default function ChartOfAccIndex({ auth, chartOfAccounts = [], currencies
                                                         </CommonButton>
                                                     )}
 
-                                                    <Dropdown>
+                                                    <Dropdown
+                                                        open={isDropdownOpen}
+                                                        onToggle={(isOpen) => setActiveDropdownId(isOpen ? account.id : null)}
+                                                    >
                                                         <Dropdown.Trigger>
                                                             <button className="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors focus:outline-none flex items-center">
                                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,20 +205,29 @@ export default function ChartOfAccIndex({ auth, chartOfAccounts = [], currencies
                                                         </Dropdown.Trigger>
                                                         <Dropdown.Content align={isLastItems ? 'top-right' : 'right'} width="48" contentClasses="py-1 bg-white ring-1 ring-black ring-opacity-5 rounded-md shadow-lg overflow-hidden">
                                                             <button
-                                                                onClick={() => handleOpenEdit(account)}
+                                                                onClick={() => {
+                                                                    setActiveDropdownId(null);
+                                                                    handleOpenEdit(account);
+                                                                }}
                                                                 className="block w-full px-4 py-2 text-start text-xs leading-5 text-slate-700 transition duration-150 ease-in-out hover:bg-slate-100 focus:bg-slate-100 focus:outline-none font-bold"
                                                             >
                                                                 Edit
                                                             </button>
                                                             <button
-                                                                onClick={() => handleOpenCreate(account)}
+                                                                onClick={() => {
+                                                                    setActiveDropdownId(null);
+                                                                    handleOpenCreate(account);
+                                                                }}
                                                                 className="block w-full px-4 py-2 text-start text-xs leading-5 text-slate-700 transition duration-150 ease-in-out hover:bg-slate-100 focus:bg-slate-100 focus:outline-none font-bold border-t border-slate-100"
                                                             >
                                                                 Add Sub-account
                                                             </button>
                                                             {!account.is_locked && (
                                                                 <button
-                                                                    onClick={() => handleToggleActive(account)}
+                                                                    onClick={() => {
+                                                                        setActiveDropdownId(null);
+                                                                        handleToggleActive(account);
+                                                                    }}
                                                                     className="block w-full px-4 py-2 text-start text-xs leading-5 text-slate-700 transition duration-150 ease-in-out hover:bg-slate-100 focus:bg-slate-100 focus:outline-none font-bold border-t border-slate-100"
                                                                 >
                                                                     {account.is_active ? "Make Inactive" : "Make Active"}
@@ -229,7 +235,10 @@ export default function ChartOfAccIndex({ auth, chartOfAccounts = [], currencies
                                                             )}
                                                             {!account.is_system && (
                                                                 <button
-                                                                    onClick={() => handleToggleLock(account)}
+                                                                    onClick={() => {
+                                                                        setActiveDropdownId(null);
+                                                                        handleToggleLock(account);
+                                                                    }}
                                                                     className="block w-full px-4 py-2 text-start text-xs leading-5 text-slate-700 transition duration-150 ease-in-out hover:bg-slate-100 focus:bg-slate-100 focus:outline-none font-bold border-t border-slate-100"
                                                                 >
                                                                     {account.is_locked ? "Unlock Account" : "Lock Account"}
