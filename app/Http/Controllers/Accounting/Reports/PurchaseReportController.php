@@ -34,10 +34,12 @@ class PurchaseReportController extends Controller
 
         if (session()->has('current_location_id')) {
             $locId = session('current_location_id');
-            $billsQuery->where(function($q) use ($locId) {
-                $q->where('bills.location_id', $locId)
-                  ->orWhereNull('bills.location_id');
-            });
+            if ($locId && $locId !== 'all') {
+                $billsQuery->where(function($q) use ($locId) {
+                    $q->where('bills.location_id', $locId)
+                      ->orWhereNull('bills.location_id');
+                });
+            }
         }
 
         if ($type !== 'all_dates') {
@@ -166,10 +168,12 @@ class PurchaseReportController extends Controller
 
         if (session()->has('current_location_id')) {
             $locId = session('current_location_id');
-            $billsQuery->where(function($q) use ($locId) {
-                $q->where('bills.location_id', $locId)
-                  ->orWhereNull('bills.location_id');
-            });
+            if ($locId && $locId !== 'all') {
+                $billsQuery->where(function($q) use ($locId) {
+                    $q->where('bills.location_id', $locId)
+                      ->orWhereNull('bills.location_id');
+                });
+            }
         }
 
         if ($type !== 'all_dates') {
@@ -298,10 +302,12 @@ class PurchaseReportController extends Controller
 
         if (session()->has('current_location_id')) {
             $locId = session('current_location_id');
-            $billsQuery->where(function($q) use ($locId) {
-                $q->where('bills.location_id', $locId)
-                  ->orWhereNull('bills.location_id');
-            });
+            if ($locId && $locId !== 'all') {
+                $billsQuery->where(function($q) use ($locId) {
+                    $q->where('bills.location_id', $locId)
+                      ->orWhereNull('bills.location_id');
+                });
+            }
         }
 
         if ($type !== 'all_dates') {

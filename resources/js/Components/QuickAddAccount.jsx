@@ -39,9 +39,12 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
     
     const defaultCurrency = homeCurrencyId || '';
     const currencyOptions = currencies;
+    const defaultLocationId = (auth?.location?.current_id && auth?.location?.current_id !== 'all') ? auth.location.current_id : null;
 
     const [parentAccounts, setParentAccounts] = useState([]);
     const [nameDuplicateError, setNameDuplicateError] = useState('');
+    const [codeDuplicateError, setCodeDuplicateError] = useState('');
+    const [isCheckingCode, setIsCheckingCode] = useState(false);
 
     const initialDate = localStorage.getItem('last_opening_balance_date') || new Date().toISOString().split('T')[0];
 
@@ -57,7 +60,7 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
         currency_id: defaultCurrency,
         is_subaccount: false,
         parent_id: '',
-        location_id: null,
+        location_id: defaultLocationId,
         is_locked: false,
         is_system: false,
     });
@@ -66,6 +69,7 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
 
     useEffect(() => {
         if (isOpen) {
+            setCodeDuplicateError('');
             if (account) {
                 setAccountWasLockedInitially(!!account.is_locked);
                 const formattedBalance = parseFloat(account.opening_balance || 0).toLocaleString('en-US', {
@@ -101,7 +105,7 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
                     opening_balance_date: initialDate,
                     is_subaccount: !!initialParentAccount,
                     parent_id: initialParentAccount ? initialParentAccount.id : '',
-                    location_id: null,
+                    location_id: defaultLocationId,
                     is_locked: false,
                     is_system: false,
                 }));
@@ -187,8 +191,71 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
         setNameDuplicateError(validateAccountName(data.name) ? 'An account with this name already exists.' : '');
     }, [data.name, parentAccounts]);
 
-    const submit = (e) => {
+    const checkAccountCode = (codeToTest) => {
+        const trimmedCode = String(codeToTest || '').trim();
+        if (!trimmedCode) {
+            setCodeDuplicateError('');
+            setIsCheckingCode(false);
+            return Promise.resolve(false);
+        }
+
+        setIsCheckingCode(true);
+        return axios.get(route('api.accounts.check-code'), {
+            params: {
+                code: trimmedCode,
+                ignore_id: account?.id || null,
+            }
+        })
+            .then(res => {
+                const exists = Boolean(res.data && res.data.exists);
+                setCodeDuplicateError(exists ? 'This account code already exists' : '');
+                return exists;
+            })
+            .catch(err => {
+                console.error("Failed to check account code:", err);
+                return false;
+            })
+            .finally(() => {
+                setIsCheckingCode(false);
+            });
+    };
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const trimmedCode = String(data.account_code || '').trim();
+        if (!trimmedCode) {
+            setCodeDuplicateError('');
+            setIsCheckingCode(false);
+            return;
+        }
+
+        setIsCheckingCode(true);
+        const timer = setTimeout(() => {
+            checkAccountCode(trimmedCode);
+        }, 400);
+
+        return () => clearTimeout(timer);
+    }, [data.account_code, account?.id, isOpen]);
+
+    const handleAccountCodeBlur = () => {
+        checkAccountCode(data.account_code);
+    };
+
+    const submit = async (e) => {
         e.preventDefault();
+
+        if (codeDuplicateError) {
+            setError('account_code', codeDuplicateError);
+            return;
+        }
+
+        if (data.account_code) {
+            const isDuplicate = await checkAccountCode(data.account_code);
+            if (isDuplicate) {
+                setError('account_code', 'This account code already exists');
+                return;
+            }
+        }
 
         if (validateAccountName(data.name)) {
             setError('name', 'An account with this name already exists.');
@@ -211,8 +278,21 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
         }
     };
 
-    const submitAndNew = (e) => {
+    const submitAndNew = async (e) => {
         e.preventDefault();
+
+        if (codeDuplicateError) {
+            setError('account_code', codeDuplicateError);
+            return;
+        }
+
+        if (data.account_code) {
+            const isDuplicate = await checkAccountCode(data.account_code);
+            if (isDuplicate) {
+                setError('account_code', 'This account code already exists');
+                return;
+            }
+        }
 
         if (validateAccountName(data.name)) {
             setError('name', 'An account with this name already exists.');
@@ -301,8 +381,14 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
                     <CommonInput
                         label="Account Code"
                         value={data.account_code}
-                        onChange={e => setData('account_code', e.target.value)}
-                        error={errors.account_code}
+                        onChange={e => {
+                            setData('account_code', e.target.value);
+                            if (errors.account_code) {
+                                clearErrors('account_code');
+                            }
+                        }}
+                        onBlur={handleAccountCodeBlur}
+                        error={errors.account_code || codeDuplicateError}
                         disabled={data.is_locked}
                     />
                     <CommonInput
@@ -453,13 +539,20 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
                                         type="button"
                                         variant="secondary"
                                         processing={processing}
+                                        disabled={Boolean(codeDuplicateError || nameDuplicateError || isCheckingCode)}
                                         size="sm"
                                         onClick={submitAndNew}
                                     >
                                         Save &amp; New
                                     </CommonButton>
                                 )}
-                                <CommonButton type="submit" variant="primary" processing={processing} size="sm">
+                                <CommonButton
+                                    type="submit"
+                                    variant="primary"
+                                    processing={processing}
+                                    disabled={Boolean(codeDuplicateError || nameDuplicateError || isCheckingCode)}
+                                    size="sm"
+                                >
                                     {isEdit ? "Update Account" : "Save Account"}
                                 </CommonButton>
                             </>

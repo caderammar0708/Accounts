@@ -42,14 +42,16 @@ class SalesReportController extends Controller
 
         if (session()->has('current_location_id')) {
             $locId = session('current_location_id');
-            $salesQuery->where(function($q) use ($locId) {
-                $q->where('sales_invoices.location_id', $locId)
-                  ->orWhereNull('sales_invoices.location_id');
-            });
-            $creditQuery->where(function($q) use ($locId) {
-                $q->where('credit_invoices.location_id', $locId)
-                  ->orWhereNull('credit_invoices.location_id');
-            });
+            if ($locId && $locId !== 'all') {
+                $salesQuery->where(function($q) use ($locId) {
+                    $q->where('sales_invoices.location_id', $locId)
+                      ->orWhereNull('sales_invoices.location_id');
+                });
+                $creditQuery->where(function($q) use ($locId) {
+                    $q->where('credit_invoices.location_id', $locId)
+                      ->orWhereNull('credit_invoices.location_id');
+                });
+            }
         }
 
         if ($type !== 'all_dates') {
@@ -195,14 +197,16 @@ class SalesReportController extends Controller
 
         if (session()->has('current_location_id')) {
             $locId = session('current_location_id');
-            $salesQuery->where(function($q) use ($locId) {
-                $q->where('sales_invoices.location_id', $locId)
-                  ->orWhereNull('sales_invoices.location_id');
-            });
-            $creditQuery->where(function($q) use ($locId) {
-                $q->where('credit_invoices.location_id', $locId)
-                  ->orWhereNull('credit_invoices.location_id');
-            });
+            if ($locId && $locId !== 'all') {
+                $salesQuery->where(function($q) use ($locId) {
+                    $q->where('sales_invoices.location_id', $locId)
+                      ->orWhereNull('sales_invoices.location_id');
+                });
+                $creditQuery->where(function($q) use ($locId) {
+                    $q->where('credit_invoices.location_id', $locId)
+                      ->orWhereNull('credit_invoices.location_id');
+                });
+            }
         }
 
         if ($type !== 'all_dates') {

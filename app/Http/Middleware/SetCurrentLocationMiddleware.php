@@ -25,7 +25,7 @@ class SetCurrentLocationMiddleware
                     // Unrestricted user: verify current session location or default to first active branch
                     $currentId = session('current_location_id');
 
-                    if ($currentId) {
+                    if ($currentId && $currentId !== 'all') {
                         $validLocation = Location::where('id', $currentId)->where('is_active', true)->exists();
                         if (!$validLocation) {
                             $currentId = null;

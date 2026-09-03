@@ -16,7 +16,10 @@ trait BelongsToLocation
 
         static::creating(function ($model) {
             if (!$model->location_id && session()->has('current_location_id')) {
-                $model->location_id = session('current_location_id');
+                $locId = session('current_location_id');
+                if ($locId && $locId !== 'all') {
+                    $model->location_id = $locId;
+                }
             }
         });
     }

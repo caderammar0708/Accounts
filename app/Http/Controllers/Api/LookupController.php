@@ -294,6 +294,32 @@ class LookupController extends Controller
     }
 
     /**
+     * Endpoint to check if an account code already exists anywhere in the system.
+     */
+    public function checkCode(Request $request)
+    {
+        $code = trim((string) $request->query('code', ''));
+        $ignoreId = $request->query('ignore_id');
+
+        if ($code === '') {
+            return response()->json([
+                'exists' => false,
+            ]);
+        }
+
+        $query = \App\Models\Accounting\ChartOfAcc::withoutGlobalScopes()
+            ->where('account_code', $code);
+
+        if ($ignoreId) {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        return response()->json([
+            'exists' => $query->exists(),
+        ]);
+    }
+
+    /**
      * Endpoint to get the next expense reference number by payment account
      */
     public function nextExpenseRef(Request $request)

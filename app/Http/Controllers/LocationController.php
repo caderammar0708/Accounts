@@ -20,6 +20,11 @@ class LocationController extends Controller
             return redirect()->back()->with('error', 'You are locked to a specific branch and cannot switch branches.');
         }
 
+        if ($request->location_id === 'all') {
+            session(['current_location_id' => 'all']);
+            return redirect()->back()->with('success', 'Switched to All Branches.');
+        }
+
         $request->validate([
             'location_id' => 'required|exists:locations,id',
         ]);

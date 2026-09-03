@@ -15,7 +15,7 @@ class LocationScope implements Scope
     {
         $currentLocationId = session('current_location_id');
 
-        if ($currentLocationId) {
+        if ($currentLocationId && $currentLocationId !== 'all') {
             $table = $model->getTable();
             $builder->where(function ($query) use ($table, $currentLocationId) {
                 $query->where($table . '.location_id', $currentLocationId)

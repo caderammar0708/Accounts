@@ -132,5 +132,49 @@ class ChartOfAccountNextCodeTest extends TestCase
         $matched = collect($accounts)->firstWhere('label', 'General Office Expense');
         $this->assertNotNull($matched);
     }
+
+    public function test_check_code_api_detects_existing_codes_across_locations_and_types(): void
+    {
+        // 1. Create an asset account with code 1050 in Mannar
+        $mannarAccount = ChartOfAcc::create([
+            'name' => 'Mannar Petty Cash',
+            'account_type' => 'asset',
+            'account_code' => '1050',
+            'location_id' => $this->mannarLocation->id,
+        ]);
+
+        // 2. Check code from Chilaw session - should detect existing code across branches
+        $response = $this->actingAs($this->user)
+            ->withSession(['current_location_id' => $this->chilawLocation->id])
+            ->getJson(route('api.accounts.check-code', ['code' => '1050']));
+
+        $response->assertOk();
+        $this->assertTrue($response->json('exists'));
+
+        // 3. Check unused code - should return false
+        $unusedResponse = $this->actingAs($this->user)
+            ->getJson(route('api.accounts.check-code', ['code' => '9999']));
+
+        $unusedResponse->assertOk();
+        $this->assertFalse($unusedResponse->json('exists'));
+
+        // 4. Check empty code - should return false
+        $emptyResponse = $this->actingAs($this->user)
+            ->getJson(route('api.accounts.check-code', ['code' => '']));
+
+        $emptyResponse->assertOk();
+        $this->assertFalse($emptyResponse->json('exists'));
+
+        // 5. Check with ignore_id for the same account (edit mode) - should return false
+        $ignoreResponse = $this->actingAs($this->user)
+            ->getJson(route('api.accounts.check-code', [
+                'code' => '1050',
+                'ignore_id' => $mannarAccount->id,
+            ]));
+
+        $ignoreResponse->assertOk();
+        $this->assertFalse($ignoreResponse->json('exists'));
+    }
 }
+
 

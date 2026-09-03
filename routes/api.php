@@ -26,6 +26,7 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     Route::get('/accounts', [LookupController::class, 'accounts'])->name('api.accounts');
     Route::get('/accounts/detail', [LookupController::class, 'accountDetails'])->name('api.accounts.detail');
     Route::get('/accounts/next-code', [LookupController::class, 'nextCode'])->name('api.accounts.next-code');
+    Route::get('/accounts/check-code', [LookupController::class, 'checkCode'])->name('api.accounts.check-code');
     Route::post('/accounts/save-date', [LookupController::class, 'saveOpeningBalanceDate'])->name('api.accounts.save-date');
     Route::get('/payments/next-ref', [LookupController::class, 'nextExpenseRef'])->name('api.payments.next-ref');
     Route::get('/items', [LookupController::class, 'items'])->name('api.items');

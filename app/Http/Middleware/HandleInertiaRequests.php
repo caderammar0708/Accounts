@@ -94,7 +94,9 @@ class HandleInertiaRequests extends Middleware
                 'has_books_pin'           => !empty($companySetting?->books_lock_pin),
                 'location'                => ($companySetting?->business_type === 'Dealership' || (bool) $companySetting?->branches_enabled) ? [
                     'current_id'          => session('current_location_id'),
-                    'current'             => session('current_location_id') ? \App\Models\Location::find(session('current_location_id')) : null,
+                    'current'             => session('current_location_id') === 'all'
+                        ? ['id' => 'all', 'name' => 'All Branches', 'code' => 'ALL']
+                        : (session('current_location_id') ? \App\Models\Location::find(session('current_location_id')) : null),
                     'is_locked'           => (bool) $request->user()?->location_id,
                 ] : null,
                 'pos_layout_enabled'      => (bool) $companySetting?->pos_layout_enabled,
