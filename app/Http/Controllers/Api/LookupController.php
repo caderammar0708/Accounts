@@ -229,6 +229,7 @@ class LookupController extends Controller
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('sku', 'like', "%{$search}%");
             })
+            ->orderBy('sort_order')
             ->orderBy('name')
             ->get()
             ->map(function($item) {
@@ -250,6 +251,7 @@ class LookupController extends Controller
     public function categories(Request $request)
     {
         $categories = \App\Models\ItemCategory::select('id', 'name')
+            ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
 
@@ -439,6 +441,7 @@ class LookupController extends Controller
         $suppliers = \App\Models\Supplier::orderBy('display_name')->get()
             ->map(fn($s) => ['id' => $s->id, 'name' => $s->display_name]);
         $allItems = \App\Models\Item::where('type', '!=', 'bundle')->orderBy('name')->get();
+        $locations = \App\Models\Location::where('is_active', true)->orderBy('name')->get();
 
         return response()->json([
             'categories' => $categories,
@@ -447,6 +450,7 @@ class LookupController extends Controller
             'inventoryAccounts' => $inventoryAccounts,
             'suppliers' => $suppliers,
             'allItems' => $allItems,
+            'locations' => $locations,
         ]);
     }
 

@@ -25,6 +25,11 @@ class InventoryQuantityAdjustmentController extends Controller
             
         $accounts = ChartOfAcc::query()->get(['id', 'name', 'account_code']);
 
+        $existingReasons = InventoryQuantityAdjustment::query()
+            ->whereNotNull('adjustment_reason')
+            ->distinct()
+            ->pluck('adjustment_reason');
+
         $lastRef = InventoryQuantityAdjustment::query()
             ->whereNotNull('reference_number')
             ->orderByRaw('CAST(reference_number AS UNSIGNED) DESC')
@@ -35,6 +40,7 @@ class InventoryQuantityAdjustmentController extends Controller
         return Inertia::render('Inventory/QuantityAdjustment/Create', [
             'items' => $items,
             'accounts' => $accounts,
+            'existingReasons' => $existingReasons,
             'nextReference' => (string) $nextRef,
         ]);
     }
@@ -190,6 +196,11 @@ class InventoryQuantityAdjustmentController extends Controller
             
         $accounts = ChartOfAcc::query()->get(['id', 'name', 'account_code']);
 
+        $existingReasons = InventoryQuantityAdjustment::query()
+            ->whereNotNull('adjustment_reason')
+            ->distinct()
+            ->pluck('adjustment_reason');
+
         $adjustmentData = [
             'id' => $journalEntry->id,
             'adjustment_date' => $adjustment->adjustment_date,
@@ -214,6 +225,7 @@ class InventoryQuantityAdjustmentController extends Controller
         return Inertia::render('Inventory/QuantityAdjustment/Edit', [
             'items' => $items,
             'accounts' => $accounts,
+            'existingReasons' => $existingReasons,
             'adjustment' => $adjustmentData,
         ]);
     }

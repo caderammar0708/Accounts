@@ -33,6 +33,7 @@ class Item extends Model
         'is_sold',
         'is_purchased',
         'location_id',
+        'sort_order',
     ];
 
     public function category()

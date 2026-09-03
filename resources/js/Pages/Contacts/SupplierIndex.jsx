@@ -1,13 +1,15 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { useForm, Head } from '@inertiajs/react';
+import { useForm, Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import SlideOver from '@/Components/SlideOver';
 import CommonInput from '@/Components/CommonInput';
 import CommonButton from '@/Components/CommonButton';
 import AddressForm from '@/Components/AddressForm';
 import ContactsTabs from '@/Components/ContactsTabs';
+import SearchableSelect from '@/Components/SearchableSelect';
 
-export default function SupplierIndex({ suppliers = [] }) {
+export default function SupplierIndex({ suppliers = [], locations = [] }) {
+    const { auth } = usePage().props;
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
@@ -21,7 +23,8 @@ export default function SupplierIndex({ suppliers = [] }) {
         email: '',
         phone_number: '',
         address: '',
-        opening_balance: ''
+        opening_balance: '',
+        location_id: null
     });
 
     const handleOpenCreate = () => {
@@ -247,17 +250,37 @@ export default function SupplierIndex({ suppliers = [] }) {
                         <section>
                             <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-50 pb-2">Address</h3>
                             <div className="mt-4">
-                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Address</label>
-                                <textarea
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all font-sans text-sm leading-snug"
-                                    rows="3"
+                                <CommonInput
+                                    type="textarea"
+                                    label="Address"
+                                    rows={2}
                                     value={data.address}
                                     onChange={(e) => setData("address", e.target.value)}
-                                ></textarea>
-                                {errors.address && <p className="text-red-500 text-xs mt-1 font-bold">{errors.address}</p>}
+                                    error={errors.address}
+                                />
                             </div>
                         </section>
 
+
+
+
+                        {Boolean(auth?.location) && (
+                            <section>
+                                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-50 pb-2">Location</h3>
+                                <div className="mt-4">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-0.5 mb-1 block">Assigned Location</label>
+                                    <SearchableSelect
+                                        options={[
+                                            { value: null, label: 'Global (All Locations)' },
+                                            ...locations.map(l => ({ value: l.id, label: l.name }))
+                                        ]}
+                                        value={data.location_id}
+                                        onChange={val => setData('location_id', val)}
+                                        placeholder="Select location"
+                                    />
+                                </div>
+                            </section>
+                        )}
 
                     </div>
 

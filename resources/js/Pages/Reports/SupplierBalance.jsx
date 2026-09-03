@@ -40,6 +40,43 @@ export default function SupplierBalance({ reportData, filters, auth }) {
     const suppliers = reportData || [];
     const totalBalance = suppliers.reduce((sum, item) => sum + item.balance, 0);
 
+    const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+
+    const sortedSuppliers = React.useMemo(() => {
+        let sortableItems = [...suppliers];
+        if (sortConfig !== null) {
+            sortableItems.sort((a, b) => {
+                if (a[sortConfig.key] < b[sortConfig.key]) {
+                    return sortConfig.direction === 'asc' ? -1 : 1;
+                }
+                if (a[sortConfig.key] > b[sortConfig.key]) {
+                    return sortConfig.direction === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        return sortableItems;
+    }, [suppliers, sortConfig]);
+
+    const requestSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIcon = (columnName) => {
+        if (!sortConfig || sortConfig.key !== columnName) {
+            return <span className="inline-block ml-1 text-gray-300 text-[10px]">↕</span>;
+        }
+        return sortConfig.direction === 'asc' ? (
+            <span className="inline-block ml-1 text-gray-500 text-[10px]">▲</span>
+        ) : (
+            <span className="inline-block ml-1 text-gray-500 text-[10px]">▼</span>
+        );
+    };
+
     const homeCurrency = auth.company?.home_currency_prefix || auth.company?.home_currency || '';
 
     const Currency = ({ value, className = '' }) => (
@@ -58,7 +95,7 @@ export default function SupplierBalance({ reportData, filters, auth }) {
             });
             csvContent += `"Final Balance"\n`;
 
-            suppliers.forEach(item => {
+            sortedSuppliers.forEach(item => {
                 csvContent += `"${item.name}","${item.email || ''}","${item.phone || ''}",`;
                 monthCols.forEach(m => {
                     const mData = item.monthly_balances?.[m] || 0;
@@ -74,7 +111,7 @@ export default function SupplierBalance({ reportData, filters, auth }) {
             csvContent += `${totalBalance}\n`;
         } else {
             csvContent += `"Supplier","Email","Phone","Open Balance (${homeCurrency})"\n`;
-            suppliers.forEach(item => {
+            sortedSuppliers.forEach(item => {
                 csvContent += `"${item.name}","${item.email || ''}","${item.phone || ''}",${item.balance}\n`;
             });
             csvContent += `\n"Total",,,${totalBalance}\n`;
@@ -152,8 +189,11 @@ export default function SupplierBalance({ reportData, filters, auth }) {
                 <table className="min-w-full text-[13px] text-left border-collapse">
                     <thead>
                         <tr className="border-y-2 border-gray-300">
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[200px]">
-                                Supplier <span className="inline-block ml-1 text-gray-400 text-[10px]">▲</span>
+                            <th 
+                                className="py-2.5 px-3 font-semibold text-gray-900 min-w-[200px] cursor-pointer select-none"
+                                onClick={() => requestSort('name')}
+                            >
+                                Supplier {getSortIcon('name')}
                             </th>
                             {isMonthWise ? (
                                 <>
@@ -168,19 +208,22 @@ export default function SupplierBalance({ reportData, filters, auth }) {
                                     <th className="py-2.5 px-3 font-semibold text-gray-900 text-right min-w-[130px] whitespace-nowrap border-l border-gray-100">Final Balance</th>
                                 </>
                             ) : (
-                                <th className="py-2.5 px-3 font-semibold text-gray-900 text-right min-w-[130px] whitespace-nowrap">
-                                    Open Balance <span className="inline-block ml-1 text-gray-400 text-[10px]">↕</span>
+                                <th 
+                                    className="py-2.5 px-3 font-semibold text-gray-900 text-right min-w-[130px] whitespace-nowrap cursor-pointer select-none"
+                                    onClick={() => requestSort('balance')}
+                                >
+                                    Open Balance {getSortIcon('balance')}
                                 </th>
                             )}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                        {suppliers.length === 0 ? (
+                        {sortedSuppliers.length === 0 ? (
                             <tr>
                                 <td colSpan={isMonthWise ? monthCols.length + 2 : 2} className="py-8 text-center text-gray-500">No supplier balances found.</td>
                             </tr>
                         ) : (
-                            suppliers.map((item, index) => (
+                            sortedSuppliers.map((item, index) => (
                                 <tr key={index} className="hover:bg-gray-50 transition-colors group">
                                     <td className="py-2 px-3 text-gray-900 min-w-[200px]">
                                         {item.name}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage } from '@inertiajs/react';
+import CommonButton from '@/Components/CommonButton';
 
 export default function Process({ reconciliation, lines }) {
     const { auth } = usePage().props;
@@ -40,6 +41,10 @@ export default function Process({ reconciliation, lines }) {
         if (filter === 'payments') return l.credit > 0;
         if (filter === 'deposits') return l.debit > 0;
         return true;
+    }).sort((a, b) => {
+        const dateA = new Date(a.journal_entry?.date || 0);
+        const dateB = new Date(b.journal_entry?.date || 0);
+        return dateA - dateB;
     });
 
     return (
@@ -50,24 +55,6 @@ export default function Process({ reconciliation, lines }) {
                         <h2 className="font-semibold text-xl text-gray-800 leading-tight">Reconcile: {reconciliation.account?.name}</h2>
                         <p className="text-sm text-gray-500 mt-1">Period: Up to {reconciliation.end_date}</p>
                     </div>
-                    {reconciliation.status === 'draft' && (
-                        <button
-                            onClick={handleFinish}
-                            disabled={!isBalanced}
-                            className={`font-bold py-2 px-6 rounded transition-colors ${
-                                isBalanced 
-                                ? 'bg-primary hover:bg-primary-600 text-white shadow-sm' 
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            }`}
-                        >
-                            Finish Now
-                        </button>
-                    )}
-                    {reconciliation.status === 'completed' && (
-                        <span className="bg-green-100 text-green-800 px-4 py-2 rounded-full font-bold">
-                            Completed
-                        </span>
-                    )}
                 </div>
             }
         >
@@ -186,6 +173,25 @@ export default function Process({ reconciliation, lines }) {
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+
+                    {/* Actions at the bottom */}
+                    <div className="flex justify-end pt-4 mt-8">
+                        {reconciliation.status === 'draft' && (
+                            <CommonButton
+                                onClick={handleFinish}
+                                disabled={!isBalanced}
+                                variant={isBalanced ? 'primary' : 'secondary'}
+                                className="px-8 py-3 text-lg shadow-sm"
+                            >
+                                Finish Now
+                            </CommonButton>
+                        )}
+                        {reconciliation.status === 'completed' && (
+                            <span className="bg-green-100 text-green-800 px-6 py-3 rounded-full font-bold shadow-sm">
+                                Completed
+                            </span>
+                        )}
                     </div>
 
                 </div>

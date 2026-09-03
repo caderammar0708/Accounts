@@ -33,7 +33,10 @@ class ContactBalanceController extends Controller
         $query = JournalEntryLine::query()
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
-            ->where('journal_entries.payee_type', Customer::class)
+            ->where(function ($q) {
+                $q->where('journal_entries.payee_type', Customer::class)
+                  ->orWhere('journal_entry_lines.payee_type', Customer::class);
+            })
             ->where('chart_of_accs.sub_type', 'accounts-receivable');
 
         if ($type !== 'all_dates' && $endDate) {
@@ -52,12 +55,12 @@ class ContactBalanceController extends Controller
             }
 
             $lines = $query->select(
-                    'journal_entries.payee_id',
+                    DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id) as payee_id'),
                     DB::raw('SUBSTRING(journal_entries.date, 1, 7) as month'),
                     DB::raw('SUM(journal_entry_lines.debit) as total_debit'),
                     DB::raw('SUM(journal_entry_lines.credit) as total_credit')
                 )
-                ->groupBy('journal_entries.payee_id', DB::raw('SUBSTRING(journal_entries.date, 1, 7)'))
+                ->groupBy(DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id)'), DB::raw('SUBSTRING(journal_entries.date, 1, 7)'))
                 ->get();
 
             $linesByCustomer = $lines->groupBy('payee_id');
@@ -108,11 +111,11 @@ class ContactBalanceController extends Controller
 
         } else {
             $lines = $query->select(
-                    'journal_entries.payee_id',
+                    DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id) as payee_id'),
                     DB::raw('SUM(journal_entry_lines.debit) as total_debit'),
                     DB::raw('SUM(journal_entry_lines.credit) as total_credit')
                 )
-                ->groupBy('journal_entries.payee_id')
+                ->groupBy(DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id)'))
                 ->get()
                 ->keyBy('payee_id');
 
@@ -167,7 +170,10 @@ class ContactBalanceController extends Controller
         $query = JournalEntryLine::query()
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
-            ->where('journal_entries.payee_type', Customer::class)
+            ->where(function ($q) {
+                $q->where('journal_entries.payee_type', Customer::class)
+                  ->orWhere('journal_entry_lines.payee_type', Customer::class);
+            })
             ->where('chart_of_accs.sub_type', 'accounts-receivable');
 
         if ($type !== 'all_dates') {
@@ -188,7 +194,7 @@ class ContactBalanceController extends Controller
                 'journal_entries.reference',
                 'journal_entries.transaction_type',
                 'journal_entries.due_date',
-                'journal_entries.payee_id',
+                DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id) as payee_id'),
                 'journal_entries.id as journal_entry_id',
                 'journal_entries.description as memo'
             )
@@ -234,8 +240,14 @@ class ContactBalanceController extends Controller
         $query = JournalEntryLine::query()
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
-            ->where('journal_entries.payee_type', Customer::class)
-            ->where('journal_entries.payee_id', $customerId)
+            ->where(function ($q) {
+                $q->where('journal_entries.payee_type', Customer::class)
+                  ->orWhere('journal_entry_lines.payee_type', Customer::class);
+            })
+            ->where(function ($q) use ($customerId) {
+                $q->where('journal_entries.payee_id', $customerId)
+                  ->orWhere('journal_entry_lines.payee_id', $customerId);
+            })
             ->where('chart_of_accs.sub_type', 'accounts-receivable');
 
         if ($type !== 'all_dates') {
@@ -257,7 +269,7 @@ class ContactBalanceController extends Controller
                 'journal_entries.due_date',
                 'journal_entries.reference',
                 'journal_entries.transaction_type',
-                'journal_entries.payee_id',
+                DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id) as payee_id'),
                 'journal_entries.id as journal_entry_id',
                 'journal_entries.description as memo'
             )
@@ -296,7 +308,10 @@ class ContactBalanceController extends Controller
         $query = JournalEntryLine::query()
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
-            ->where('journal_entries.payee_type', Supplier::class)
+            ->where(function ($q) {
+                $q->where('journal_entries.payee_type', Supplier::class)
+                  ->orWhere('journal_entry_lines.payee_type', Supplier::class);
+            })
             ->where('chart_of_accs.sub_type', 'accounts-payable');
 
         if ($type !== 'all_dates' && $endDate) {
@@ -427,7 +442,10 @@ class ContactBalanceController extends Controller
         $query = JournalEntryLine::query()
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
-            ->where('journal_entries.payee_type', Supplier::class)
+            ->where(function ($q) {
+                $q->where('journal_entries.payee_type', Supplier::class)
+                  ->orWhere('journal_entry_lines.payee_type', Supplier::class);
+            })
             ->where('chart_of_accs.sub_type', 'accounts-payable');
 
         if ($type !== 'all_dates') {
@@ -448,7 +466,7 @@ class ContactBalanceController extends Controller
                 'journal_entries.reference',
                 'journal_entries.transaction_type',
                 'journal_entries.due_date',
-                'journal_entries.payee_id',
+                DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id) as payee_id'),
                 'journal_entries.id as journal_entry_id',
                 'journal_entries.description as memo'
             )
@@ -494,8 +512,14 @@ class ContactBalanceController extends Controller
         $query = JournalEntryLine::query()
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->join('chart_of_accs', 'journal_entry_lines.chart_of_acc_id', '=', 'chart_of_accs.id')
-            ->where('journal_entries.payee_type', Supplier::class)
-            ->where('journal_entries.payee_id', $supplierId)
+            ->where(function ($q) {
+                $q->where('journal_entries.payee_type', Supplier::class)
+                  ->orWhere('journal_entry_lines.payee_type', Supplier::class);
+            })
+            ->where(function ($q) use ($supplierId) {
+                $q->where('journal_entries.payee_id', $supplierId)
+                  ->orWhere('journal_entry_lines.payee_id', $supplierId);
+            })
             ->where('chart_of_accs.sub_type', 'accounts-payable');
 
         if ($type !== 'all_dates') {
@@ -517,7 +541,7 @@ class ContactBalanceController extends Controller
                 'journal_entries.due_date',
                 'journal_entries.reference',
                 'journal_entries.transaction_type',
-                'journal_entries.payee_id',
+                DB::raw('COALESCE(journal_entry_lines.payee_id, journal_entries.payee_id) as payee_id'),
                 'journal_entries.id as journal_entry_id',
                 'journal_entries.description as memo'
             )

@@ -43,43 +43,82 @@ export default function SalesByCustomer({ reportData, filters, auth }) {
     const totalAmount = customers.reduce((sum, item) => sum + parseFloat(item.total_amount || 0), 0);
     const totalCount = customers.reduce((sum, item) => sum + parseFloat(item.invoice_count || 0), 0);
 
+    const [sortConfig, setSortConfig] = useState({ key: 'customer_name', direction: 'asc' });
+
+    const sortedCustomers = React.useMemo(() => {
+        let sortableItems = [...customers];
+        if (sortConfig !== null) {
+            sortableItems.sort((a, b) => {
+                let valA = a[sortConfig.key];
+                let valB = b[sortConfig.key];
+                
+                if (sortConfig.key === 'invoice_count' || sortConfig.key === 'total_amount') {
+                    valA = parseFloat(valA || 0);
+                    valB = parseFloat(valB || 0);
+                }
+
+                if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        return sortableItems;
+    }, [customers, sortConfig]);
+
+    const requestSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIcon = (columnName) => {
+        if (!sortConfig || sortConfig.key !== columnName) {
+            return <span className="inline-block ml-1 text-gray-300 text-[10px]">↕</span>;
+        }
+        return sortConfig.direction === 'asc' ? (
+            <span className="inline-block ml-1 text-gray-500 text-[10px]">▲</span>
+        ) : (
+            <span className="inline-block ml-1 text-gray-500 text-[10px]">▼</span>
+        );
+    };
+
     const homeCurrency = auth.company?.home_currency_prefix || auth.company?.home_currency || '';
 
     const Currency = ({ value, className = '' }) => (
         <ReportCurrency value={value} currency={homeCurrency} className={className} />
     );
 
-    const handleMonthCellClick = (customer, monthKey, mData) => {
-        const txLines = mData?.lines || [];
-        if (txLines.length === 0) return;
-        if (txLines.length === 1) {
-            const url = getTransactionUrl(txLines[0]);
-            if (url && url !== '#') {
-                router.visit(url);
-            }
+    const getDrillDownUrl = (customerId, monthCol = null) => {
+        const params = new URLSearchParams();
+        if (monthCol) {
+            const [y, m] = monthCol.split('-');
+            const sDate = `${monthCol}-01`;
+            const lastDay = new Date(y, m, 0).getDate();
+            const eDate = `${monthCol}-${lastDay.toString().padStart(2, '0')}`;
+            params.set('start_date', sDate);
+            params.set('end_date', eDate);
+            params.set('type', 'custom');
+        } else if (filters.type === 'all_dates') {
+            params.set('type', 'all_dates');
         } else {
-            const monthLabel = monthKey ? new Date(monthKey + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '';
-            setDrillDown({
-                title: `${customer.customer_name} (${monthLabel})`,
-                lines: txLines
-            });
+            if (filters.start_date) params.set('start_date', filters.start_date);
+            if (filters.end_date) params.set('end_date', filters.end_date);
+            if (filters.type) params.set('type', filters.type);
         }
+        const qs = params.toString();
+        return route('reports.customer-detail', customerId) + (qs ? `?${qs}` : '');
+    };
+
+    const handleMonthCellClick = (customer, monthKey, mData) => {
+        if (!customer.customer_id) return;
+        router.visit(getDrillDownUrl(customer.customer_id, monthKey));
     };
 
     const handleTotalCellClick = (customer) => {
-        const txLines = customer.lines || [];
-        if (txLines.length === 0) return;
-        if (txLines.length === 1) {
-            const url = getTransactionUrl(txLines[0]);
-            if (url && url !== '#') {
-                router.visit(url);
-            }
-        } else {
-            setDrillDown({
-                title: `${customer.customer_name} (All Transactions)`,
-                lines: txLines
-            });
-        }
+        if (!customer.customer_id) return;
+        router.visit(getDrillDownUrl(customer.customer_id, null));
     };
 
     const handleExportExcel = () => {
@@ -94,7 +133,7 @@ export default function SalesByCustomer({ reportData, filters, auth }) {
             });
             csvContent += `"Total Amount"\n`;
 
-            customers.forEach(item => {
+            sortedCustomers.forEach(item => {
                 csvContent += `"${item.customer_name}",`;
                 monthCols.forEach(m => {
                     const mData = item.monthly_totals?.[m] || { amount: 0 };
@@ -104,13 +143,13 @@ export default function SalesByCustomer({ reportData, filters, auth }) {
             });
             csvContent += `\n"Total",`;
             monthCols.forEach(m => {
-                const mTotalAmt = customers.reduce((sum, item) => sum + (item.monthly_totals?.[m]?.amount || 0), 0);
+                const mTotalAmt = sortedCustomers.reduce((sum, item) => sum + (item.monthly_totals?.[m]?.amount || 0), 0);
                 csvContent += `${mTotalAmt},`;
             });
             csvContent += `${totalAmount}\n`;
         } else {
             csvContent += `"Customer Name","Invoice Count","Total Amount (${homeCurrency})"\n`;
-            customers.forEach(item => {
+            sortedCustomers.forEach(item => {
                 csvContent += `"${item.customer_name}",${item.invoice_count},${item.total_amount}\n`;
             });
             csvContent += `\n"Total",${totalCount},${totalAmount}\n`;
@@ -163,7 +202,12 @@ export default function SalesByCustomer({ reportData, filters, auth }) {
                 <table className="min-w-full text-[13px] text-left border-collapse">
                     <thead>
                         <tr className="border-y-2 border-gray-300">
-                            <th className="py-2.5 px-3 font-semibold text-gray-900 min-w-[200px]">Customer Name</th>
+                            <th 
+                                className="py-2.5 px-3 font-semibold text-gray-900 min-w-[200px] cursor-pointer select-none"
+                                onClick={() => requestSort('customer_name')}
+                            >
+                                Customer Name {getSortIcon('customer_name')}
+                            </th>
                             {isMonthWise ? (
                                 <>
                                     {monthCols.map(m => {
@@ -178,19 +222,29 @@ export default function SalesByCustomer({ reportData, filters, auth }) {
                                 </>
                             ) : (
                                 <>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[110px]">Invoice Count</th>
-                                    <th className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px]">Amount</th>
+                                    <th 
+                                        className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[110px] cursor-pointer select-none"
+                                        onClick={() => requestSort('invoice_count')}
+                                    >
+                                        Invoice Count {getSortIcon('invoice_count')}
+                                    </th>
+                                    <th 
+                                        className="py-2.5 px-3 font-semibold text-gray-900 text-right whitespace-nowrap min-w-[130px] cursor-pointer select-none"
+                                        onClick={() => requestSort('total_amount')}
+                                    >
+                                        Amount {getSortIcon('total_amount')}
+                                    </th>
                                 </>
                             )}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                        {customers.length === 0 ? (
+                        {sortedCustomers.length === 0 ? (
                             <tr>
                                 <td colSpan={isMonthWise ? monthCols.length + 2 : 3} className="py-8 text-center text-gray-500">No sales found for this period.</td>
                             </tr>
                         ) : (
-                            customers.map((item, index) => (
+                            sortedCustomers.map((item, index) => (
                                 <tr key={index} className="hover:bg-gray-50 transition-colors group">
                                     <td className="py-2 px-3 text-gray-900 font-medium">
                                         <button
@@ -230,18 +284,18 @@ export default function SalesByCustomer({ reportData, filters, auth }) {
                                     ) : (
                                         <>
                                             <td
-                                                className={`py-2 px-3 text-right whitespace-nowrap ${item.lines?.length > 0 ? 'cursor-pointer hover:bg-indigo-50/50' : ''}`}
+                                                className={`py-2 px-3 text-right whitespace-nowrap cursor-pointer hover:bg-indigo-50/50`}
                                                 onClick={() => handleTotalCellClick(item)}
                                             >
-                                                <span className={item.lines?.length > 0 ? 'text-indigo-600 hover:underline' : 'text-gray-900'}>
+                                                <span className={'text-indigo-600 hover:underline'}>
                                                     {parseFloat(item.invoice_count).toLocaleString()}
                                                 </span>
                                             </td>
                                             <td
-                                                className={`py-2 px-3 text-right whitespace-nowrap font-semibold ${item.lines?.length > 0 ? 'cursor-pointer hover:bg-indigo-50/50' : ''}`}
+                                                className={`py-2 px-3 text-right whitespace-nowrap font-semibold cursor-pointer hover:bg-indigo-50/50`}
                                                 onClick={() => handleTotalCellClick(item)}
                                             >
-                                                <span className={item.lines?.length > 0 ? 'text-indigo-600 hover:underline' : 'text-gray-900'}>
+                                                <span className={'text-indigo-600 hover:underline'}>
                                                     <Currency value={item.total_amount} />
                                                 </span>
                                             </td>

@@ -55,14 +55,21 @@ class Customer extends Model
         if ($arAccountIds === null) {
             $arAccountIds = ChartOfAcc::where('sub_type', 'accounts-receivable')->pluck('id');
         }
+        $debits = JournalEntryLine::join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+            ->where(function($q) {
+                $q->where('journal_entry_lines.payee_id', $this->id)
+                  ->orWhere('journal_entries.payee_id', $this->id);
+            })
+            ->whereIn('journal_entry_lines.chart_of_acc_id', $arAccountIds)
+            ->sum('journal_entry_lines.debit');
             
-        $debits = JournalEntryLine::where('payee_id', $this->id)
-            ->whereIn('chart_of_acc_id', $arAccountIds)
-            ->sum('debit');
-            
-        $credits = JournalEntryLine::where('payee_id', $this->id)
-            ->whereIn('chart_of_acc_id', $arAccountIds)
-            ->sum('credit');
+        $credits = JournalEntryLine::join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+            ->where(function($q) {
+                $q->where('journal_entry_lines.payee_id', $this->id)
+                  ->orWhere('journal_entries.payee_id', $this->id);
+            })
+            ->whereIn('journal_entry_lines.chart_of_acc_id', $arAccountIds)
+            ->sum('journal_entry_lines.credit');
 
         return ($this->opening_balance ?? 0) + $debits - $credits;
     }

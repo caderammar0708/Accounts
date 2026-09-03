@@ -41,14 +41,21 @@ class Supplier extends Model
         if ($apAccountIds === null) {
             $apAccountIds = \App\Models\Accounting\ChartOfAcc::where('sub_type', 'accounts-payable')->pluck('id');
         }
+        $debits = \App\Models\Accounting\JournalEntryLine::join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+            ->where(function($q) {
+                $q->where('journal_entry_lines.payee_id', $this->id)
+                  ->orWhere('journal_entries.payee_id', $this->id);
+            })
+            ->whereIn('journal_entry_lines.chart_of_acc_id', $apAccountIds)
+            ->sum('journal_entry_lines.debit');
             
-        $debits = \App\Models\Accounting\JournalEntryLine::where('payee_id', $this->id)
-            ->whereIn('chart_of_acc_id', $apAccountIds)
-            ->sum('debit');
-            
-        $credits = \App\Models\Accounting\JournalEntryLine::where('payee_id', $this->id)
-            ->whereIn('chart_of_acc_id', $apAccountIds)
-            ->sum('credit');
+        $credits = \App\Models\Accounting\JournalEntryLine::join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+            ->where(function($q) {
+                $q->where('journal_entry_lines.payee_id', $this->id)
+                  ->orWhere('journal_entries.payee_id', $this->id);
+            })
+            ->whereIn('journal_entry_lines.chart_of_acc_id', $apAccountIds)
+            ->sum('journal_entry_lines.credit');
 
         return ($this->opening_balance ?? 0) + $credits - $debits;
     }

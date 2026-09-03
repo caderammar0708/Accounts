@@ -3,9 +3,9 @@ name: Deploy JBooks App
 on:
   push:
     branches:
-      - demo
-      - ausj
-      - aaafs
+      # - demo
+      # - ausj
+      # - aaafs
       # - aaass
       # - testing
       # - jobalign

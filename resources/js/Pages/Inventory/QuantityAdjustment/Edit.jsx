@@ -23,7 +23,7 @@ const FormSection = ({ title, children, show = true }) => {
     );
 };
 
-export default function EditAdjustment({ items, accounts, adjustment }) {
+export default function EditAdjustment({ items, accounts, existingReasons = [], adjustment }) {
     const { data, setData, patch, processing, errors, transform } = useForm({
         adjustment_date: adjustment.adjustment_date || new Date().toISOString().split('T')[0],
         reference_number: adjustment.reference_number || '1',
@@ -42,13 +42,18 @@ export default function EditAdjustment({ items, accounts, adjustment }) {
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-    const reasons = [
-        { value: 'Damaged Goods', label: 'Damaged Goods' },
-        { value: 'Stocktaking', label: 'Stocktaking' },
-        { value: 'Theft', label: 'Theft' },
-        { value: 'Promotional', label: 'Promotional' },
-        { value: 'Other', label: 'Other' }
+    const defaultReasons = [
+        'Damaged Goods',
+        'Stocktaking',
+        'Theft',
+        'Promotional',
+        'Other'
     ];
+    
+    // Combine defaults and db reasons, removing duplicates
+    const allReasons = [...new Set([...defaultReasons, ...existingReasons])];
+    
+    const reasons = allReasons.map(r => ({ value: r, label: r }));
 
     const addLine = () => {
         setData('items', [
@@ -203,6 +208,7 @@ export default function EditAdjustment({ items, accounts, adjustment }) {
                                 value={data.adjustment_reason}
                                 onChange={val => setData('adjustment_reason', val)}
                                 placeholder="Select reason"
+                                allowCustom={true}
                             />
                             {errors.adjustment_reason && <div className="text-red-500 text-xs mt-1 font-bold">{errors.adjustment_reason}</div>}
                         </div>
@@ -294,13 +300,14 @@ export default function EditAdjustment({ items, accounts, adjustment }) {
 
                     <div className="mt-8 grid grid-cols-2 gap-8">
                         <div>
-                            <label className="block text-[11px] font-bold text-slate-600 ml-0.5 text-xs mb-1">Memo</label>
-                            <textarea
-                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-sm text-xs focus:border-green-500 focus:ring-2 focus:ring-green-500/20 shadow-sm transition-all resize-none min-h-[80px] leading-snug"
+                            <CommonInput
+                                type="textarea"
+                                label="Memo"
+                                rows={2}
                                 value={data.memo}
                                 onChange={e => setData('memo', e.target.value)}
                                 placeholder="Add a note for internal use..."
-                            ></textarea>
+                            />
                         </div>
                         <div>
                             <AttachmentUpload

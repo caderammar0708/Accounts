@@ -4,16 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use App\Traits\BelongsToLocation;
 
 class ItemCategory extends Model
 {
-    use HasUuids, BelongsToLocation;
+    use HasUuids;
 
     protected $fillable = [
         'name',
         'parent_id',
-        'location_id',
+        'sort_order',
     ];
 
     public function parent()

@@ -16,6 +16,7 @@ use App\Models\Accounting\JournalEntry;
 use App\Models\Customer;
 use App\Models\FuelStation\PumpShiftCollection;
 use App\Models\FuelStation\PumpShiftCreditSale;
+use App\Models\FuelStation\PumpShiftReceivePayment;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -276,7 +277,7 @@ class PumpShiftController extends Controller
 
     public function editCollections(PumpShift $shift)
     {
-        $shift->load(['employee', 'shiftNozzles.nozzle.pump.tank.fuel_type', 'collections', 'creditSales']);
+        $shift->load(['employee', 'shiftNozzles.nozzle.pump.tank.fuel_type', 'collections', 'creditSales', 'receivePayments']);
         
         $accounts = ChartOfAcc::get();
         $customers = Customer::get();
@@ -297,11 +298,15 @@ class PumpShiftController extends Controller
             'credit_sales' => 'nullable|array',
             'credit_sales.*.customer_id' => 'required|exists:customers,id',
             'credit_sales.*.amount' => 'required|numeric|min:0',
+            'receive_payments' => 'nullable|array',
+            'receive_payments.*.customer_id' => 'required|exists:customers,id',
+            'receive_payments.*.amount' => 'required|numeric|min:0',
         ]);
 
         DB::transaction(function() use ($request, $shift) {
             $shift->collections()->delete();
             $shift->creditSales()->delete();
+            $shift->receivePayments()->delete();
 
             if ($request->collections) {
                 foreach ($request->collections as $collection) {
@@ -325,6 +330,20 @@ class PumpShiftController extends Controller
                             'pump_shift_id' => $shift->id,
                             'customer_id' => $sale['customer_id'],
                             'description' => $sale['description'] ?? null,
+                            'amount' => $amt
+                        ]);
+                    }
+                }
+            }
+
+            if ($request->receive_payments) {
+                foreach ($request->receive_payments as $rp) {
+                    $amt = floatval($rp['amount'] ?? 0);
+                    if ($amt > 0) {
+                        PumpShiftReceivePayment::create([
+                            'pump_shift_id' => $shift->id,
+                            'customer_id' => $rp['customer_id'],
+                            'description' => $rp['description'] ?? null,
                             'amount' => $amt
                         ]);
                     }
@@ -374,6 +393,10 @@ class PumpShiftController extends Controller
             'credit_sales' => 'nullable|array',
             'credit_sales.*.customer_id' => 'required|exists:customers,id',
             'credit_sales.*.amount' => 'required|numeric|min:0',
+
+            'receive_payments' => 'nullable|array',
+            'receive_payments.*.customer_id' => 'required|exists:customers,id',
+            'receive_payments.*.amount' => 'required|numeric|min:0',
         ]);
 
         DB::transaction(function() use ($request, $shift) {
@@ -401,6 +424,7 @@ class PumpShiftController extends Controller
 
             $shift->collections()->delete();
             $shift->creditSales()->delete();
+            $shift->receivePayments()->delete();
 
             $totalCollections = 0;
             if ($request->collections) {
@@ -434,12 +458,28 @@ class PumpShiftController extends Controller
                 }
             }
 
-            $totalCollected = $totalCollections + $totalCreditSales;
+            $totalReceivePayments = 0;
+            if ($request->receive_payments) {
+                foreach ($request->receive_payments as $rp) {
+                    $amt = floatval($rp['amount'] ?? 0);
+                    if ($amt > 0) {
+                        PumpShiftReceivePayment::create([
+                            'pump_shift_id' => $shift->id,
+                            'customer_id' => $rp['customer_id'],
+                            'description' => $rp['description'] ?? null,
+                            'amount' => $amt
+                        ]);
+                        $totalReceivePayments += $amt;
+                    }
+                }
+            }
+
+            $totalCollected = $totalCollections + $totalCreditSales - $totalReceivePayments;
             $discrepancy = $totalCollected - $shift->total_sales_value;
 
             if (abs($discrepancy) > 0.01) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
-                    'discrepancy' => ['Total collections and credit sales must exactly match Total Sales.']
+                    'discrepancy' => ['Total collections and credit sales (excluding received payments) must exactly match Total Sales.']
                 ]);
             }
 
@@ -575,6 +615,24 @@ class PumpShiftController extends Controller
                                 'debit' => $amt,
                                 'credit' => 0,
                                 'memo' => 'Collection for Shift ' . $shift->id,
+                            ]);
+                        }
+                    }
+                }
+
+                // Credit Accounts Receivable for Receive Payments
+                if ($request->receive_payments) {
+                    foreach ($request->receive_payments as $rp) {
+                        $amt = floatval($rp['amount'] ?? 0);
+                        if ($amt > 0) {
+                            \App\Models\Accounting\JournalEntryLine::create([
+                                'journal_entry_id' => $settleJournal->id,
+                                'chart_of_acc_id' => ChartOfAcc::getOrCreateDefault('accounts-receivable')->id,
+                                'payee_id' => $rp['customer_id'],
+                                'payee_type' => \App\Models\Customer::class,
+                                'debit' => 0,
+                                'credit' => $amt,
+                                'memo' => 'Payment received during Shift. ' . ($rp['description'] ?? ''),
                             ]);
                         }
                     }

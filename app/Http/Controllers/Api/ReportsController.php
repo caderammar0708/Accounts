@@ -100,9 +100,16 @@ class ReportsController extends Controller
         return SalesByCustomerResource::collection($this->reportDataService->salesByCustomerData());
     }
 
-    public function purchaseByItem(Request $request)
+    public function purchaseByItemSummary(Request $request)
     {
-        return PurchaseByItemResource::collection($this->reportDataService->purchaseByItemData());
+        return response()->json([
+            'data' => $this->reportDataService->purchaseByItemSummaryData($request->query('start_date'), $request->query('end_date'))
+        ]);
+    }
+
+    public function purchaseByItemDetail(Request $request)
+    {
+        return PurchaseByItemResource::collection($this->reportDataService->purchaseByItemDetailData($request->query('start_date'), $request->query('end_date'), $request->query('item_ids')));
     }
 
         public function purchaseBySupplier(Request $request)

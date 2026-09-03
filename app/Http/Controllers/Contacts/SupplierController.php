@@ -28,13 +28,16 @@ class SupplierController extends Controller
             ->orderBy('display_name')
             ->get();
         return Inertia::render('Contacts/SupplierIndex', [
-            'suppliers' => $suppliers
+            'suppliers' => $suppliers,
+            'locations' => \App\Models\Location::where('is_active', true)->get()
         ]);
     }
 
     public function create()
     {
-        return Inertia::render('Contacts/SupplierForm');
+        return Inertia::render('Contacts/SupplierForm', [
+            'locations' => \App\Models\Location::where('is_active', true)->get()
+        ]);
     }
 
     public function store(Request $request)
@@ -48,6 +51,7 @@ class SupplierController extends Controller
             'phone_number' => 'nullable|string|max:255',
             'address' => 'nullable|string',
             'opening_balance' => 'nullable|numeric',
+            'location_id' => 'nullable|exists:locations,id',
         ]);
 
         $validatedData['opening_balance'] = $validatedData['opening_balance'] ?? 0;
@@ -77,6 +81,7 @@ class SupplierController extends Controller
             'email' => 'nullable|email|max:255',
             'phone_number' => 'nullable|string|max:255',
             'address' => 'nullable|string',
+            'location_id' => 'nullable|exists:locations,id',
         ]);
 
         $supplier->update($validatedData);

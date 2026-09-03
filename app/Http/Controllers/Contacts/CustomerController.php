@@ -37,7 +37,8 @@ class CustomerController extends Controller
             return response()->json($customers);
         }
         return Inertia::render('Contacts/CustomerIndex', [
-            'customers' => $customers
+            'customers' => $customers,
+            'locations' => \App\Models\Location::where('is_active', true)->get()
         ]);
     }
 
@@ -45,6 +46,7 @@ class CustomerController extends Controller
     {
         return Inertia::render('Contacts/CustomerForm', [
             'nextCustomerNumber' => $this->nextCustomerNumber(),
+            'locations' => \App\Models\Location::where('is_active', true)->get()
         ]);
     }
 
@@ -52,6 +54,7 @@ class CustomerController extends Controller
     {
         return Inertia::render('Contacts/CustomerForm', [
             'customer' => $customer,
+            'locations' => \App\Models\Location::where('is_active', true)->get()
         ]);
     }
 
@@ -68,6 +71,7 @@ class CustomerController extends Controller
             'passport' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:500',
             'opening_balance' => 'nullable|numeric',
+            'location_id' => 'nullable|exists:locations,id',
         ]);
 
         $validatedData['opening_balance'] = $validatedData['opening_balance'] ?? 0;
@@ -103,6 +107,7 @@ class CustomerController extends Controller
             'nic' => 'nullable|string|max:50',
             'passport' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:500',
+            'location_id' => 'nullable|exists:locations,id',
         ]);
         // customer_number is intentionally excluded — it's assigned once at creation and never changes.
 

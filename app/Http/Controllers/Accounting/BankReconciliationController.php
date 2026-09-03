@@ -42,17 +42,28 @@ class BankReconciliationController extends Controller
 
         $request->validate([
             'account_id' => 'required|exists:chart_of_accs,id',
-            'end_date' => 'required|date',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
             'opening_balance' => 'required|numeric',
             'ending_balance' => 'required|numeric',
         ]);
         
+        // Prevent creating multiple reconciliations for the same account in the same month
+        $endMonth = date('Y-m', strtotime($request->end_date));
+        $exists = BankReconciliation::where('account_id', $request->account_id)
+            ->whereRaw("DATE_FORMAT(end_date, '%Y-%m') = ?", [$endMonth])
+            ->exists();
+            
+        if ($exists) {
+            return back()->withErrors(['end_date' => 'A bank reconciliation already exists for this account in the selected month.']);
+        }
+
         $company = auth()->user()->company;
 
         $reconciliation = BankReconciliation::create([
             'company_id' => $company ? $company->id : null,
             'account_id' => $request->account_id,
-            'start_date' => '2000-01-01', // Dummy start date since it's not needed by user
+            'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'opening_balance' => $request->opening_balance,
             'ending_balance' => $request->ending_balance,
@@ -63,6 +74,43 @@ class BankReconciliationController extends Controller
 
         return redirect()->route('bank-reconciliation.process', $reconciliation->id);
     }
+    
+    public function getOpeningBalance(Request $request)
+    {
+        $request->validate([
+            'account_id' => 'required|exists:chart_of_accs,id',
+            'start_date' => 'required|date',
+        ]);
+
+        // Find the most recent completed reconciliation before the start_date
+        $lastReconciliation = BankReconciliation::where('account_id', $request->account_id)
+            ->where('end_date', '<', $request->start_date)
+            ->where('status', 'completed')
+            ->orderBy('end_date', 'desc')
+            ->first();
+
+        return response()->json([
+            'opening_balance' => $lastReconciliation ? $lastReconciliation->ending_balance : 0
+        ]);
+    }
+    
+    public function destroy(BankReconciliation $reconciliation)
+    {
+        if ($reconciliation->status !== 'draft') {
+            return back()->with('error', 'Only draft reconciliations can be deleted.');
+        }
+        
+        // Un-clear all journal entry lines that were cleared by this draft reconciliation
+        JournalEntryLine::where('bank_reconciliation_id', $reconciliation->id)
+            ->update([
+                'is_cleared' => false,
+                'bank_reconciliation_id' => null
+            ]);
+            
+        $reconciliation->delete();
+        
+        return back()->with('success', 'Draft bank reconciliation deleted successfully.');
+    }
 
     public function process(BankReconciliation $reconciliation)
     {
@@ -70,7 +118,7 @@ class BankReconciliationController extends Controller
         $lines = JournalEntryLine::with('journalEntry')
             ->where('chart_of_acc_id', $reconciliation->account_id)
             ->whereHas('journalEntry', function($q) use ($reconciliation) {
-                $q->where('date', '<=', $reconciliation->end_date);
+                $q->whereBetween('date', [$reconciliation->start_date, $reconciliation->end_date]);
             })
             ->where(function($q) use ($reconciliation) {
                 $q->where('is_cleared', false)

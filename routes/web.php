@@ -112,7 +112,9 @@ Route::middleware('auth')->group(function () {
 
     // Inventory
     Route::get('items/{item}/print-barcode', [ItemController::class, 'printBarcode'])->name('items.print-barcode');
+    Route::post('items/reorder', [ItemController::class, 'reorder'])->name('items.reorder');
     Route::resource('items', ItemController::class);
+    Route::post('item-categories/reorder', [ItemCategoryController::class, 'reorder'])->name('item-categories.reorder');
     Route::resource('item-categories', ItemCategoryController::class);
     Route::controller(InventoryQuantityAdjustmentController::class)
         ->as('inventory-adjustment.')->prefix('inventory-adjustment')->group(function () {
@@ -184,7 +186,9 @@ Route::middleware('auth')->group(function () {
         ->as('bank-reconciliation.')->prefix('bank-reconciliation')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/create', 'create')->name('create');
+        Route::get('/opening-balance', 'getOpeningBalance')->name('opening-balance');
         Route::post('/', 'store')->name('store');
+        Route::delete('/{reconciliation}', 'destroy')->name('destroy');
         Route::get('/{reconciliation}/process', 'process')->name('process');
         Route::post('/{reconciliation}/lines/{line}/toggle', 'toggleClear')->name('toggleClear');
         Route::post('/{reconciliation}/finish', 'finish')->name('finish');
@@ -395,7 +399,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/sales-by-customer', [\App\Http\Controllers\Accounting\Reports\SalesReportController::class, 'salesByCustomer'])->name('reports.sales-by-customer');
 
         // Purchases
-        Route::get('/purchase-by-item', [\App\Http\Controllers\Accounting\Reports\PurchaseReportController::class, 'purchaseByItem'])->name('reports.purchase-by-item');
+        Route::get('/purchase-by-item-summary', [\App\Http\Controllers\Accounting\Reports\PurchaseReportController::class, 'purchaseByItemSummary'])->name('reports.purchase-by-item-summary');
+        Route::get('/purchase-by-item-detail', [\App\Http\Controllers\Accounting\Reports\PurchaseReportController::class, 'purchaseByItemDetail'])->name('reports.purchase-by-item-detail');
         Route::get('/purchase-by-supplier', [\App\Http\Controllers\Accounting\Reports\PurchaseReportController::class, 'purchaseBySupplier'])->name('reports.purchase-by-supplier');
     });
 

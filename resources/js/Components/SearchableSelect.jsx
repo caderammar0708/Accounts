@@ -177,12 +177,33 @@ const SearchableSelect = forwardRef(function SearchableSelect({
         requestAnimationFrame(() => containerRef.current?.focus());
     };
 
+    const focusSiblingElement = (direction = 'next') => {
+        if (!containerRef.current) return;
+        const focusableElements = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+        // Need to query from document but filter out things inside our own portal
+        const elements = Array.from(document.querySelectorAll(focusableElements))
+            .filter(el => !el.disabled && el.offsetParent !== null && (!dropdownRef.current || !dropdownRef.current.contains(el)));
+        const currentIndex = elements.indexOf(containerRef.current);
+        if (currentIndex > -1) {
+            if (direction === 'next' && currentIndex < elements.length - 1) {
+                elements[currentIndex + 1].focus();
+            } else if (direction === 'prev' && currentIndex > 0) {
+                elements[currentIndex - 1].focus();
+            }
+        }
+    };
+
     const handleKeyDown = (e) => {
         if (!isOpen) {
             if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
                 e.preventDefault();
                 e.stopPropagation();
                 setIsOpen(true);
+            } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsOpen(true);
+                setSearch(e.key);
             }
             return;
         }
@@ -215,10 +236,9 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                     if (onTabSelect) {
                         onTabSelect(targetOption);
                     }
+                    setTimeout(() => focusSiblingElement('next'), 10);
                 } else {
-                    // No selection made (no highlight, or noAutoSelectOnTab with no arrow-key pick).
-                    // Still prevent default and fire onTabSelect(null) so the table can
-                    // move focus to the next row without changing the field value.
+                    // No selection made
                     e.preventDefault();
                     e.stopPropagation();
                     setIsOpen(false);
@@ -226,11 +246,15 @@ const SearchableSelect = forwardRef(function SearchableSelect({
                     if (onTabSelect) {
                         onTabSelect(null);
                     }
+                    setTimeout(() => focusSiblingElement('next'), 10);
                 }
             } else {
-                // Shift+Tab: close dropdown, let browser handle backward navigation
+                // Shift+Tab: close dropdown, move focus to prev
+                e.preventDefault();
+                e.stopPropagation();
                 setIsOpen(false);
                 setSearch("");
+                setTimeout(() => focusSiblingElement('prev'), 10);
             }
         } else if (e.key === 'ArrowDown') {
             e.preventDefault();
