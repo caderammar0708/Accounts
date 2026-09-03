@@ -88,6 +88,7 @@ class ReportDataService
                 'display_by' => $displayBy,
                 'months' => $months,
                 'type' => $type,
+                'show_codes' => $request->get('show_codes') === '1' || $request->get('show_codes') === 'true',
             ],
         ];
     }
@@ -149,6 +150,7 @@ class ReportDataService
                 'display_by' => $displayBy,
                 'months' => $months,
                 'type' => $type,
+                'show_codes' => $request->get('show_codes') === '1' || $request->get('show_codes') === 'true',
             ],
         ];
     }

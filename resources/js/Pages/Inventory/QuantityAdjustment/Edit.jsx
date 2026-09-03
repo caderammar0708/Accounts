@@ -106,22 +106,49 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
         setData('items', newItems);
     };
 
+    const cleanQtyInput = (val, allowNegative = false) => {
+        if (val === '' || val === null || val === undefined) return '';
+        let str = String(val).replace(/,/g, '');
+        let isNegative = false;
+        if (allowNegative) {
+            isNegative = str.startsWith('-');
+            str = str.replace(/^-/, '');
+        }
+        // Remove all non-digit and non-period characters
+        str = str.replace(/[^\d.]/g, '');
+        // Ensure only one period
+        const parts = str.split('.');
+        let clean = parts[0] + (parts.length > 1 ? '.' + parts.slice(1).join('') : '');
+
+        // Prevent leading zero stacking: '05' -> '5', but keep '0', '0.x'
+        if (clean.length > 1 && clean.startsWith('0') && clean[1] !== '.') {
+            clean = clean.replace(/^0+/, '');
+            if (clean === '' || clean.startsWith('.')) clean = '0' + clean;
+        }
+
+        if (allowNegative && isNegative) {
+            return '-' + clean;
+        }
+        return clean;
+    };
+
     const handleNewQtyChange = (index, value) => {
-        const parsedNewQty = parseFloat(value);
+        const cleaned = cleanQtyInput(value, false);
+        const parsedNewQty = parseFloat(cleaned);
         const newItems = data.items.map((item, i) => {
             if (i !== index) return item;
             const qtyOnHand = parseFloat(item.qty_on_hand) || 0;
             let changeInQty = 0;
             if (!isNaN(parsedNewQty)) {
                 changeInQty = Math.round((parsedNewQty - qtyOnHand + Number.EPSILON) * 10000) / 10000;
-            } else if (value === '') {
+            } else if (cleaned === '') {
                 changeInQty = -qtyOnHand;
             } else {
                 changeInQty = item.change_in_qty;
             }
             return {
                 ...item,
-                new_qty: value,
+                new_qty: cleaned,
                 change_in_qty: changeInQty
             };
         });
@@ -129,25 +156,42 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
     };
 
     const handleChangeQtyChange = (index, value) => {
-        const parsedChangeQty = parseFloat(value);
+        const cleaned = cleanQtyInput(value, true);
+        const parsedChangeQty = parseFloat(cleaned);
         const newItems = data.items.map((item, i) => {
             if (i !== index) return item;
             const qtyOnHand = parseFloat(item.qty_on_hand) || 0;
             let newQty = qtyOnHand;
             if (!isNaN(parsedChangeQty)) {
                 newQty = Math.round((qtyOnHand + parsedChangeQty + Number.EPSILON) * 10000) / 10000;
-            } else if (value === '') {
+            } else if (cleaned === '' || cleaned === '-') {
                 newQty = qtyOnHand;
             } else {
                 newQty = item.new_qty;
             }
             return {
                 ...item,
-                change_in_qty: value,
+                change_in_qty: cleaned,
                 new_qty: newQty
             };
         });
         setData('items', newItems);
+    };
+
+    const handleNewQtyBlur = (index) => {
+        const item = data.items[index];
+        if (!item) return;
+        if (item.new_qty === '' || isNaN(parseFloat(item.new_qty))) {
+            handleNewQtyChange(index, '0');
+        }
+    };
+
+    const handleChangeQtyBlur = (index) => {
+        const item = data.items[index];
+        if (!item) return;
+        if (item.change_in_qty === '' || item.change_in_qty === '-' || isNaN(parseFloat(item.change_in_qty))) {
+            handleChangeQtyChange(index, '0');
+        }
     };
 
     const { auth } = usePage().props;
@@ -335,24 +379,41 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
                                                 }} />
                                             </td>
                                             <td className="p-2">
-                                                <input type="number" step="any" readOnly className="w-full px-2 py-1.5 bg-transparent border-none focus:ring-0 text-xs font-mono text-slate-500 text-right" value={item.qty_on_hand ?? 0} />
-                                            </td>
-                                            <td className="p-2">
-                                                <input
-                                                    type="number"
-                                                    step="any"
-                                                    className={`w-full px-2 py-1.5 bg-transparent border-none focus:bg-slate-50/50 focus:ring-0 text-xs font-mono text-slate-800 text-right rounded ${errors[`items.${index}.new_qty`] ? 'bg-red-50 text-red-700 ring-1 ring-red-400' : ''}`}
-                                                    value={item.new_qty ?? ''}
-                                                    onChange={e => handleNewQtyChange(index, e.target.value)}
+                                                <CommonInput
+                                                    type="text"
+                                                    variant="table"
+                                                    size="sm"
+                                                    readOnly
+                                                    inputClass="text-right font-mono text-slate-500 cursor-default px-2 py-1.5"
+                                                    value={item.qty_on_hand ?? 0}
                                                 />
                                             </td>
                                             <td className="p-2">
-                                                <input
-                                                    type="number"
-                                                    step="any"
-                                                    className="w-full px-2 py-1.5 bg-transparent border-none focus:bg-slate-50/50 focus:ring-0 text-xs font-mono text-slate-800 text-right"
-                                                    value={item.change_in_qty ?? ''}
+                                                <CommonInput
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    variant="table"
+                                                    size="sm"
+                                                    inputClass={`text-right font-mono text-slate-800 focus:bg-slate-50/50 rounded px-2 py-1.5 ${errors[`items.${index}.new_qty`] ? 'bg-red-50 text-red-700 ring-1 ring-red-400' : ''}`}
+                                                    value={item.new_qty !== undefined && item.new_qty !== null ? item.new_qty : ''}
+                                                    onChange={e => handleNewQtyChange(index, e.target.value)}
+                                                    onFocus={e => setTimeout(() => e.target.select(), 0)}
+                                                    onClick={e => e.target.select()}
+                                                    onBlur={() => handleNewQtyBlur(index)}
+                                                />
+                                            </td>
+                                            <td className="p-2">
+                                                <CommonInput
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    variant="table"
+                                                    size="sm"
+                                                    inputClass="text-right font-mono text-slate-800 focus:bg-slate-50/50 rounded px-2 py-1.5"
+                                                    value={item.change_in_qty !== undefined && item.change_in_qty !== null ? item.change_in_qty : ''}
                                                     onChange={e => handleChangeQtyChange(index, e.target.value)}
+                                                    onFocus={e => setTimeout(() => e.target.select(), 0)}
+                                                    onClick={e => e.target.select()}
+                                                    onBlur={() => handleChangeQtyBlur(index)}
                                                 />
                                             </td>
                                             <td className="p-2 text-center">

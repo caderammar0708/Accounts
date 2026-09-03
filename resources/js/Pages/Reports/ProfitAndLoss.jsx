@@ -7,11 +7,13 @@ import { useDateFormat, formatDate } from '@/Utils/dateFormat';
 import ReportDateFilter from '@/Components/ReportDateFilter';
 
 import ReportCurrency from '@/Components/ReportCurrency';
+import ShowAccountCodesToggle, { formatAccountDisplayName, useAccountCodesToggle } from '@/Components/ShowAccountCodesToggle';
 
 export default function ProfitAndLoss({ reportData, filters, auth }) {
     const dateFormat = useDateFormat();
     const [displayBy, setDisplayBy] = useState(filters.display_by || 'total');
     const [collapsedGroups, setCollapsedGroups] = useState(new Set());
+    const [showAccountCodes, toggleShowAccountCodes] = useAccountCodesToggle(filters?.show_codes);
 
     const toggleGroup = (id) => {
         setCollapsedGroups(prev => {
@@ -30,7 +32,8 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
             start_date: newFilters.start_date, 
             end_date: newFilters.end_date,
             display_by: displayBy,
-            type: newFilters.type 
+            type: newFilters.type,
+            show_codes: showAccountCodes ? '1' : undefined
         }, {
             preserveState: true,
             preserveScroll: true,
@@ -44,7 +47,8 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
             start_date: filters.start_date, 
             end_date: filters.end_date,
             display_by: val,
-            type: filters.type
+            type: filters.type,
+            show_codes: showAccountCodes ? '1' : undefined
         }, {
             preserveState: true,
             preserveScroll: true,
@@ -94,8 +98,9 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
     const flattenAccounts = (accounts, prefix = "") => {
         let flattened = [];
         accounts.forEach(acc => {
+            const displayName = formatAccountDisplayName(acc, null, showAccountCodes);
             flattened.push({
-                name: prefix + acc.name,
+                name: prefix + displayName,
                 balance: acc.balance,
                 monthly_balances: acc.monthly_balances
             });
@@ -227,6 +232,10 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                 <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
                 {displayBy === 'month' ? 'View Totals' : 'View by Month'}
             </CommonButton>
+            <ShowAccountCodesToggle
+                enabled={showAccountCodes}
+                onToggle={toggleShowAccountCodes}
+            />
         </div>
     );
 
@@ -255,6 +264,7 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
         const hasChildren = item.children && item.children.length > 0;
         const isCollapsed = collapsedGroups.has(item.id);
         const paddingLeft = `${1.5 + depth * 1.5}rem`;
+        const displayName = formatAccountDisplayName(item, null, showAccountCodes);
 
         return (
             <React.Fragment>
@@ -268,7 +278,7 @@ export default function ProfitAndLoss({ reportData, filters, auth }) {
                                 {isCollapsed ? '▶' : '▼'}
                             </span>
                         )}
-                        {item.name}
+                        {displayName}
                     </td>
                     {isMonthWise && monthCols.map(ym => {
                         const displayVal = (hasChildren && isCollapsed) ? item.total_monthly_balances?.[ym] : item.monthly_balances?.[ym];

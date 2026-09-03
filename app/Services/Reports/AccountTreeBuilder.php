@@ -34,6 +34,7 @@ class AccountTreeBuilder
             $accountBalances[$account->id] = [
                 'id' => $account->id,
                 'name' => $account->name,
+                'account_code' => $account->account_code,
                 'account_type' => $type,
                 'sub_type' => $account->sub_type,
                 'parent_id' => $account->parent_id,
@@ -132,6 +133,7 @@ class AccountTreeBuilder
             $accountBalances[$account->id] = [
                 'id' => $account->id,
                 'name' => $account->name,
+                'account_code' => $account->account_code,
                 'account_type' => $type,
                 'sub_type' => $account->sub_type,
                 'parent_id' => $account->parent_id,
@@ -202,6 +204,7 @@ class AccountTreeBuilder
         $accountBalances['retained_earnings'] = [
             'id' => 'retained_earnings',
             'name' => 'Retained Earnings',
+            'account_code' => null,
             'account_type' => 'equity',
             'sub_type' => 'retained-earnings',
             'parent_id' => null,
@@ -215,6 +218,7 @@ class AccountTreeBuilder
         $accountBalances['net_income'] = [
             'id' => 'net_income',
             'name' => 'Net Income',
+            'account_code' => null,
             'account_type' => 'equity',
             'sub_type' => 'retained-earnings',
             'parent_id' => null,
@@ -318,6 +322,7 @@ class AccountTreeBuilder
             $accountBalances[$account->id] = [
                 'id' => $account->id,
                 'name' => $account->name,
+                'account_code' => $account->account_code,
                 'account_type' => $type,
                 'sub_type' => $account->sub_type,
                 'parent_id' => $account->parent_id,
