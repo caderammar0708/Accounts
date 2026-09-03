@@ -4,14 +4,14 @@ on:
   push:
     branches:
       # - demo
-      # - ausj
+      - ausj
       # - aaafs
       # - aaass
       # - testing
       # - jobalign
       # - hallam-city-campus
       # - steel-audit
-      - steel-mobile
+      # - steel-mobile
       # - tgl-kandy
   workflow_dispatch:
 
@@ -83,5 +83,3 @@ jobs:
             **/node_modules/**
             **/.git/**
             **/.github/**
-            **/database/migrations/modules/**
-            database/migrations/modules/**
