@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
 import axios from 'axios';
 
@@ -67,6 +67,29 @@ export default function RecentTransactionHistory({ historyType = 'invoice', dirt
     const [cache, setCache] = useState({});
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [pendingTarget, setPendingTarget] = useState(null);
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (containerRef.current && !containerRef.current.contains(event.target)) {
+                setOpen(false);
+            }
+        };
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                setOpen(false);
+            }
+        };
+
+        if (open) {
+            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('keydown', handleKeyDown);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [open]);
 
     const normalizedType = useMemo(() => normalizeType(historyType), [historyType]);
     const records = cache[normalizedType] || [];
@@ -118,7 +141,7 @@ export default function RecentTransactionHistory({ historyType = 'invoice', dirt
     };
 
     return (
-        <div className="relative">
+        <div className="relative" ref={containerRef}>
             {children ? (
                 <div onClick={handleToggle} className="cursor-pointer" aria-label="Recent transaction history">
                     {children}
@@ -128,7 +151,7 @@ export default function RecentTransactionHistory({ historyType = 'invoice', dirt
                     type="button"
                     onClick={handleToggle}
                     tabIndex={-1}
-                    className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:border-primary-500 hover:bg-primary-50 hover:text-primary-700"
+                    className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:border-primary-500 hover:bg-primary-50 hover:text-primary-700 cursor-pointer"
                     aria-label="Recent transaction history"
                 >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -146,7 +169,7 @@ export default function RecentTransactionHistory({ historyType = 'invoice', dirt
                         <button
                             type="button"
                             onClick={() => setOpen(false)}
-                            className="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                            className="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
                             aria-label="Close history panel"
                         >
                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,12 +190,15 @@ export default function RecentTransactionHistory({ historyType = 'invoice', dirt
                                         key={record.id}
                                         type="button"
                                         onClick={() => handleOpenRecord(record)}
-                                        className="mb-1 block w-full rounded-md px-2 py-1.5 text-left text-[11px] text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:bg-slate-100"
+                                        className="mb-1 block w-full rounded-md px-2 py-1.5 text-left text-[11px] text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:bg-slate-100 cursor-pointer"
                                     >
                                         <div className="flex items-center justify-between gap-4">
                                             <div className="flex flex-col overflow-hidden">
                                                 <div className="flex items-center gap-1.5">
                                                     <span className="font-semibold text-slate-800">{record.date || '—'}</span>
+                                                    {record.ref_no && record.ref_no !== '—' && (
+                                                        <span className="text-slate-500 font-mono text-[10px]">#{record.ref_no}</span>
+                                                    )}
                                                     {record.status === 'void' && (
                                                         <span className="rounded bg-rose-100 px-1 py-0.2 text-[8px] font-bold text-rose-700 uppercase">
                                                             Void

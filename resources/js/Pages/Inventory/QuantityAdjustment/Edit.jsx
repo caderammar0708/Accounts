@@ -10,6 +10,8 @@ import PinPromptModal from '@/Components/PinPromptModal';
 import { useBooksLock, isBooksLocked } from '@/Hooks/useBooksLock';
 import { usePage } from '@inertiajs/react';
 import AttachmentUpload from '@/Components/AttachmentUpload';
+import { showToast } from '@/Components/ToastNotification';
+import RecentTransactionHistory from '@/Components/RecentTransactionHistory';
 
 const FormSection = ({ title, children, show = true }) => {
     if (!show) return null;
@@ -24,7 +26,7 @@ const FormSection = ({ title, children, show = true }) => {
 };
 
 export default function EditAdjustment({ items, accounts, existingReasons = [], adjustment }) {
-    const { data, setData, patch, processing, errors, transform } = useForm({
+    const { data, setData, patch, processing, errors, transform, clearErrors, isDirty } = useForm({
         adjustment_date: adjustment.adjustment_date || new Date().toISOString().split('T')[0],
         reference_number: adjustment.reference_number || '1',
         adjustment_reason: adjustment.adjustment_reason || 'Damaged Goods',
@@ -67,8 +69,7 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
     };
 
     const removeLine = (index) => {
-        const newItems = [...data.items];
-        newItems.splice(index, 1);
+        const newItems = data.items.filter((_, i) => i !== index);
         if (newItems.length === 0) {
             newItems.push({ id: Date.now(), item_id: '', sku: '', description: '', qty_on_hand: 0, new_qty: 0, change_in_qty: 0 });
         }
@@ -76,50 +77,76 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
     };
 
     const handleItemChange = (index, value) => {
-        const selectedItem = items.find(i => i.id === value);
-        const newItems = [...data.items];
-        if (selectedItem) {
-            newItems[index] = {
-                ...newItems[index],
-                item_id: selectedItem.id,
-                sku: selectedItem.sku || '',
-                description: selectedItem.description || '',
-                qty_on_hand: parseFloat(selectedItem.quantity_on_hand) || 0,
-                new_qty: parseFloat(selectedItem.quantity_on_hand) || 0,
-                change_in_qty: 0
-            };
-        } else {
-            newItems[index] = {
-                ...newItems[index],
-                item_id: '', sku: '', description: '', qty_on_hand: 0, new_qty: 0, change_in_qty: 0
-            };
-        }
+        const selectedItem = items.find(i => String(i.id) === String(value));
+        const newItems = data.items.map((item, i) => {
+            if (i !== index) return item;
+            if (selectedItem) {
+                const qtyOnHand = parseFloat(selectedItem.quantity_on_hand) || 0;
+                return {
+                    ...item,
+                    item_id: selectedItem.id,
+                    sku: selectedItem.sku || '',
+                    description: selectedItem.description || '',
+                    qty_on_hand: qtyOnHand,
+                    new_qty: qtyOnHand,
+                    change_in_qty: 0
+                };
+            } else {
+                return {
+                    ...item,
+                    item_id: '',
+                    sku: '',
+                    description: '',
+                    qty_on_hand: 0,
+                    new_qty: 0,
+                    change_in_qty: 0
+                };
+            }
+        });
         setData('items', newItems);
     };
 
     const handleNewQtyChange = (index, value) => {
-        const newItems = [...data.items];
-        const item = { ...newItems[index], new_qty: value };
         const parsedNewQty = parseFloat(value);
-        if (!isNaN(parsedNewQty)) {
-            item.change_in_qty = parsedNewQty - (parseFloat(item.qty_on_hand) || 0);
-        } else if (value === '') {
-            item.change_in_qty = 0 - (parseFloat(item.qty_on_hand) || 0);
-        }
-        newItems[index] = item;
+        const newItems = data.items.map((item, i) => {
+            if (i !== index) return item;
+            const qtyOnHand = parseFloat(item.qty_on_hand) || 0;
+            let changeInQty = 0;
+            if (!isNaN(parsedNewQty)) {
+                changeInQty = Math.round((parsedNewQty - qtyOnHand + Number.EPSILON) * 10000) / 10000;
+            } else if (value === '') {
+                changeInQty = -qtyOnHand;
+            } else {
+                changeInQty = item.change_in_qty;
+            }
+            return {
+                ...item,
+                new_qty: value,
+                change_in_qty: changeInQty
+            };
+        });
         setData('items', newItems);
     };
 
     const handleChangeQtyChange = (index, value) => {
-        const newItems = [...data.items];
-        const item = { ...newItems[index], change_in_qty: value };
         const parsedChangeQty = parseFloat(value);
-        if (!isNaN(parsedChangeQty)) {
-            item.new_qty = (parseFloat(item.qty_on_hand) || 0) + parsedChangeQty;
-        } else if (value === '') {
-            item.new_qty = parseFloat(item.qty_on_hand) || 0;
-        }
-        newItems[index] = item;
+        const newItems = data.items.map((item, i) => {
+            if (i !== index) return item;
+            const qtyOnHand = parseFloat(item.qty_on_hand) || 0;
+            let newQty = qtyOnHand;
+            if (!isNaN(parsedChangeQty)) {
+                newQty = Math.round((qtyOnHand + parsedChangeQty + Number.EPSILON) * 10000) / 10000;
+            } else if (value === '') {
+                newQty = qtyOnHand;
+            } else {
+                newQty = item.new_qty;
+            }
+            return {
+                ...item,
+                change_in_qty: value,
+                new_qty: newQty
+            };
+        });
         setData('items', newItems);
     };
 
@@ -127,6 +154,7 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
 
     const submit = (e, actionType = 'save', pinOverride = null) => {
         if (e && e.preventDefault) e.preventDefault();
+        console.log("Submitting inventory adjustment update...", { actionType, pinOverride, data });
 
         if (!pinOverride && isBooksLocked(data.adjustment_date, auth?.books_lock_date, true)) {
             setPendingAction(actionType);
@@ -134,12 +162,33 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
             return;
         }
 
+        const validItems = data.items.filter(item => item.item_id && item.item_id !== '');
+        if (validItems.length === 0) {
+            showToast('error', 'Please select at least one product in the adjustment lines.');
+            return;
+        }
+
+        if (!data.inventory_adjustment_account_id) {
+            showToast('error', 'Please select an adjustment account.');
+            return;
+        }
+
+        if (!data.adjustment_date) {
+            showToast('error', 'Please select an adjustment date.');
+            return;
+        }
+
+        if (!data.adjustment_reason) {
+            showToast('error', 'Please select or enter an adjustment reason.');
+            return;
+        }
+
         setPendingAction(actionType);
 
-        transform((data) => ({
-            ...data,
-            books_pin: pinOverride !== null ? pinOverride : data.books_pin,
-            items: data.items.filter(item => item.item_id !== '').map(item => ({
+        transform((currentData) => ({
+            ...currentData,
+            books_pin: pinOverride !== null ? pinOverride : currentData.books_pin,
+            items: currentData.items.filter(item => item.item_id && item.item_id !== '').map(item => ({
                 ...item,
                 new_qty: parseFloat(item.new_qty) || 0,
                 change_in_qty: parseFloat(item.change_in_qty) || 0,
@@ -147,11 +196,18 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
         }));
 
         patch(route('inventory-adjustment.update', { journalEntry: adjustment.id, action: actionType }), {
-            onSuccess: () => {
+            onSuccess: (page) => {
                 setIsPinModalOpen(false);
                 setPendingAction(null);
                 clearErrors('books_pin');
                 setData('books_pin', '');
+                showToast('success', page?.props?.flash?.success || 'Inventory quantity adjustment updated successfully.');
+            },
+            onError: (errs) => {
+                console.error("Inventory adjustment update failed:", errs);
+                const firstError = Object.values(errs)[0];
+                const msg = typeof firstError === 'string' ? firstError : 'Failed to update adjustment. Please check the form errors.';
+                showToast('error', msg);
             }
         });
     };
@@ -167,10 +223,13 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
             <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto ">
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
-                        <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center">
-                            Edit Inventory Quantity Adjustment #{data.reference_number}
-                            <BooksLockIndicator date={data.adjustment_date} lockDate={auth?.books_lock_date} isEdit={true} />
-                        </h1>
+                        <div className="flex items-center gap-2.5">
+                            <RecentTransactionHistory historyType="inventory_adjustment" dirty={isDirty} />
+                            <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                                Edit Inventory Quantity Adjustment #{data.reference_number}
+                                <BooksLockIndicator date={data.adjustment_date} lockDate={auth?.books_lock_date} isEdit={true} />
+                            </h1>
+                        </div>
                         <button
                             type="button"
                             onClick={() => setShowDeleteModal(true)}
@@ -180,9 +239,20 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
                         </button>
                     </div>
 
-                    {errors.error && (
-                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm font-bold">
-                            {errors.error}
+                    {Object.keys(errors).length > 0 && (
+                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-600 text-xs font-bold space-y-1 animate-in fade-in">
+                            <div className="font-extrabold text-sm mb-1 flex items-center gap-1.5">
+                                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                Please correct the following errors:
+                            </div>
+                            {errors.error && <div>• {errors.error}</div>}
+                            {errors.items && <div>• {errors.items}</div>}
+                            {Object.entries(errors)
+                                .filter(([k]) => !['error', 'items', 'books_pin'].includes(k))
+                                .map(([k, msg]) => (
+                                    <div key={k}>• {msg}</div>
+                                ))
+                            }
                         </div>
                     )}
 
@@ -215,7 +285,7 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
                         <div>
                             <label className="block text-[11px] font-bold text-slate-600 ml-0.5 text-xs mb-1">Adjustment Account</label>
                             <SearchableSelect
-                                options={accounts.map(acc => ({ value: acc.id, label: `${acc.account_code} - ${acc.name}` }))}
+                                options={accounts.map(acc => ({ value: acc.id, label: acc.account_code ? `${acc.account_code} - ${acc.name}` : acc.name }))}
                                 value={data.inventory_adjustment_account_id}
                                 onChange={val => setData('inventory_adjustment_account_id', val)}
                                 placeholder="Select account"
@@ -252,26 +322,38 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
                                                     placeholder="Select item"
                                                     variant="table"
                                                     hideChevron
+                                                    error={!!errors[`items.${index}.item_id`]}
                                                 />
                                             </td>
                                             <td className="p-2">
-                                                <input type="text" readOnly className="w-full px-2 py-1.5 bg-transparent border-none focus:ring-0 text-xs text-slate-500 font-mono" value={item.sku} />
+                                                <input type="text" readOnly className="w-full px-2 py-1.5 bg-transparent border-none focus:ring-0 text-xs text-slate-500 font-mono" value={item.sku || ''} />
                                             </td>
                                             <td className="p-2">
-                                                <input type="text" className="w-full px-2 py-1.5 bg-transparent border-none focus:bg-slate-50/50 focus:ring-0 text-xs text-slate-800" value={item.description} onChange={e => {
-                                                    const newItems = [...data.items];
-                                                    newItems[index].description = e.target.value;
-                                                    setData('items', newItems);
+                                                <input type="text" className="w-full px-2 py-1.5 bg-transparent border-none focus:bg-slate-50/50 focus:ring-0 text-xs text-slate-800" value={item.description || ''} onChange={e => {
+                                                    const val = e.target.value;
+                                                    setData('items', data.items.map((it, i) => i === index ? { ...it, description: val } : it));
                                                 }} />
                                             </td>
                                             <td className="p-2">
-                                                <input type="number" readOnly className="w-full px-2 py-1.5 bg-transparent border-none focus:ring-0 text-xs font-mono text-slate-500 text-right" value={item.qty_on_hand} />
+                                                <input type="number" step="any" readOnly className="w-full px-2 py-1.5 bg-transparent border-none focus:ring-0 text-xs font-mono text-slate-500 text-right" value={item.qty_on_hand ?? 0} />
                                             </td>
                                             <td className="p-2">
-                                                <input type="number" className="w-full px-2 py-1.5 bg-transparent border-none focus:bg-slate-50/50 focus:ring-0 text-xs font-mono text-slate-800 text-right" value={item.new_qty} onChange={e => handleNewQtyChange(index, e.target.value)} />
+                                                <input
+                                                    type="number"
+                                                    step="any"
+                                                    className={`w-full px-2 py-1.5 bg-transparent border-none focus:bg-slate-50/50 focus:ring-0 text-xs font-mono text-slate-800 text-right rounded ${errors[`items.${index}.new_qty`] ? 'bg-red-50 text-red-700 ring-1 ring-red-400' : ''}`}
+                                                    value={item.new_qty ?? ''}
+                                                    onChange={e => handleNewQtyChange(index, e.target.value)}
+                                                />
                                             </td>
                                             <td className="p-2">
-                                                <input type="number" className="w-full px-2 py-1.5 bg-transparent border-none focus:bg-slate-50/50 focus:ring-0 text-xs font-mono text-slate-800 text-right" value={item.change_in_qty} onChange={e => handleChangeQtyChange(index, e.target.value)} />
+                                                <input
+                                                    type="number"
+                                                    step="any"
+                                                    className="w-full px-2 py-1.5 bg-transparent border-none focus:bg-slate-50/50 focus:ring-0 text-xs font-mono text-slate-800 text-right"
+                                                    value={item.change_in_qty ?? ''}
+                                                    onChange={e => handleChangeQtyChange(index, e.target.value)}
+                                                />
                                             </td>
                                             <td className="p-2 text-center">
                                                 <button
@@ -286,6 +368,11 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
                                     ))}
                                 </tbody>
                             </table>
+                            {errors.items && (
+                                <div className="p-3 bg-red-50/50 border-t border-red-100 text-red-600 text-xs font-bold">
+                                    {errors.items}
+                                </div>
+                            )}
                             <div className="p-3 border-t border-slate-100 flex gap-2">
                                 <button type="button" onClick={addLine} className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-primary-50 border border-primary-200 text-primary-600 rounded-sm hover:bg-primary-100 transition-all uppercase tracking-wider shadow-sm">
                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
@@ -333,6 +420,7 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
                         </button>
                         <div className="flex gap-3">
                             <CommonButton
+                                type="button"
                                 variant="secondary"
                                 onClick={(e) => submit(e, 'close')}
                                 disabled={processing}
@@ -341,6 +429,7 @@ export default function EditAdjustment({ items, accounts, existingReasons = [], 
                                 Save and close
                             </CommonButton>
                             <CommonButton
+                                type="button"
                                 variant="primary"
                                 onClick={(e) => submit(e, 'save')}
                                 disabled={processing}

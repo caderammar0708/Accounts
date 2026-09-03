@@ -59,6 +59,17 @@ class InventoryQuantityAdjustmentController extends Controller
             'items.*.qty_on_hand' => 'required|numeric',
             'items.*.new_qty' => 'required|numeric',
             'items.*.change_in_qty' => 'required|numeric',
+        ], [
+            'items.required' => 'Please select at least one product in the adjustment lines.',
+            'items.min' => 'Please select at least one product in the adjustment lines.',
+            'items.*.item_id.required' => 'Please select a product for all line items.',
+            'items.*.item_id.exists' => 'The selected product does not exist.',
+            'items.*.new_qty.required' => 'New quantity is required for all line items.',
+            'items.*.new_qty.numeric' => 'New quantity must be a valid number.',
+            'items.*.change_in_qty.required' => 'Change in quantity is required.',
+            'items.*.change_in_qty.numeric' => 'Change in quantity must be a valid number.',
+            'inventory_adjustment_account_id.required' => 'Please select an adjustment account.',
+            'inventory_adjustment_account_id.exists' => 'The selected adjustment account is invalid.',
         ]);
 
         $this->checkBooksLock($request->adjustment_date, $request->books_pin);
@@ -66,7 +77,7 @@ class InventoryQuantityAdjustmentController extends Controller
         
         try {
             $journalEntry = null;
-            DB::transaction(function () use ($validated, &$journalEntry) {
+            DB::transaction(function () use ($validated, &$journalEntry, $request) {
                 $adjustment = InventoryQuantityAdjustment::create([
                     'adjustment_date' => \Carbon\Carbon::parse($validated['adjustment_date'])->format('Y-m-d'),
                     'reference_number' => $validated['reference_number'] ?? null,
@@ -103,7 +114,8 @@ class InventoryQuantityAdjustmentController extends Controller
                             (ChartOfAcc::query()->where('sub_type', 'inventory')->first()?->id ?? 
                              ChartOfAcc::getOrCreateDefault('inventory')->id);
 
-                        $lineMemo = "Inventory Qty Adj: " . $item->name . ($itemData['description'] ? ' (' . $itemData['description'] . ')' : '');
+                        $descSuffix = !empty($itemData['description']) ? ' (' . $itemData['description'] . ')' : '';
+                        $lineMemo = "Inventory Qty Adj: " . $item->name . $descSuffix;
 
                         if ($changeInQty > 0) {
                             // Inventory Increase:
@@ -141,9 +153,8 @@ class InventoryQuantityAdjustmentController extends Controller
                     }
                 }
 
-                // Create the Journal Entry if there is any adjustment value
-                if ($totalAmount > 0) {
-                    $journalEntry = JournalEntry::create([
+                // Create the Journal Entry for the adjustment
+                $journalEntry = JournalEntry::create([
                         'date' => \Carbon\Carbon::parse($validated['adjustment_date'])->format('Y-m-d'),
                         'reference' => $validated['reference_number'] ?? 'ADJ-' . time(),
                         'description' => $validated['memo'] ?? ('Inventory quantity adjustment - ' . $validated['adjustment_reason']),
@@ -158,9 +169,8 @@ class InventoryQuantityAdjustmentController extends Controller
                     foreach ($journalLines as $line) {
                         $journalEntry->lines()->create($line);
                     }
-                }
 
-                $adjustment->attachAttachments($request->input('attachment_ids', []));
+                    $adjustment->attachAttachments($request->input('attachment_ids', []));
                 if ($journalEntry) {
                     $journalEntry->attachAttachments($request->input('attachment_ids', []));
                 }
@@ -180,8 +190,17 @@ class InventoryQuantityAdjustmentController extends Controller
                 return redirect()->route('inventory-adjustment.edit', $journalEntry->id)->with('success', 'Inventory quantity adjustment saved successfully.');
             }
             return redirect()->route('items.index')->with('success', 'Inventory quantity adjustment saved successfully.');
-        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Inventory Adjustment Store Error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request' => $request->all(),
+            ]);
+            if ($request->expectsJson() || ($request->header('X-Inertia') === null && $request->isJson())) {
+                return response()->json(['message' => $e->getMessage(), 'error' => $e->getMessage()], 422);
+            }
+            return redirect()->back()->withInput()->withErrors(['error' => $e->getMessage()])->with('error', $e->getMessage());
         }
     }
     
@@ -244,13 +263,24 @@ class InventoryQuantityAdjustmentController extends Controller
             'items.*.qty_on_hand' => 'required|numeric',
             'items.*.new_qty' => 'required|numeric',
             'items.*.change_in_qty' => 'required|numeric',
+        ], [
+            'items.required' => 'Please select at least one product in the adjustment lines.',
+            'items.min' => 'Please select at least one product in the adjustment lines.',
+            'items.*.item_id.required' => 'Please select a product for all line items.',
+            'items.*.item_id.exists' => 'The selected product does not exist.',
+            'items.*.new_qty.required' => 'New quantity is required for all line items.',
+            'items.*.new_qty.numeric' => 'New quantity must be a valid number.',
+            'items.*.change_in_qty.required' => 'Change in quantity is required.',
+            'items.*.change_in_qty.numeric' => 'Change in quantity must be a valid number.',
+            'inventory_adjustment_account_id.required' => 'Please select an adjustment account.',
+            'inventory_adjustment_account_id.exists' => 'The selected adjustment account is invalid.',
         ]);
 
         $this->checkBooksLock($journalEntry->date, $request->books_pin);
         $this->checkBooksLock($request->adjustment_date, $request->books_pin);
 
         try {
-            DB::transaction(function () use ($validated, $journalEntry) {
+            DB::transaction(function () use ($validated, $journalEntry, $request) {
                 $adjustment = InventoryQuantityAdjustment::findOrFail($journalEntry->transactionable_id);
 
                 // Revert previous items
@@ -298,7 +328,8 @@ class InventoryQuantityAdjustmentController extends Controller
                             (ChartOfAcc::query()->where('sub_type', 'inventory')->first()?->id ?? 
                              ChartOfAcc::getOrCreateDefault('inventory')->id);
 
-                        $lineMemo = "Inventory Qty Adj: " . $item->name . ($itemData['description'] ? ' (' . $itemData['description'] . ')' : '');
+                        $descSuffix = !empty($itemData['description']) ? ' (' . $itemData['description'] . ')' : '';
+                        $lineMemo = "Inventory Qty Adj: " . $item->name . $descSuffix;
 
                         if ($changeInQty > 0) {
                             $journalLines[] = [
@@ -360,8 +391,17 @@ class InventoryQuantityAdjustmentController extends Controller
             }
             return redirect()->route('inventory-adjustment.edit', $journalEntry->id)->with('success', 'Inventory quantity adjustment updated successfully.');
 
-        } catch (\Illuminate\Validation\ValidationException $e) { throw $e; } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Inventory Adjustment Update Error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request' => $request->all(),
+            ]);
+            if ($request->expectsJson() || ($request->header('X-Inertia') === null && $request->isJson())) {
+                return response()->json(['message' => $e->getMessage(), 'error' => $e->getMessage()], 422);
+            }
+            return redirect()->back()->withInput()->withErrors(['error' => $e->getMessage()])->with('error', $e->getMessage());
         }
     }
 
