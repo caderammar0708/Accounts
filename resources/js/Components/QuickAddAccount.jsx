@@ -303,7 +303,6 @@ export default function QuickAddAccount({ isOpen, onClose, onSuccess, defaultTyp
                         value={data.account_code}
                         onChange={e => setData('account_code', e.target.value)}
                         error={errors.account_code}
-                        required
                         disabled={data.is_locked}
                     />
                     <CommonInput

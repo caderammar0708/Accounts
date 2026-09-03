@@ -173,10 +173,10 @@ class ChartOfAcc extends Model implements Auditable
         ];
 
         $code = $def['account_code'];
-        $exists = self::where('account_code', $code)->exists();
+        $exists = self::withoutGlobalScope(\App\Scopes\LocationScope::class)->where('account_code', $code)->exists();
         if ($exists) {
             $i = 1;
-            while (self::where('account_code', $code . $i)->exists()) {
+            while (self::withoutGlobalScope(\App\Scopes\LocationScope::class)->where('account_code', $code . $i)->exists()) {
                 $i++;
             }
             $code = $code . $i;

@@ -62,7 +62,7 @@ class ChartOfAccController extends Controller
         }
 
         $account = ChartOfAcc::create([
-            'account_code' => $request->input('account_code'),
+            'account_code' => $request->input('account_code') ?: null,
             'name' => $request->input('name'),
             'account_type' => $request->input('account_type'),
             'sub_type' => $request->input('sub_type'),
@@ -140,7 +140,7 @@ class ChartOfAccController extends Controller
             'success' => 'Chart of account created successfully.',
             'new_account' => [
                 'value' => $account->id,
-                'label' => "{$account->account_code} - {$account->name}",
+                'label' => $account->account_code ? "{$account->account_code} - {$account->name}" : $account->name,
                 'account_type' => $account->account_type,
                 'currency_id' => $account->currency_id,
             ]
@@ -199,7 +199,7 @@ class ChartOfAccController extends Controller
         $request->validated();
 
         $chartOfAccount->update([
-            'account_code' => $request->input('account_code'),
+            'account_code' => $request->input('account_code') ?: null,
             'name' => $request->input('name'),
             'account_type' => $request->input('account_type'),
             'sub_type' => $request->input('sub_type'),

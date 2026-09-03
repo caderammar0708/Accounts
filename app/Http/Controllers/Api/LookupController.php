@@ -136,7 +136,7 @@ class LookupController extends Controller
 
                 return [
                     'value' => $acc->id,
-                    'label' => "{$acc->account_code} - {$acc->name}",
+                    'label' => $acc->account_code ? "{$acc->account_code} - {$acc->name}" : $acc->name,
                     'balance' => $acc->balance,
                     'account_type' => $acc->account_type,
                     'currency_code' => $currencyCode,
@@ -273,8 +273,9 @@ class LookupController extends Controller
 
         $defaultCode = $defaults[strtolower($type)] ?? 1000;
 
-        // Fetch all account codes of this type for the active company
-        $codes = \App\Models\Accounting\ChartOfAcc::where('account_type', $type)
+        // Fetch all account codes of this type across ALL locations/branches
+        $codes = \App\Models\Accounting\ChartOfAcc::withoutGlobalScope(\App\Scopes\LocationScope::class)
+            ->where('account_type', $type)
             ->pluck('account_code');
 
         $numericCodes = $codes->filter(function($code) {

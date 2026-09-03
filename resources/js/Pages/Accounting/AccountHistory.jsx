@@ -80,7 +80,7 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
         const linesList = tx.journal_entry?.lines || [];
         if (linesList.length === 2) {
             const offsetLine = linesList.find(l => l.chart_of_acc_id !== account.id);
-            return offsetLine?.account ? `${offsetLine.account.account_code} - ${offsetLine.account.name}` : 'Unknown';
+            return offsetLine?.account ? `${offsetLine.account.account_code ? offsetLine.account.account_code + ' - ' : ''}${offsetLine.account.name}` : 'Unknown';
         } else if (linesList.length > 2) {
             return 'Split';
         }
@@ -279,7 +279,7 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                 <h2 className="text-xl font-bold text-gray-900">Account History: {account.name}</h2>
                 <h3 className="text-sm text-gray-700 mt-1">{auth.company?.company_name}</h3>
                 <p className="text-[13px] text-gray-500 mt-1">
-                    {account.account_code} • {account.account_type}
+                    {account.account_code ? `${account.account_code} • ` : ''}{account.account_type}
                 </p>
                 {filters.type === 'all_dates' ? (
                     <p className="text-[13px] text-gray-500 mt-1">All Dates</p>
@@ -385,7 +385,7 @@ export default function AccountHistory({ account, lines = [], accounts = [], ope
                                                         >
                                                             <option value="">Select Account</option>
                                                             {accounts.map(a => (
-                                                                <option key={a.id} value={a.id}>{a.account_code} - {a.name}</option>
+                                                                <option key={a.id} value={a.id}>{a.account_code ? `${a.account_code} - ` : ''}{a.name}</option>
                                                             ))}
                                                         </select>
                                                     )}

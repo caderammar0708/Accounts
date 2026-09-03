@@ -23,6 +23,10 @@ class ChartOfAccRequest extends FormRequest
                 'opening_balance' => str_replace(',', '', $this->input('opening_balance'))
             ]);
         }
+
+        if ($this->has('account_code') && trim((string)$this->input('account_code')) === '') {
+            $this->merge(['account_code' => null]);
+        }
     }
 
     public function rules(): array
@@ -32,13 +36,13 @@ class ChartOfAccRequest extends FormRequest
 
         return [
             'account_code' => [
-                'required',
+                'nullable',
                 'string',
                 'max:255',
                 Rule::unique('chart_of_accs', 'account_code')
                     ->ignore($chartOfAccountId)
                     ->where(function ($query) {
-                        return $query;
+                        return $query->whereNotNull('account_code');
                     })
             ],
             'name' => [

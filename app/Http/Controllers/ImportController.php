@@ -727,7 +727,7 @@ class ImportController extends Controller
                             $prefixMap = ['asset' => '1', 'liability' => '2', 'equity' => '3', 'income' => '4', 'expense' => '5'];
                             $prefix = $prefixMap[$baseType] ?? '6';
                             $code = $prefix . rand(100, 999);
-                            while (ChartOfAcc::where('account_code', $code)->exists()) {
+                            while (ChartOfAcc::withoutGlobalScope(\App\Scopes\LocationScope::class)->where('account_code', $code)->exists()) {
                                 $code = $prefix . rand(1000, 9999);
                             }
                         }
