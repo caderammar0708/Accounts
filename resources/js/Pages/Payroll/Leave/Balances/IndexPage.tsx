@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { usePage } from '@inertiajs/react';
-import { usePageHeader } from '@/src/App';
-
+import { usePage, Page } from '@inertiajs/react';
 import { MagnifyingGlassIcon } from '@/src/components/icons/Icons';
+import CommonButton from '@/Components/CommonButton';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 interface LeaveBalance {
     id: number;
@@ -10,6 +10,8 @@ interface LeaveBalance {
     leave_type_id: number;
     year: number;
     remaining_days: number;
+    taken_days?: number;
+    entitlement?: number;
     staff?: {
         name: string;
         id: number;
@@ -29,6 +31,7 @@ interface LeaveType {
 interface Staff {
     id: number;
     name: string;
+    staff_no?: string;
 }
 
 interface BalancesPageProps {
@@ -37,9 +40,12 @@ interface BalancesPageProps {
     leaveTypes: LeaveType[];
 }
 
-const LeaveBalancesPage: React.FC = () => {
-    const { balances, employees, leaveTypes } = usePage<Page<PageProps>>().props as any as BalancesPageProps;
-    const { setTitle, setActions } = usePageHeader();
+interface Props {
+    isEmbedded?: boolean;
+}
+
+const LeaveBalancesPage: React.FC<Props> = ({ isEmbedded = false }) => {
+    const { balances = [], employees = [], leaveTypes = [] } = usePage<Page<BalancesPageProps>>().props as any;
 
     const [year, setYear] = useState<number>(new Date().getFullYear());
     const [searchTerm, setSearchTerm] = useState<string>('');
@@ -48,7 +54,7 @@ const LeaveBalancesPage: React.FC = () => {
     // Sync matrix state based on loaded balances for the selected year
     useEffect(() => {
         const initialMatrix: Record<string, any> = {};
-        balances.forEach(b => {
+        balances.forEach((b: LeaveBalance) => {
             if (b.year === year) {
                 initialMatrix[`${b.employee_id}_${b.leave_type_id}`] = {
                     remaining: b.remaining_days,
@@ -60,33 +66,16 @@ const LeaveBalancesPage: React.FC = () => {
         setMatrix(initialMatrix);
     }, [balances, year]);
 
-    useEffect(() => {
-        setTitle('Leave Balances Grid');
-        setActions(
-            <div className="flex gap-2.5">
-                <a 
-                    href="/leave-balance/export" 
-                    className="flex items-center justify-center px-8 py-2.5 text-sm font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200/80 shadow-sm transition duration-150 active:scale-[0.98]"
-                >
-                    Export to Excel
-                </a>
-            </div>
-        );
-        return () => setActions(undefined);
-    }, [setTitle, setActions]);
-
     // Filter staff members based on search term
-    const filteredStaffs = employees.filter(s => 
-        s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const filteredStaffs = employees.filter((s: Staff) => 
+        s.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
         s.staff_no?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    return (
-        <div className="space-y-6 pb-12">
-            
+    const content = (
+        <div className="space-y-6">
             {/* Header Toolbar Selection */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                 {/* Search Bar */}
                 <div className="relative flex-1 max-w-md">
                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -95,40 +84,48 @@ const LeaveBalancesPage: React.FC = () => {
                     <input 
                         type="text" 
                         placeholder="Search employee by name or ID..."
-                        className="w-full pl-9 pr-4 py-2 text-sm border-slate-200 focus:border-teal-500 focus:ring-teal-500/20 rounded-lg transition"
+                        className="w-full pl-9 pr-4 py-2 text-xs border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-lg transition"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
 
-                {/* Calendar Year Selector */}
-                <div className="flex items-center gap-3">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Calendar Year:</label>
-                    <input 
-                        type="number"
-                        className="w-28 text-sm font-bold border-slate-200 focus:border-teal-500 focus:ring-teal-500/20 rounded-lg text-center"
-                        value={year}
-                        onChange={e => setYear(parseInt(e.target.value) || new Date().getFullYear())}
-                        min={2020}
-                        max={2100}
-                    />
+                {/* Calendar Year Selector & Actions */}
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Year:</label>
+                        <input 
+                            type="number"
+                            className="w-24 text-xs font-bold border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-lg text-center py-1.5"
+                            value={year}
+                            onChange={e => setYear(parseInt(e.target.value) || new Date().getFullYear())}
+                            min={2020}
+                            max={2100}
+                        />
+                    </div>
+                    <CommonButton 
+                        href="/leave-balance/export" 
+                        variant="secondary"
+                        size="sm"
+                    >
+                        Export to Excel
+                    </CommonButton>
                 </div>
             </div>
 
             {/* Balances Spreadsheet Matrix Grid */}
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-                
-                {/* Modern Slate Header Banner */}
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                {/* Standard Card Header */}
+                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                     <div>
-                        <h3 className="text-base font-bold text-white tracking-wide">Employee Leave Balances Grid</h3>
-                        <p className="text-slate-400 text-xs mt-0.5">Overview of active staff leave allocations and remaining balances. (Shown as: Taken / Entitlement)</p>
+                        <h3 className="text-sm font-bold text-slate-800 tracking-tight">Employee Leave Balances Grid</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Overview of active staff leave allocations and remaining balances. (Shown as: Taken / Entitlement)</p>
                     </div>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-slate-200 table-fixed">
-                        <thead className="bg-slate-50">
+                        <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
                                 <th className="w-1/3 px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Employee</th>
                                 {leaveTypes.map(lt => (
@@ -142,15 +139,15 @@ const LeaveBalancesPage: React.FC = () => {
                         <tbody className="bg-white divide-y divide-slate-100">
                             {filteredStaffs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={1 + leaveTypes.length} className="px-6 py-10 text-center text-sm text-slate-400 italic">
+                                    <td colSpan={1 + leaveTypes.length} className="px-6 py-12 text-center text-xs font-medium text-slate-400">
                                         No active staff members found.
                                     </td>
                                 </tr>
                             ) : (
                                 filteredStaffs.map(staff => (
-                                    <tr key={staff.id} className="hover:bg-slate-50/50 transition">
+                                    <tr key={staff.id} className="hover:bg-slate-50/70 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap text-left">
-                                            <div className="text-sm font-bold text-slate-950 leading-tight">{staff.name}</div>
+                                            <div className="text-sm font-bold text-slate-900 leading-tight">{staff.name}</div>
                                             <div className="text-xs text-slate-400 font-semibold mt-0.5">{staff.staff_no}</div>
                                         </td>
                                         {leaveTypes.map(lt => {
@@ -162,7 +159,7 @@ const LeaveBalancesPage: React.FC = () => {
                                                 <td key={lt.id} className="px-6 py-4 whitespace-nowrap text-center">
                                                     <span className={`inline-flex text-xs font-bold font-mono tracking-wider px-2.5 py-1 rounded-lg border ${
                                                         isAssigned 
-                                                            ? 'text-teal-700 bg-teal-50 border-teal-200' 
+                                                            ? 'text-primary bg-primary/10 border-primary/20' 
                                                             : 'text-slate-400 bg-slate-50 border-slate-200/60'
                                                     }`}>
                                                         {isAssigned ? `${Number(val.taken)} / ${Number(val.entitlement)}` : `0 / 0`}
@@ -179,6 +176,27 @@ const LeaveBalancesPage: React.FC = () => {
             </div>
         </div>
     );
+
+    if (isEmbedded) {
+        return content;
+    }
+
+    return (
+        <AuthenticatedLayout
+            header={
+                <h2 className="font-bold text-lg text-slate-800 tracking-tight">
+                    Leave Balances Grid
+                </h2>
+            }
+        >
+            <div className="py-6">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    {content}
+                </div>
+            </div>
+        </AuthenticatedLayout>
+    );
 };
 
 export default LeaveBalancesPage;
+

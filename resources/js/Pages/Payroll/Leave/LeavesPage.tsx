@@ -1,41 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LeaveRequestsPage from './Requests/IndexPage';
 import LeaveBalancesPage from './Balances/IndexPage';
-import { usePageHeader } from '@/src/App';
 
 const LeavesPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'requests' | 'balances'>('requests');
-    const { setTitle } = usePageHeader();
-
-    useEffect(() => {
-        setTitle('Leaves Management');
-    }, [setTitle]);
 
     return (
-        <div className="space-y-6">
-            {/* Tab Bar */}
-            <div className="flex border-b border-slate-200 bg-white px-6 py-2 rounded-xl shadow-sm border">
-                <button 
-                    onClick={() => setActiveTab('requests')}
-                    className={`px-5 py-3 text-sm font-bold border-b-2 transition-all duration-150 ${activeTab === 'requests' ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                >
-                    Leave Requests
-                </button>
-                <button 
-                    onClick={() => setActiveTab('balances')}
-                    className={`px-5 py-3 text-sm font-bold border-b-2 transition-all duration-150 ${activeTab === 'balances' ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                >
-                    Leave Balances
-                </button>
-            </div>
+        <AuthenticatedLayout
+            header={
+                <h2 className="font-bold text-lg text-slate-800 tracking-tight">
+                    Leaves Management
+                </h2>
+            }
+        >
+            <div className="py-6">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+                    {/* Tab Navigation */}
+                    <div className="border-b border-slate-200">
+                        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                            <button
+                                onClick={() => setActiveTab('requests')}
+                                className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wider transition-colors ${
+                                    activeTab === 'requests'
+                                        ? 'border-primary text-primary'
+                                        : 'border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300'
+                                }`}
+                            >
+                                Leave Requests
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('balances')}
+                                className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wider transition-colors ${
+                                    activeTab === 'balances'
+                                        ? 'border-primary text-primary'
+                                        : 'border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300'
+                                }`}
+                            >
+                                Leave Balances
+                            </button>
+                        </nav>
+                    </div>
 
-            {/* Tab Content */}
-            <div className="mt-4">
-                {activeTab === 'requests' && <LeaveRequestsPage />}
-                {activeTab === 'balances' && <LeaveBalancesPage />}
+                    {/* Tab Content */}
+                    <div>
+                        {activeTab === 'requests' && <LeaveRequestsPage isEmbedded={true} />}
+                        {activeTab === 'balances' && <LeaveBalancesPage isEmbedded={true} />}
+                    </div>
+                </div>
             </div>
-        </div>
+        </AuthenticatedLayout>
     );
 };
 
 export default LeavesPage;
+

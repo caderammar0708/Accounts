@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import CommonButton from '@/Components/CommonButton';
@@ -9,7 +9,59 @@ export default function RoleEdit({ role = {}, groupedPermissions = {} }) {
         permissions: role.permissions || [],
     });
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(searchTerm.trim().toLowerCase());
+        }, 150);
+        return () => clearTimeout(handler);
+    }, [searchTerm]);
+
     const allPermissionNames = Object.values(groupedPermissions).flatMap(group => group.map(p => p.name));
+
+    // Filter permissions and groups by name, label, or module name
+    const filteredGroupedPermissions = useMemo(() => {
+        if (!debouncedSearch) return groupedPermissions;
+
+        const result = {};
+        Object.entries(groupedPermissions).forEach(([moduleName, perms]) => {
+            const moduleMatches = moduleName.toLowerCase().includes(debouncedSearch);
+            const matchingPerms = perms.filter(p =>
+                moduleMatches ||
+                p.name.toLowerCase().includes(debouncedSearch) ||
+                p.label.toLowerCase().includes(debouncedSearch)
+            );
+
+            if (matchingPerms.length > 0) {
+                result[moduleName] = matchingPerms;
+            }
+        });
+        return result;
+    }, [groupedPermissions, debouncedSearch]);
+
+    const totalMatchingCount = useMemo(() => {
+        return Object.values(filteredGroupedPermissions).reduce((acc, perms) => acc + perms.length, 0);
+    }, [filteredGroupedPermissions]);
+
+    const highlightMatch = (text, query) => {
+        if (!query || !text) return text;
+        const index = text.toLowerCase().indexOf(query);
+        if (index === -1) return text;
+        const before = text.slice(0, index);
+        const match = text.slice(index, index + query.length);
+        const after = text.slice(index + query.length);
+        return (
+            <>
+                {before}
+                <mark className="bg-emerald-100 text-emerald-900 rounded px-0.5 font-semibold">
+                    {match}
+                </mark>
+                {after}
+            </>
+        );
+    };
 
     const handleTogglePermission = (permName) => {
         if (data.permissions.includes(permName)) {
@@ -109,76 +161,132 @@ export default function RoleEdit({ role = {}, groupedPermissions = {} }) {
 
                     {/* Permissions Matrix */}
                     <div className="mb-8">
-                        <div className="flex items-center justify-between mb-4">
+                        {/* Header & Search Bar */}
+                        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
                                 <h3 className="text-base font-black text-slate-900">Module Permissions</h3>
                                 <p className="text-xs text-slate-500">
                                     {data.permissions.length} of {allPermissionNames.length} permissions granted
+                                    {debouncedSearch && (
+                                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            {totalMatchingCount} {totalMatchingCount === 1 ? 'match' : 'matches'}
+                                        </span>
+                                    )}
                                 </p>
+                            </div>
+
+                            {/* Live Debounced Search Filter */}
+                            <div className="relative w-full sm:w-80">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Filter by name or key (e.g. payroll)..."
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    className="w-full pl-9 pr-8 py-1.5 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 bg-white shadow-xs"
+                                />
+                                {searchTerm && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined text-base">close</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            {Object.entries(groupedPermissions).map(([moduleName, perms]) => {
-                                const groupNames = perms.map(p => p.name);
-                                const isGroupAllSelected = groupNames.every(name => data.permissions.includes(name));
-                                const hasSomeSelected = groupNames.some(name => data.permissions.includes(name));
+                        {Object.keys(filteredGroupedPermissions).length === 0 ? (
+                            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
+                                <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                                <h4 className="text-sm font-black text-slate-800">No matching permissions</h4>
+                                <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                                    No permissions matching &ldquo;<span className="font-semibold text-slate-700">{debouncedSearch}</span>&rdquo; were found.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchTerm('')}
+                                    className="mt-4 px-3 py-1.5 text-xs font-bold text-primary hover:text-primary-600 hover:underline"
+                                >
+                                    Clear Search Filter
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                {Object.entries(filteredGroupedPermissions).map(([moduleName, perms]) => {
+                                    const groupNames = perms.map(p => p.name);
+                                    const isGroupAllSelected = groupNames.every(name => data.permissions.includes(name));
+                                    const hasSomeSelected = groupNames.some(name => data.permissions.includes(name));
 
-                                return (
-                                    <div key={moduleName} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                                        {/* Module Card Header */}
-                                        <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="checkbox"
-                                                    id={`group-${moduleName}`}
-                                                    checked={isGroupAllSelected}
-                                                    ref={el => {
-                                                        if (el) el.indeterminate = hasSomeSelected && !isGroupAllSelected;
-                                                    }}
-                                                    onChange={() => handleToggleGroup(perms)}
-                                                    className="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary cursor-pointer"
-                                                />
-                                                <label htmlFor={`group-${moduleName}`} className="text-xs font-black text-slate-800 uppercase tracking-wider cursor-pointer">
-                                                    {moduleName}
-                                                </label>
-                                            </div>
-                                            <span className="text-2xs text-slate-400 font-bold">
-                                                {groupNames.filter(n => data.permissions.includes(n)).length}/{groupNames.length}
-                                            </span>
-                                        </div>
-
-                                        {/* Permissions list */}
-                                        <div className="p-4 space-y-2.5 flex-1">
-                                            {perms.map(p => {
-                                                const checked = data.permissions.includes(p.name);
-                                                return (
-                                                    <label
-                                                        key={p.name}
-                                                        className={`flex items-start gap-2.5 p-2 rounded-xl border transition-all cursor-pointer select-none ${
-                                                            checked
-                                                                ? 'border-primary/30 bg-primary/5 text-slate-900 shadow-xs'
-                                                                : 'border-transparent hover:bg-slate-50 text-slate-600'
-                                                        }`}
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={checked}
-                                                            onChange={() => handleTogglePermission(p.name)}
-                                                            className="w-4 h-4 mt-0.5 text-primary rounded border-slate-300 focus:ring-primary cursor-pointer shrink-0"
-                                                        />
-                                                        <div className="flex flex-col">
-                                                            <span className="text-xs font-bold leading-tight">{p.label}</span>
-                                                            <span className="text-[10px] text-slate-400 font-mono mt-0.5">{p.name}</span>
-                                                        </div>
+                                    return (
+                                        <div key={moduleName} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                                            {/* Module Card Header */}
+                                            <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`group-${moduleName}`}
+                                                        checked={isGroupAllSelected}
+                                                        ref={el => {
+                                                            if (el) el.indeterminate = hasSomeSelected && !isGroupAllSelected;
+                                                        }}
+                                                        onChange={() => handleToggleGroup(perms)}
+                                                        className="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary cursor-pointer"
+                                                    />
+                                                    <label htmlFor={`group-${moduleName}`} className="text-xs font-black text-slate-800 uppercase tracking-wider cursor-pointer">
+                                                        {highlightMatch(moduleName, debouncedSearch)}
                                                     </label>
-                                                );
-                                            })}
+                                                </div>
+                                                <span className="text-2xs text-slate-400 font-bold">
+                                                    {groupNames.filter(n => data.permissions.includes(n)).length}/{groupNames.length}
+                                                </span>
+                                            </div>
+
+                                            {/* Permissions list */}
+                                            <div className="p-4 space-y-2.5 flex-1">
+                                                {perms.map(p => {
+                                                    const checked = data.permissions.includes(p.name);
+                                                    return (
+                                                        <label
+                                                            key={p.name}
+                                                            className={`flex items-start gap-2.5 p-2 rounded-xl border transition-all cursor-pointer select-none ${
+                                                                checked
+                                                                    ? 'border-primary/30 bg-primary/5 text-slate-900 shadow-xs'
+                                                                    : 'border-transparent hover:bg-slate-50 text-slate-600'
+                                                            }`}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={checked}
+                                                                onChange={() => handleTogglePermission(p.name)}
+                                                                className="w-4 h-4 mt-0.5 text-primary rounded border-slate-300 focus:ring-primary cursor-pointer shrink-0"
+                                                            />
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs font-bold leading-tight">
+                                                                    {highlightMatch(p.label, debouncedSearch)}
+                                                                </span>
+                                                                <span className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                                                    {highlightMatch(p.name, debouncedSearch)}
+                                                                </span>
+                                                            </div>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     {/* Bottom Actions */}

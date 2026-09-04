@@ -167,6 +167,13 @@ class PermissionSeeder extends Seeder
                 'roles.edit' => 'Edit Roles',
                 'roles.delete' => 'Delete Roles',
             ],
+            'HR & Payroll' => [
+                'manage-payroll' => 'Manage Payroll & Salary Operations',
+                'view-payroll' => 'View Payroll',
+                'manage-leave-requests' => 'Manage Leave Requests & Calendar',
+                'manage-system' => 'Manage System Approvals',
+                'view-attendance-report' => 'View Attendance Report',
+            ],
         ];
 
         $allPermissionNames = [];

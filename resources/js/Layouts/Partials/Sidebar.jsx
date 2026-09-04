@@ -1,46 +1,92 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import SidebarIcon from './SidebarIcon';
 import { can } from '@/Utils/permissions';
 
 export default function Sidebar({ navigation, user, onQuickMenuOpen }) {
     const scrollContainerRef = useRef(null);
+    const { url } = usePage();
 
-    const getInitialOpenMenu = () => {
-        if (typeof window === 'undefined') return 'reports';
-        const stored = sessionStorage.getItem('sidebar_open_menu');
-        if (stored !== null) {
-            return stored === 'null' ? null : stored;
+    const isSubmenuActive = (sub) => {
+        if (!sub) return false;
+
+        // 1. Check Ziggy route activeRoutes
+        if (sub.activeRoutes && Array.isArray(sub.activeRoutes)) {
+            if (sub.activeRoutes.some(r => {
+                try { return route().current(r); } catch (e) { return false; }
+            })) return true;
         }
 
-        const currentUrl = window.location.href;
-        const currentPath = window.location.pathname;
+        // 2. Check activePattern
+        if (sub.activePattern && Array.isArray(sub.activePattern)) {
+            if (sub.activePattern.some(pattern => {
+                try { return route().current(pattern); } catch (e) { return false; }
+            })) return true;
+        }
 
-        const matchesPath = (href) => {
-            if (!href) return false;
-            if (href.startsWith('http://') || href.startsWith('https://')) {
-                return currentUrl.startsWith(href) || href.includes(currentPath);
+        // 3. Check route name inferred from href
+        const subRouteName = sub.href ? sub.href.split('?')[0].split('/').filter(Boolean).pop() : '';
+        if (subRouteName) {
+            try {
+                if (route().current(`${subRouteName}.*`) || route().current(subRouteName) || route().current(`${subRouteName}.index`)) {
+                    return true;
+                }
+            } catch (e) {}
+        }
+
+        // 4. URL path matching
+        if (url && sub.href) {
+            try {
+                const currentPath = url.split('?')[0];
+                const subPath = new URL(sub.href, typeof window !== 'undefined' ? window.location.origin : 'http://localhost').pathname;
+                if (currentPath === subPath || (subPath !== '/' && currentPath.startsWith(subPath))) {
+                    return true;
+                }
+            } catch (e) {
+                if (url.startsWith(sub.href)) return true;
             }
-            return currentPath.startsWith(href) || href.startsWith(currentPath);
-        };
+        }
 
-        return null;
+        return false;
     };
 
-    const [openMenu, setOpenMenu] = useState(getInitialOpenMenu);
-    const [expandedMenus, setExpandedMenus] = useState({});
+    const [expandedMenus, setExpandedMenus] = useState(() => {
+        const initial = {};
+        if (navigation) {
+            navigation.forEach(item => {
+                if (item.submenus && item.submenus.some(sub => isSubmenuActive(sub))) {
+                    initial[item.name] = true;
+                }
+            });
+        }
+        return initial;
+    });
 
-    const toggleSubmenu = (menuName) => {
-        setExpandedMenus(prev => ({
-            ...prev,
-            [menuName]: !prev[menuName]
-        }));
-    };
-
+    // Automatically expand parent whenever navigating to a page matching any child submenu
     useEffect(() => {
-        sessionStorage.setItem('sidebar_open_menu', openMenu === null ? 'null' : openMenu);
-    }, [openMenu]);
+        setExpandedMenus(prev => {
+            const next = { ...prev };
+            if (navigation) {
+                navigation.forEach(item => {
+                    if (item.submenus && item.submenus.some(sub => isSubmenuActive(sub))) {
+                        next[item.name] = true;
+                    }
+                });
+            }
+            return next;
+        });
+    }, [url, navigation]);
+
+    const toggleSubmenu = (menuName, hasActive) => {
+        setExpandedMenus(prev => {
+            const currentVal = prev[menuName] !== undefined ? prev[menuName] : hasActive;
+            return {
+                ...prev,
+                [menuName]: !currentVal
+            };
+        });
+    };
 
     useEffect(() => {
         const savedScrollPosition = sessionStorage.getItem('sidebar_scroll_position');
@@ -110,17 +156,13 @@ export default function Sidebar({ navigation, user, onQuickMenuOpen }) {
                             if (!hasAccess) return null;
 
                             if (item.submenus) {
-                                const isExpanded = expandedMenus[item.name];
-                                const hasActiveSubmenu = item.submenus.some(sub => 
-                                    (sub.activeRoutes && Array.isArray(sub.activeRoutes) && sub.activeRoutes.some(r => route().current(r))) ||
-                                    (sub.activePattern && Array.isArray(sub.activePattern) && sub.activePattern.some(pattern => route().current(pattern))) ||
-                                    (sub.href && sub.href.split('/').pop() && route().current(`${sub.href.split('/').pop()}.*`))
-                                );
+                                const hasActiveSubmenu = item.submenus.some(sub => isSubmenuActive(sub));
+                                const isExpanded = expandedMenus[item.name] !== undefined ? expandedMenus[item.name] : hasActiveSubmenu;
                                 
                                 return (
                                     <div key={item.name} className="space-y-1">
                                         <button
-                                            onClick={() => toggleSubmenu(item.name)}
+                                            onClick={() => toggleSubmenu(item.name, hasActiveSubmenu)}
                                             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 group ${
                                                 hasActiveSubmenu || isExpanded
                                                 ? 'bg-white/10 text-white font-bold'
@@ -141,11 +183,7 @@ export default function Sidebar({ navigation, user, onQuickMenuOpen }) {
                                         {isExpanded && (
                                             <div className="pl-11 pr-3 space-y-1 mt-1">
                                                 {item.submenus.map((sub, idx) => {
-                                                    const subRouteName = sub.href ? sub.href.split('/').pop() : '';
-                                                    const isSubActive = (sub.activeRoutes && Array.isArray(sub.activeRoutes) && sub.activeRoutes.some(r => route().current(r))) ||
-                                                        (sub.activePattern && Array.isArray(sub.activePattern) && sub.activePattern.some(pattern => route().current(pattern))) ||
-                                                        (subRouteName && (route().current(`${subRouteName}.*`) || route().current(subRouteName) || route().current(`${subRouteName}.index`)));
-                                                    
+                                                    const isSubActive = isSubmenuActive(sub);
                                                     const hasSubAccess = sub.permission ? can(user, sub.permission) : true;
                                                     
                                                     return hasSubAccess && (

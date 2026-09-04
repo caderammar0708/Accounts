@@ -163,6 +163,13 @@ class RoleController extends Controller
                 ['name' => 'roles.edit', 'label' => 'Edit Roles'],
                 ['name' => 'roles.delete', 'label' => 'Delete Roles'],
             ],
+            'HR & Payroll' => [
+                ['name' => 'manage-payroll', 'label' => 'Manage Payroll & Salary Operations'],
+                ['name' => 'view-payroll', 'label' => 'View Payroll'],
+                ['name' => 'manage-leave-requests', 'label' => 'Manage Leave Requests & Calendar'],
+                ['name' => 'manage-system', 'label' => 'Manage System Approvals'],
+                ['name' => 'view-attendance-report', 'label' => 'View Attendance Report'],
+            ],
         ];
     }
 

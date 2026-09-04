@@ -99,6 +99,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setCollapsed }) => {
         return currentParent?.name || null;
     });
 
+    React.useEffect(() => {
+        const currentParent = filteredNavigation.find(item =>
+            item.children?.some(child => url.startsWith(child.href))
+        );
+        if (currentParent) {
+            setOpenMenu(currentParent.name);
+        }
+    }, [url]);
+
     const handleMenuToggle = (name: string) => {
         setOpenMenu(openMenu === name ? null : name);
     };

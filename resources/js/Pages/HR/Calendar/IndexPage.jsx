@@ -102,105 +102,105 @@ export default function CalendarIndexPage({ auth, currentMonth, holidays, leaves
     return (
         <AuthenticatedLayout
             user={auth?.user || {}}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Leave & Holiday Calendar</h2>}
+            header={<h2 className="font-bold text-lg text-slate-800 tracking-tight">Holiday Calendar</h2>}
         >
-            <Head title="Leave & Holiday Calendar" />
+            <Head title="Holiday Calendar" />
 
-            <div className="py-6">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-                    
-                    {/* Header Toolbar */}
-                    <div className="flex items-center justify-between bg-white px-6 py-4 rounded-2xl border border-gray-200 shadow-sm">
-                        <div className="flex items-center space-x-4">
-                            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
-                                <CalendarIcon />
-                            </div>
-                            <h2 className="text-2xl font-extrabold text-gray-800 tracking-tight">
+            <div className="p-6 max-w-7xl mx-auto space-y-6">
+                {/* Header Toolbar */}
+                <div className="flex items-center justify-between bg-white px-6 py-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-primary-50 text-primary rounded-lg">
+                            <CalendarIcon />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
                                 {selectedDate.format('MMMM YYYY')}
                             </h2>
-                        </div>
-                        
-                        <div className="flex items-center bg-gray-50 rounded-xl p-1 shadow-inner border border-gray-100">
-                            <button 
-                                onClick={() => changeMonth(-1)} 
-                                className="p-2 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-white hover:shadow-sm transition-all focus:outline-none"
-                                title="Previous Month"
-                            >
-                                <ChevronLeftIcon />
-                            </button>
-                            <div className="px-4 py-1 text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                                {selectedDate.format('YYYY')}
-                            </div>
-                            <button 
-                                onClick={() => changeMonth(1)} 
-                                className="p-2 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-white hover:shadow-sm transition-all focus:outline-none"
-                                title="Next Month"
-                            >
-                                <ChevronRightIcon />
-                            </button>
+                            <p className="text-xs text-slate-500">Manage company holidays and view scheduled leaves</p>
                         </div>
                     </div>
-
-                    {/* Calendar Grid */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                        <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/50">
-                            {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => (
-                                <div key={day} className="py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                    <span className="hidden sm:inline">{day}</span>
-                                    <span className="sm:hidden">{day.substring(0, 3)}</span>
-                                </div>
-                            ))}
+                    
+                    <div className="flex items-center bg-slate-50 rounded-lg p-1 border border-slate-200">
+                        <button 
+                            onClick={() => changeMonth(-1)} 
+                            className="p-1.5 rounded-md text-slate-500 hover:text-primary hover:bg-white hover:shadow-xs transition-all focus:outline-none"
+                            title="Previous Month"
+                        >
+                            <ChevronLeftIcon />
+                        </button>
+                        <div className="px-4 py-1 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            {selectedDate.format('YYYY')}
                         </div>
-                        
-                        <div className="grid grid-cols-7 auto-rows-fr bg-gray-50/20">
-                            {Array.from({ length: startDay }).map((_, i) => (
-                                <div key={`empty-${i}`} className="min-h-[140px] border-b border-r border-gray-100 p-2 opacity-50 bg-gray-50"></div>
-                            ))}
-                            {days.map(day => {
-                                const dateStr = selectedDate.date(day).format('YYYY-MM-DD');
-                                const dayLeaves = leavesByDate[dateStr] || [];
-                                const holiday = holidaysByDate[dateStr];
-                                const isToday = dateStr === dayjs().format('YYYY-MM-DD');
+                        <button 
+                            onClick={() => changeMonth(1)} 
+                            className="p-1.5 rounded-md text-slate-500 hover:text-primary hover:bg-white hover:shadow-xs transition-all focus:outline-none"
+                            title="Next Month"
+                        >
+                            <ChevronRightIcon />
+                        </button>
+                    </div>
+                </div>
 
-                                return (
-                                    <div key={day} className={`min-h-[140px] border-b border-r border-gray-100 p-3 hover:bg-indigo-50/30 transition-colors relative group ${isToday ? 'bg-indigo-50/50' : 'bg-white'}`}>
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${isToday ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-700'}`}>
-                                                {day}
-                                            </span>
-                                            <button 
-                                                onClick={() => openModal(dateStr, holiday)}
-                                                className="p-1 rounded-full text-indigo-500 opacity-0 group-hover:opacity-100 hover:bg-indigo-100 transition-all focus:outline-none"
-                                                title={holiday ? 'Edit Holiday' : 'Add Holiday'}
-                                            >
-                                                <PlusIcon />
-                                            </button>
-                                        </div>
-                                        
-                                        <div className="space-y-1.5 overflow-y-auto max-h-[85px] pr-1 scrollbar-thin scrollbar-thumb-gray-200">
-                                            {holiday && (
-                                                <div 
-                                                    onClick={() => openModal(dateStr, holiday)}
-                                                    className="cursor-pointer text-xs px-2 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-medium rounded-lg shadow-sm truncate hover:shadow-md transition-shadow"
-                                                    title={holiday.name}
-                                                >
-                                                    ✨ {holiday.name} {holiday.is_half_day ? '(Half)' : ''}
-                                                </div>
-                                            )}
-                                            {dayLeaves.map((l) => (
-                                                <div 
-                                                    key={l.id} 
-                                                    className="text-xs px-2 py-1.5 bg-amber-50 text-amber-800 font-medium border border-amber-100 rounded-lg truncate shadow-sm" 
-                                                    title={`${l.employee?.name || 'Unknown Staff'} - ${l.leave_type?.name || 'Unknown Leave'}`}
-                                                >
-                                                    🏖️ {l.employee?.name || 'Unknown Staff'} <span className="opacity-75 font-normal">({l.day_type === 'Half Day' ? '1/2' : 'Full'})</span>
-                                                </div>
-                                            ))}
-                                        </div>
+                {/* Calendar Grid */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50/70">
+                        {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => (
+                            <div key={day} className="py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">
+                                <span className="hidden sm:inline">{day}</span>
+                                <span className="sm:hidden">{day.substring(0, 3)}</span>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div className="grid grid-cols-7 auto-rows-fr bg-slate-50/20">
+                        {Array.from({ length: startDay }).map((_, i) => (
+                            <div key={`empty-${i}`} className="min-h-[130px] border-b border-r border-slate-100 p-2 opacity-50 bg-slate-50/50"></div>
+                        ))}
+                        {days.map(day => {
+                            const dateStr = selectedDate.date(day).format('YYYY-MM-DD');
+                            const dayLeaves = leavesByDate[dateStr] || [];
+                            const holiday = holidaysByDate[dateStr];
+                            const isToday = dateStr === dayjs().format('YYYY-MM-DD');
+
+                            return (
+                                <div key={day} className={`min-h-[130px] border-b border-r border-slate-100 p-3 hover:bg-slate-50/80 transition-colors relative group ${isToday ? 'bg-green-50/30' : 'bg-white'}`}>
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${isToday ? 'bg-primary text-white shadow-sm' : 'text-slate-700'}`}>
+                                            {day}
+                                        </span>
+                                        <button 
+                                            onClick={() => openModal(dateStr, holiday)}
+                                            className="p-1 rounded-full text-primary opacity-0 group-hover:opacity-100 hover:bg-green-50 transition-all focus:outline-none"
+                                            title={holiday ? 'Edit Holiday' : 'Add Holiday'}
+                                        >
+                                            <PlusIcon />
+                                        </button>
                                     </div>
-                                );
-                            })}
-                        </div>
+                                    
+                                    <div className="space-y-1.5 overflow-y-auto max-h-[80px] pr-1 scrollbar-thin scrollbar-thumb-slate-200">
+                                        {holiday && (
+                                            <div 
+                                                onClick={() => openModal(dateStr, holiday)}
+                                                className="cursor-pointer text-xs px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold rounded-md shadow-2xs truncate hover:bg-emerald-100 transition-colors"
+                                                title={holiday.name}
+                                            >
+                                                ✨ {holiday.name} {holiday.is_half_day ? '(Half)' : ''}
+                                            </div>
+                                        )}
+                                        {dayLeaves.map((l) => (
+                                            <div 
+                                                key={l.id} 
+                                                className="text-xs px-2 py-1 bg-amber-50 text-amber-800 font-medium border border-amber-200 rounded-md truncate shadow-2xs" 
+                                                title={`${l.employee?.name || 'Unknown Staff'} - ${l.leave_type?.name || 'Unknown Leave'}`}
+                                            >
+                                                🏖️ {l.employee?.name || 'Unknown Staff'} <span className="opacity-75 font-normal">({l.day_type === 'Half Day' ? '1/2' : 'Full'})</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -208,10 +208,10 @@ export default function CalendarIndexPage({ auth, currentMonth, holidays, leaves
             {/* Modal */}
             <Modal show={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <div className="p-6">
-                    <h3 className="text-xl font-bold leading-6 text-gray-900 mb-2">
+                    <h3 className="text-lg font-bold leading-6 text-slate-900 mb-1">
                         {editingHolidayId ? 'Edit Holiday' : 'Add Holiday'}
                     </h3>
-                    <p className="text-sm text-gray-500 mb-6">
+                    <p className="text-xs text-slate-500 mb-6">
                         {dayjs(modalDate).format('dddd, MMMM D, YYYY')}
                     </p>
                     
@@ -223,28 +223,28 @@ export default function CalendarIndexPage({ auth, currentMonth, holidays, leaves
                             placeholder="e.g., Independence Day"
                             required
                         />
-                        <div className="flex items-center bg-gray-50 p-3 rounded-xl border border-gray-100 mt-2">
+                        <div className="flex items-center bg-slate-50 p-3 rounded-lg border border-slate-200 mt-2">
                             <input 
                                 type="checkbox" 
                                 id="halfDayCheck"
                                 checked={isHalfDay} 
                                 onChange={e => setIsHalfDay(e.target.checked)}
-                                className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-colors"
+                                className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary transition-colors"
                             />
-                            <label htmlFor="halfDayCheck" className="ml-3 block text-sm font-medium text-gray-700 cursor-pointer select-none">
+                            <label htmlFor="halfDayCheck" className="ml-3 block text-xs font-semibold text-slate-700 cursor-pointer select-none">
                                 This is a half-day holiday
                             </label>
                         </div>
 
-                        <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100">
+                        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
                             {editingHolidayId && (
-                                <button 
+                                <CommonButton 
                                     type="button" 
+                                    variant="danger"
                                     onClick={deleteHoliday} 
-                                    className="px-4 py-2.5 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors"
                                 >
                                     Delete
-                                </button>
+                                </CommonButton>
                             )}
                             <CommonButton 
                                 type="button" 
@@ -253,7 +253,7 @@ export default function CalendarIndexPage({ auth, currentMonth, holidays, leaves
                             >
                                 Cancel
                             </CommonButton>
-                            <CommonButton type="submit">
+                            <CommonButton type="submit" variant="primary">
                                 {editingHolidayId ? 'Save Changes' : 'Create Holiday'}
                             </CommonButton>
                         </div>

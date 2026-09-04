@@ -1,40 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { usePage, Head } from '@inertiajs/react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import SalaryRevisionPage from './SalaryRevisionPage';
 import AdvanceSalaryPage from '../AdvanceSalary/IndexPage';
-import { usePageHeader } from '@/src/App';
 
 const SalaryOperationPage: React.FC = () => {
+    const { auth } = usePage().props as any;
     const [activeTab, setActiveTab] = useState<'revisions' | 'advances'>('revisions');
-    const { setTitle } = usePageHeader();
-
-    useEffect(() => {
-        setTitle('Salary Operations');
-    }, [setTitle]);
 
     return (
-        <div className="space-y-6">
-            {/* Tab Bar */}
-            <div className="flex border-b border-slate-200 bg-white px-6 py-2 rounded-xl shadow-sm border">
-                <button 
-                    onClick={() => setActiveTab('revisions')}
-                    className={`px-5 py-3 text-sm font-bold border-b-2 transition-all duration-150 ${activeTab === 'revisions' ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                >
-                    Salary Revisions
-                </button>
-                <button 
-                    onClick={() => setActiveTab('advances')}
-                    className={`px-5 py-3 text-sm font-bold border-b-2 transition-all duration-150 ${activeTab === 'advances' ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                >
-                    Advance Salaries
-                </button>
-            </div>
+        <AuthenticatedLayout
+            user={auth?.user || {}}
+            header={<h2 className="font-bold text-lg text-slate-800 tracking-tight">Salary Operations</h2>}
+        >
+            <Head title="Salary Operations" />
 
-            {/* Tab Content */}
-            <div className="mt-4">
-                {activeTab === 'revisions' && <SalaryRevisionPage />}
-                {activeTab === 'advances' && <AdvanceSalaryPage />}
+            <div className="p-6 max-w-7xl mx-auto space-y-6">
+                {/* Tab Bar */}
+                <div className="border-b border-slate-200">
+                    <nav className="-mb-px flex space-x-8" aria-label="Salary Operations Tabs">
+                        <button 
+                            onClick={() => setActiveTab('revisions')}
+                            className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wider transition-colors ${
+                                activeTab === 'revisions'
+                                    ? 'border-primary text-primary'
+                                    : 'border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300'
+                            }`}
+                        >
+                            Salary Revisions
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('advances')}
+                            className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wider transition-colors ${
+                                activeTab === 'advances'
+                                    ? 'border-primary text-primary'
+                                    : 'border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300'
+                            }`}
+                        >
+                            Advance Salaries
+                        </button>
+                    </nav>
+                </div>
+
+                {/* Tab Content */}
+                <div>
+                    {activeTab === 'revisions' && <SalaryRevisionPage />}
+                    {activeTab === 'advances' && <AdvanceSalaryPage isEmbedded={true} />}
+                </div>
             </div>
-        </div>
+        </AuthenticatedLayout>
     );
 };
 

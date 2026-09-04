@@ -90,11 +90,11 @@ export default function AuthenticatedLayout({ header, children, hideSidebar = fa
             icon: 'accounting',
             permission: 'manage-payroll',
             submenus: [
-                { name: 'Payroll', href: route('payroll.index'), permission: 'view-payroll' },
-                { name: 'Salary Operations', href: route('salary-revision.index'), permission: 'manage-payroll' },
-                { name: 'Leaves', href: route('leave-request.index'), permission: 'manage-leave-requests' },
-                { name: 'Approvals', href: route('approvals.index'), permission: 'manage-system' },
-                { name: 'Attendance', href: route('attendance.index'), permission: 'view-attendance-report' },
+                { name: 'Payroll', href: route('payroll.index'), permission: 'view-payroll', activeRoutes: ['payroll.*', 'payslip.*'] },
+                { name: 'Salary Operations', href: route('salary-revision.index'), permission: 'manage-payroll', activeRoutes: ['salary-revision.*', 'advance-salary.*'] },
+                { name: 'Leaves', href: route('leave-request.index'), permission: 'manage-leave-requests', activeRoutes: ['leave-request.*', 'leave-type.*', 'leave-balance.*'] },
+                { name: 'Approvals', href: route('approvals.index'), permission: 'manage-system', activeRoutes: ['approvals.*'] },
+                { name: 'Attendance', href: route('attendance.index'), permission: 'view-attendance-report', activeRoutes: ['attendance.*'] },
             ]
         }] : []),
 
