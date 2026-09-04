@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm } from '@inertiajs/react';
 import HRSettingsLayout from './HRSettingsLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
+import CommonButton from '@/Components/CommonButton';
 import CommonInput from '@/Components/CommonInput';
 
 export default function LeaveNotification({ settings }) {
@@ -21,16 +21,17 @@ export default function LeaveNotification({ settings }) {
     return (
         <HRSettingsLayout activeTab="leave-notification">
             <div className="max-w-3xl pb-12">
-                <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-                    <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 border-b border-slate-200">
-                        <h3 className="text-base font-bold text-white tracking-wide">Leave Notification Routing</h3>
-                        <p className="text-slate-400 text-xs mt-0.5">Configure automated email recipients for employee leave requests.</p>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <h3 className="text-sm font-bold text-slate-800">Leave Notification Routing</h3>
+                        <p className="text-xs text-slate-400 mt-0.5">Configure automated email recipients for employee leave requests.</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                        <p className="text-xs text-slate-500 font-semibold leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-100">
-                            🔔 Configure who gets notified automatically when employees submit a leave request. You can input multiple email addresses separated by commas for CC and BCC fields.
-                        </p>
+                        <div className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-200/60 flex items-start gap-2.5">
+                            <span className="material-symbols-outlined text-primary text-base shrink-0 mt-0.5">notifications</span>
+                            <span>Configure who gets notified automatically when employees submit a leave request. You can input multiple email addresses separated by commas for CC and BCC fields.</span>
+                        </div>
 
                         <div className="space-y-5">
                             <CommonInput
@@ -61,10 +62,10 @@ export default function LeaveNotification({ settings }) {
                             />
                         </div>
 
-                        <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
-                            <PrimaryButton type="submit" disabled={!isDirty || processing}>
+                        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                            <CommonButton type="submit" variant="primary" processing={processing} disabled={!isDirty || processing}>
                                 Save Settings
-                            </PrimaryButton>
+                            </CommonButton>
                         </div>
                     </form>
                 </div>

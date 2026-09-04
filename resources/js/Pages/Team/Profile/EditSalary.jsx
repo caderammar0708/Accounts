@@ -1,395 +1,376 @@
 import React, { useState } from 'react';
-import { useForm, usePage, Head, router, Link } from '@inertiajs/react';
+import { useForm, usePage, Head, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import CommonInput from '@/Components/CommonInput';
-import { TrashIcon } from '@heroicons/react/24/outline';
-import PrimaryButton from '@/Components/PrimaryButton';
+import CommonButton from '@/Components/CommonButton';
+import CurrencyInput from '@/Components/CurrencyInput';
 import EmployeeTabs from '@/Components/EmployeeTabs';
 
-const StaffSalaryPage= () => {
-    const { employee, settings, company } = usePage().props ;
-    
-    const [allowances, setAllowances] = useState(employee.salary_structure?.allowances || []);
-    const [deductions, setDeductions] = useState(employee.salary_structure?.deductions || []);
-
-    const { data, setData, post, processing, errors } = useForm({
-        basic_salary: employee.salary_structure?.basic_salary || 0,
-        ot_rate_per_hour: employee.salary_structure?.ot_rate_per_hour || 0,
-        bonus: employee.salary_structure?.bonus || 0,
-        loan_deduction: employee.salary_structure?.loan_deduction || 0,
-        leave_deduction: employee.salary_structure?.leave_deduction || 0,
-        income_tax: employee.salary_structure?.income_tax || 0,
-        allowances: allowances,
-        deductions: deductions,
-        deduct_epf: employee.salary_structure?.deduct_epf ?? true,
-        deduct_etf: employee.salary_structure?.deduct_etf ?? true,
-        deduct_tax: employee.salary_structure?.deduct_tax ?? true,
-    });
-
-    
+const StaffSalaryPage = ({ auth }) => {
+    const { employee, settings, company } = usePage().props;
     const prefix = company?.currency_prefix || 'LKR';
 
-    const formatValue = (amt) => {
-        return prefix + ' ' + Number(amt).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    };
+    const salaryStructure = employee.salary_structure || {};
+    const [allowances, setAllowances] = useState(salaryStructure.allowances || []);
+    const [deductions, setDeductions] = useState(salaryStructure.deductions || []);
+
+    const { data, setData, put, processing, errors, isDirty } = useForm({
+        basic_salary: salaryStructure.basic_salary ?? employee.salary ?? 0,
+        ot_rate_per_hour: salaryStructure.ot_rate_per_hour ?? 0,
+        bonus: salaryStructure.bonus ?? 0,
+        loan_deduction: salaryStructure.loan_deduction ?? 0,
+        leave_deduction: salaryStructure.leave_deduction ?? 0,
+        income_tax: salaryStructure.income_tax ?? 0,
+        allowances: allowances,
+        deductions: deductions,
+        deduct_epf: salaryStructure.deduct_epf ?? true,
+        deduct_etf: salaryStructure.deduct_etf ?? true,
+        deduct_tax: salaryStructure.deduct_tax ?? true,
+    });
 
     const addAllowance = () => {
-        const newArr = [...allowances, { label: '', amount: 0 }];
-        setAllowances(newArr);
-        setData('allowances', newArr);
+        const updated = [...allowances, { label: '', amount: 0 }];
+        setAllowances(updated);
+        setData('allowances', updated);
     };
 
     const addDeduction = () => {
-        const newArr = [...deductions, { label: '', amount: 0 }];
-        setDeductions(newArr);
-        setData('deductions', newArr);
+        const updated = [...deductions, { label: '', amount: 0 }];
+        setDeductions(updated);
+        setData('deductions', updated);
     };
 
     const removeAllowance = (index) => {
-        const newArr = allowances.filter((_, idx) => idx !== index);
-        setAllowances(newArr);
-        setData('allowances', newArr);
+        const updated = allowances.filter((_, idx) => idx !== index);
+        setAllowances(updated);
+        setData('allowances', updated);
     };
 
     const removeDeduction = (index) => {
-        const newArr = deductions.filter((_, idx) => idx !== index);
-        setDeductions(newArr);
-        setData('deductions', newArr);
+        const updated = deductions.filter((_, idx) => idx !== index);
+        setDeductions(updated);
+        setData('deductions', updated);
     };
 
     const updateAllowance = (index, key, val) => {
-        const newArr = [...allowances];
-        newArr[index][key] = val;
-        setAllowances(newArr);
-        setData('allowances', newArr);
+        const updated = [...allowances];
+        updated[index][key] = val;
+        setAllowances(updated);
+        setData('allowances', updated);
     };
 
     const updateDeduction = (index, key, val) => {
-        const newArr = [...deductions];
-        newArr[index][key] = val;
-        setDeductions(newArr);
-        setData('deductions', newArr);
+        const updated = [...deductions];
+        updated[index][key] = val;
+        setDeductions(updated);
+        setData('deductions', updated);
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(`/employees/${employee.id}/salary`);
+        put(route('employees.salary.update', employee.id), {
+            preserveScroll: true,
+        });
     };
 
     return (
-<AuthenticatedLayout header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Employee Profile</h2>}>
-<Head title="Employee Profile" />
-<div className="max-w-5xl mx-auto pb-12">
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden mb-8">
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 border-b border-slate-200">
-                    <h3 className="text-base font-bold text-white tracking-wide">Modify Staff Profile</h3>
-                    <p className="text-slate-400 text-xs mt-0.5">Manage personal profiles, corporate designations, and status logs.</p>
-                </div>
-                <EmployeeTabs employeeId={employee.id} activeTab="salary" />
-            </div>
-            
-            <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
-            
-            {/* Base Salary Settings Card */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 border-b border-slate-200">
-                    <h3 className="text-base font-bold text-white tracking-wide">Base Salary Settings</h3>
-                    <p className="text-slate-400 text-xs mt-0.5">Configure employee primary base salary rate and hourly overtime calculations.</p>
-                </div>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <CommonInput
-                            label={`Basic Salary (${prefix})`}
-                            type="number"
-                            value={data.basic_salary}
-                            onChange={e => setData('basic_salary', parseFloat(e.target.value) || 0)}
-                            error={errors.basic_salary}
-                        />
-                        {data.basic_salary > 0 && (
-                            <span className="text-[11px] text-teal-600 font-bold block mt-1.5 bg-teal-50 px-2 py-0.5 rounded border border-teal-100 w-max">
-                                Formatted: {formatValue(data.basic_salary)}
-                            </span>
-                        )}
+        <AuthenticatedLayout
+            user={auth?.user || {}}
+            header={<h2 className="font-bold text-lg text-slate-800 tracking-tight">Edit Employee</h2>}
+        >
+            <Head title={`Edit Salary - ${employee.name}`} />
+
+            <div className="p-6 max-w-7xl mx-auto space-y-6">
+                <div>
+                    <div className="mb-3">
+                        <Link 
+                            href={route('employees.index')} 
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-primary transition-colors uppercase tracking-wider"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            Back to Employees
+                        </Link>
                     </div>
-                    <div>
-                        <CommonInput
-                            label={`OT Rate Per Hour (${prefix})`}
-                            type="number"
-                            value={data.ot_rate_per_hour}
-                            onChange={e => setData('ot_rate_per_hour', parseFloat(e.target.value) || 0)}
-                            error={errors.ot_rate_per_hour}
-                        />
-                        {data.ot_rate_per_hour > 0 && (
-                            <span className="text-[11px] text-teal-600 font-bold block mt-1.5 bg-teal-50 px-2 py-0.5 rounded border border-teal-100 w-max">
-                                Formatted: {formatValue(data.ot_rate_per_hour)}
-                            </span>
-                        )}
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Edit Employee: {employee.name}</h1>
+                            <p className="text-xs text-slate-500 mt-0.5">Configure base remuneration, statutory deductions, and dynamic allowances.</p>
+                        </div>
                     </div>
-                    {settings?.payroll?.deduct_income_tax && settings?.payroll?.manual_income_tax ? (
-                        <div className="col-span-1 md:col-span-2">
-                            <CommonInput
-                                label={`Income Tax Override (Monthly ${prefix})`}
-                                type="number"
-                                value={data.income_tax}
-                                onChange={e => setData('income_tax', parseFloat(e.target.value) || 0)}
-                                error={errors.income_tax}
+                </div>
+
+                <EmployeeTabs employeeId={employee.id} activeTab="salary" isDirty={isDirty} />
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Base Salary Settings Card */}
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                            <h3 className="text-sm font-bold text-slate-800 tracking-tight">Base Remuneration & Overtime</h3>
+                            <p className="text-xs text-slate-500 mt-0.5">Configure primary base salary and hourly overtime calculation rate.</p>
+                        </div>
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <CurrencyInput
+                                label="Basic Salary"
+                                prefix={prefix}
+                                value={data.basic_salary}
+                                onChange={(val) => setData('basic_salary', parseFloat(val) || 0)}
+                                error={errors.basic_salary}
+                                required
                             />
-                            {data.income_tax > 0 && (
-                                <span className="text-[11px] text-teal-600 font-bold block mt-1.5 bg-teal-50 px-2 py-0.5 rounded border border-teal-100 w-max">
-                                    Formatted: {formatValue(data.income_tax)}
-                                </span>
+                            <CurrencyInput
+                                label="OT Rate Per Hour"
+                                prefix={prefix}
+                                value={data.ot_rate_per_hour}
+                                onChange={(val) => setData('ot_rate_per_hour', parseFloat(val) || 0)}
+                                error={errors.ot_rate_per_hour}
+                            />
+                            {settings?.payroll?.deduct_income_tax && settings?.payroll?.manual_income_tax && (
+                                <div className="col-span-1 md:col-span-2">
+                                    <CurrencyInput
+                                        label="Income Tax Override (Monthly)"
+                                        prefix={prefix}
+                                        value={data.income_tax}
+                                        onChange={(val) => setData('income_tax', parseFloat(val) || 0)}
+                                        error={errors.income_tax}
+                                    />
+                                </div>
                             )}
                         </div>
-                    ) : null}
-                </div>
-            </div>
+                    </div>
 
-            {/* Statutory Contributions & Tax Toggles */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 border-b border-slate-200">
-                    <h3 className="text-base font-bold text-white tracking-wide">Statutory Deductions & Taxes</h3>
-                    <p className="text-slate-400 text-xs mt-0.5">Enable or disable statutory contributions (EPF/ETF) and income tax deductions for this employee.</p>
-                </div>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="flex items-center space-x-3 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                        <input
-                            type="checkbox"
-                            id="deduct_epf"
-                            checked={data.deduct_epf}
-                            onChange={e => setData('deduct_epf', e.target.checked)}
-                            className="h-4.5 w-4.5 text-emerald-600 focus:ring-emerald-500/20 border-slate-300 rounded transition cursor-pointer"
-                        />
-                        <div>
-                            <label htmlFor="deduct_epf" className="text-sm font-bold text-slate-700 select-none cursor-pointer block">
-                                Deduct EPF Contribution
-                            </label>
-                            <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                                Employee ({company?.epf_employee_percent || 8}%) & Employer ({company?.epf_employer_percent || 12}%)
-                            </span>
+                    {/* Statutory Deductions Card */}
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                            <h3 className="text-sm font-bold text-slate-800 tracking-tight">Statutory Deductions & Taxes</h3>
+                            <p className="text-xs text-slate-500 mt-0.5">Toggle statutory compliance contributions (EPF, ETF) and income tax for this employee.</p>
                         </div>
-                    </div>
-
-                    <div className="flex items-center space-x-3 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                        <input
-                            type="checkbox"
-                            id="deduct_etf"
-                            checked={data.deduct_etf}
-                            onChange={e => setData('deduct_etf', e.target.checked)}
-                            className="h-4.5 w-4.5 text-emerald-600 focus:ring-emerald-500/20 border-slate-300 rounded transition cursor-pointer"
-                        />
-                        <div>
-                            <label htmlFor="deduct_etf" className="text-sm font-bold text-slate-700 select-none cursor-pointer block">
-                                Deduct ETF Contribution
-                            </label>
-                            <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                                Employer ETF ({company?.etf_percent || 3}%)
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center space-x-3 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                        <input
-                            type="checkbox"
-                            id="deduct_tax"
-                            checked={data.deduct_tax}
-                            onChange={e => setData('deduct_tax', e.target.checked)}
-                            className="h-4.5 w-4.5 text-emerald-600 focus:ring-emerald-500/20 border-slate-300 rounded transition cursor-pointer"
-                        />
-                        <div>
-                            <label htmlFor="deduct_tax" className="text-sm font-bold text-slate-700 select-none cursor-pointer block">
-                                Deduct Income Tax (PAYE)
-                            </label>
-                            <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                                Automatic or manual income tax calculation
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Salary Adjustments Card */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 border-b border-slate-200">
-                    <h3 className="text-base font-bold text-white tracking-wide">Recurring Adjustments & Deductions</h3>
-                    <p className="text-slate-400 text-xs mt-0.5">Manage fixed regular adjustments, standard monthly loan collections, and recurring leave penalties.</p>
-                </div>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <CommonInput
-                            label={`Regular Bonus (${prefix})`}
-                            type="number"
-                            value={data.bonus}
-                            onChange={e => setData('bonus', parseFloat(e.target.value) || 0)}
-                            error={errors.bonus}
-                        />
-                        {data.bonus > 0 && (
-                            <span className="text-[11px] text-teal-600 font-bold block mt-1.5 bg-teal-50 px-2 py-0.5 rounded border border-teal-100 w-max">
-                                Formatted: {formatValue(data.bonus)}
-                            </span>
-                        )}
-                    </div>
-                    <div>
-                        <CommonInput
-                            label={`Loan Deduction (${prefix})`}
-                            type="number"
-                            value={data.loan_deduction}
-                            onChange={e => setData('loan_deduction', parseFloat(e.target.value) || 0)}
-                            error={errors.loan_deduction}
-                        />
-                        {data.loan_deduction > 0 && (
-                            <span className="text-[11px] text-teal-600 font-bold block mt-1.5 bg-teal-50 px-2 py-0.5 rounded border border-teal-100 w-max">
-                                Formatted: {formatValue(data.loan_deduction)}
-                            </span>
-                        )}
-                    </div>
-                    <div>
-                        <CommonInput
-                            label={`Leave Deduction (${prefix})`}
-                            type="number"
-                            value={data.leave_deduction}
-                            onChange={e => setData('leave_deduction', parseFloat(e.target.value) || 0)}
-                            error={errors.leave_deduction}
-                        />
-                        {data.leave_deduction > 0 && (
-                            <span className="text-[11px] text-teal-600 font-bold block mt-1.5 bg-teal-50 px-2 py-0.5 rounded border border-teal-100 w-max">
-                                Formatted: {formatValue(data.leave_deduction)}
-                            </span>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Custom Allowances & Deductions Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* Allowances List Card */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                    <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                        <div>
-                            <h3 className="text-base font-bold text-white tracking-wide">Dynamic Allowances</h3>
-                            <p className="text-slate-400 text-xs mt-0.5">Add custom earnings category types.</p>
-                        </div>
-                        <button 
-                            type="button" 
-                            onClick={addAllowance} 
-                            className="px-3 py-1 bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold rounded-md transition"
-                        >
-                            + Add Item
-                        </button>
-                    </div>
-                    <div className="p-6 space-y-3 flex-1">
-                        {allowances.map((item, idx) => (
-                            <div key={idx} className="flex gap-2 items-center bg-slate-50 p-2 rounded-md border border-slate-100">
-                                <input 
-                                    placeholder="Allowance Name (e.g. Travel)" 
-                                    value={item.label} 
-                                    onChange={e => updateAllowance(idx, 'label', e.target.value)} 
-                                    className="flex-1 text-sm border-gray-300 rounded px-2.5 py-1.5 focus:ring-teal-500 focus:border-teal-500" 
-                                />
-                                <div className="w-1/3">
-                                    <input 
-                                        type="number" 
-                                        placeholder="Amount" 
-                                        value={item.amount} 
-                                        onChange={e => updateAllowance(idx, 'amount', parseFloat(e.target.value) || 0)} 
-                                        className="w-full text-sm border-gray-300 rounded px-2.5 py-1.5 focus:ring-teal-500 focus:border-teal-500 font-semibold text-slate-850" 
-                                    />
-                                    {item.amount > 0 && (
-                                        <span className="text-[10px] text-teal-600 font-bold block mt-0.5 truncate text-right">
-                                            {formatValue(item.amount)}
-                                        </span>
-                                    )}
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="flex items-center justify-between p-4 bg-slate-50/60 rounded-lg border border-slate-100">
+                                <div>
+                                    <label htmlFor="deduct_epf" className="text-xs font-bold text-slate-800 cursor-pointer block">
+                                        Deduct EPF Contribution
+                                    </label>
+                                    <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
+                                        Employee ({company?.epf_employee_percent || 8}%) & Employer ({company?.epf_employer_percent || 12}%)
+                                    </span>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => removeAllowance(idx)}
-                                    className="text-rose-600 hover:text-rose-800 p-1.5 rounded-md hover:bg-rose-50 transition active:scale-95 inline-flex items-center justify-center focus:outline-none"
-                                    title="Remove Allowance"
-                                >
-                                    <TrashIcon className="h-5 w-5" />
-                                </button>
-                            </div>
-                        ))}
-                        {allowances.length === 0 && (
-                            <div className="text-center py-8 text-sm text-slate-400 font-medium">
-                                No custom allowances assigned.
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Deductions List Card */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                    <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                        <div>
-                            <h3 className="text-base font-bold text-white tracking-wide">Custom Deductions</h3>
-                            <p className="text-slate-400 text-xs mt-0.5">Add custom penalty or pay-back types.</p>
-                        </div>
-                        <button 
-                            type="button" 
-                            onClick={addDeduction} 
-                            className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-md transition"
-                        >
-                            + Add Item
-                        </button>
-                    </div>
-                    <div className="p-6 space-y-3 flex-1">
-                        {deductions.map((item, idx) => (
-                            <div key={idx} className="flex gap-2 items-center bg-slate-50 p-2 rounded-md border border-slate-100">
-                                <input 
-                                    placeholder="Deduction Name (e.g. Welfare)" 
-                                    value={item.label} 
-                                    onChange={e => updateDeduction(idx, 'label', e.target.value)} 
-                                    className="flex-1 text-sm border-gray-300 rounded px-2.5 py-1.5 focus:ring-rose-500 focus:border-rose-500" 
-                                />
-                                <div className="w-1/3">
-                                    <input 
-                                        type="number" 
-                                        placeholder="Amount" 
-                                        value={item.amount} 
-                                        onChange={e => updateDeduction(idx, 'amount', parseFloat(e.target.value) || 0)} 
-                                        className="w-full text-sm border-gray-300 rounded px-2.5 py-1.5 focus:ring-rose-500 focus:border-rose-500 font-semibold text-slate-850" 
+                                <label className="relative inline-flex items-center cursor-pointer scale-90 shrink-0 ml-4">
+                                    <input
+                                        type="checkbox"
+                                        id="deduct_epf"
+                                        checked={data.deduct_epf}
+                                        onChange={(e) => setData('deduct_epf', e.target.checked)}
+                                        className="sr-only peer"
                                     />
-                                    {item.amount > 0 && (
-                                        <span className="text-[10px] text-rose-600 font-bold block mt-0.5 truncate text-right">
-                                            {formatValue(item.amount)}
-                                        </span>
-                                    )}
+                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                </label>
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 bg-slate-50/60 rounded-lg border border-slate-100">
+                                <div>
+                                    <label htmlFor="deduct_etf" className="text-xs font-bold text-slate-800 cursor-pointer block">
+                                        Deduct ETF Contribution
+                                    </label>
+                                    <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
+                                        Employer ETF ({company?.etf_percent || 3}%)
+                                    </span>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => removeDeduction(idx)}
-                                    className="text-rose-600 hover:text-rose-800 p-1.5 rounded-md hover:bg-rose-50 transition active:scale-95 inline-flex items-center justify-center focus:outline-none"
-                                    title="Remove Deduction"
-                                >
-                                    <TrashIcon className="h-5 w-5" />
-                                </button>
+                                <label className="relative inline-flex items-center cursor-pointer scale-90 shrink-0 ml-4">
+                                    <input
+                                        type="checkbox"
+                                        id="deduct_etf"
+                                        checked={data.deduct_etf}
+                                        onChange={(e) => setData('deduct_etf', e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                </label>
                             </div>
-                        ))}
-                        {deductions.length === 0 && (
-                            <div className="text-center py-8 text-sm text-slate-400 font-medium">
-                                No custom deductions assigned.
+
+                            <div className="flex items-center justify-between p-4 bg-slate-50/60 rounded-lg border border-slate-100">
+                                <div>
+                                    <label htmlFor="deduct_tax" className="text-xs font-bold text-slate-800 cursor-pointer block">
+                                        Deduct Income Tax (PAYE)
+                                    </label>
+                                    <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
+                                        Statutory income tax withholding
+                                    </span>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer scale-90 shrink-0 ml-4">
+                                    <input
+                                        type="checkbox"
+                                        id="deduct_tax"
+                                        checked={data.deduct_tax}
+                                        onChange={(e) => setData('deduct_tax', e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                </label>
                             </div>
-                        )}
+                        </div>
                     </div>
-                </div>
 
-            </div>
+                    {/* Recurring Adjustments Card */}
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                            <h3 className="text-sm font-bold text-slate-800 tracking-tight">Recurring Adjustments & Deductions</h3>
+                            <p className="text-xs text-slate-500 mt-0.5">Standard monthly bonus, regular loan deductions, and standard leave penalty amounts.</p>
+                        </div>
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <CurrencyInput
+                                label="Regular Bonus"
+                                prefix={prefix}
+                                value={data.bonus}
+                                onChange={(val) => setData('bonus', parseFloat(val) || 0)}
+                                error={errors.bonus}
+                            />
+                            <CurrencyInput
+                                label="Loan Deduction"
+                                prefix={prefix}
+                                value={data.loan_deduction}
+                                onChange={(val) => setData('loan_deduction', parseFloat(val) || 0)}
+                                error={errors.loan_deduction}
+                            />
+                            <CurrencyInput
+                                label="Leave Deduction"
+                                prefix={prefix}
+                                value={data.leave_deduction}
+                                onChange={(val) => setData('leave_deduction', parseFloat(val) || 0)}
+                                error={errors.leave_deduction}
+                            />
+                        </div>
+                    </div>
 
-            {/* Bottom Actions Bar */}
-            <div className="flex justify-end pt-4 border-t border-slate-200">
-                <PrimaryButton
-                    type="submit"
-                    loading={processing}
-                    loadingText="Saving..."
-                >
-                    Update Salary Structure
-                </PrimaryButton>
+                    {/* Dynamic Allowances & Deductions Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Dynamic Allowances */}
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-800 tracking-tight">Dynamic Allowances</h3>
+                                    <p className="text-xs text-slate-500 mt-0.5">Custom earnings categories (e.g. Travel, Attendance).</p>
+                                </div>
+                                <CommonButton 
+                                    type="button" 
+                                    variant="secondary" 
+                                    size="xs"
+                                    onClick={addAllowance}
+                                >
+                                    + Add Item
+                                </CommonButton>
+                            </div>
+                            <div className="p-6 space-y-3 flex-1">
+                                {allowances.map((item, idx) => (
+                                    <div key={idx} className="flex gap-2 items-center bg-slate-50/60 p-2 rounded-lg border border-slate-200/60">
+                                        <input 
+                                            placeholder="Allowance Name (e.g. Travel)" 
+                                            value={item.label} 
+                                            onChange={(e) => updateAllowance(idx, 'label', e.target.value)} 
+                                            className="flex-1 text-xs border border-slate-300 rounded px-2.5 py-1.5 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 text-slate-800" 
+                                        />
+                                        <div className="w-40">
+                                            <CurrencyInput
+                                                prefix={prefix}
+                                                size="sm"
+                                                value={item.amount}
+                                                onChange={(val) => updateAllowance(idx, 'amount', parseFloat(val) || 0)}
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeAllowance(idx)}
+                                            className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
+                                            title="Remove Item"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                                {allowances.length === 0 && (
+                                    <div className="text-center py-6 text-xs text-slate-400 font-medium italic">
+                                        No custom allowances assigned. Use "+ Add Item" to configure one.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Dynamic Deductions */}
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-800 tracking-tight">Custom Deductions</h3>
+                                    <p className="text-xs text-slate-500 mt-0.5">Recurring penalties, welfare, or payback deductions.</p>
+                                </div>
+                                <CommonButton 
+                                    type="button" 
+                                    variant="secondary" 
+                                    size="xs"
+                                    onClick={addDeduction}
+                                >
+                                    + Add Item
+                                </CommonButton>
+                            </div>
+                            <div className="p-6 space-y-3 flex-1">
+                                {deductions.map((item, idx) => (
+                                    <div key={idx} className="flex gap-2 items-center bg-slate-50/60 p-2 rounded-lg border border-slate-200/60">
+                                        <input 
+                                            placeholder="Deduction Name (e.g. Welfare)" 
+                                            value={item.label} 
+                                            onChange={(e) => updateDeduction(idx, 'label', e.target.value)} 
+                                            className="flex-1 text-xs border border-slate-300 rounded px-2.5 py-1.5 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 text-slate-800" 
+                                        />
+                                        <div className="w-40">
+                                            <CurrencyInput
+                                                prefix={prefix}
+                                                size="sm"
+                                                value={item.amount}
+                                                onChange={(val) => updateDeduction(idx, 'amount', parseFloat(val) || 0)}
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeDeduction(idx)}
+                                            className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
+                                            title="Remove Item"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                                {deductions.length === 0 && (
+                                    <div className="text-center py-6 text-xs text-slate-400 font-medium italic">
+                                        No custom deductions assigned. Use "+ Add Item" to configure one.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom Actions Bar */}
+                    <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
+                        <CommonButton 
+                            variant="secondary" 
+                            href={route('employees.index')}
+                        >
+                            Cancel
+                        </CommonButton>
+                        <CommonButton
+                            type="submit"
+                            variant="primary"
+                            processing={processing}
+                        >
+                            {processing ? 'Saving...' : 'Update Salary Structure'}
+                        </CommonButton>
+                    </div>
+                </form>
             </div>
-            </form>
-        </div>
-</AuthenticatedLayout>
-);
+        </AuthenticatedLayout>
+    );
 };
 
 export default StaffSalaryPage;

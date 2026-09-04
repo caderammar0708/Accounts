@@ -1,6 +1,6 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 
 export default function HRSettingsLayout({ children, activeTab }) {
     const tabs = [
@@ -14,26 +14,25 @@ export default function HRSettingsLayout({ children, activeTab }) {
     ];
 
     return (
-        <AuthenticatedLayout header="HR Settings">
-            <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                    <div>
-                        <h1 className="text-xl font-bold text-slate-900 tracking-tight">HR Settings</h1>
-                        <p className="text-xs text-slate-500 mt-0.5">Manage HR, attendance, leave, and payroll configurations.</p>
-                    </div>
+        <AuthenticatedLayout header={<h2 className="font-bold text-lg text-slate-800 tracking-tight">HR Settings</h2>}>
+            <Head title="HR Settings" />
+            <div className="p-6 max-w-7xl mx-auto space-y-6">
+                <div>
+                    <h1 className="text-xl font-bold text-slate-900 tracking-tight">HR Settings</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Manage HR, attendance, leave, and payroll configurations.</p>
                 </div>
 
-                <div className="mb-6 border-b border-gray-200 overflow-x-auto">
-                    <nav className="-mb-px flex space-x-6 min-w-max" aria-label="Tabs">
+                <div className="border-b border-slate-200 overflow-x-auto overflow-y-hidden no-scrollbar [&::-webkit-scrollbar]:hidden">
+                    <nav className="-mb-px flex space-x-8 min-w-max pb-0.5" aria-label="Tabs">
                         {tabs.map((tab) => (
                             <Link
                                 key={tab.key}
                                 href={route(tab.routeName)}
-                                className={`${
+                                className={`whitespace-nowrap py-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wider transition-colors ${
                                     activeTab === tab.key
-                                        ? 'border-indigo-500 text-indigo-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                                        ? 'border-primary text-primary'
+                                        : 'border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300'
+                                }`}
                             >
                                 {tab.name}
                             </Link>
@@ -41,13 +40,8 @@ export default function HRSettingsLayout({ children, activeTab }) {
                     </nav>
                 </div>
 
-                <div className="flex flex-col gap-6">
-                    {/* Main Content Area */}
-                    <main className="flex-1">
-                        <div className="rounded-2xl min-h-[500px]">
-                            {children}
-                        </div>
-                    </main>
+                <div className="min-h-[500px]">
+                    {children}
                 </div>
             </div>
         </AuthenticatedLayout>

@@ -15,7 +15,7 @@ createInertiaApp({
         const page = await resolvePageComponent(
             [`./Pages/${name}.jsx`, `./Pages/${name}.tsx`], import.meta.glob('./Pages/**/*.{jsx,tsx}'),
         );
-        if (page.default.layout === undefined && !name.startsWith('Auth/') && !name.startsWith('Welcome')) {
+        if ((name.startsWith('Payroll/') || name.startsWith('Admin/')) && page.default.layout === undefined) {
             page.default.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;
         }
         return page;

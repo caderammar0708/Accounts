@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm, Link } from '@inertiajs/react';
 import HRSettingsLayout from '../HRSettingsLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
+import CommonButton from '@/Components/CommonButton';
 import CommonInput from '@/Components/CommonInput';
 import SearchableSelect from '@/Components/SearchableSelect';
 
@@ -39,16 +39,25 @@ export default function Form({ leaveType }) {
 
     return (
         <HRSettingsLayout activeTab="leave-types">
-            <div className="max-w-4xl pb-12">
-                <div className="mb-4">
-                    <Link href={route('settings.hr.leave-types.index')} className="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
-                        &larr; Back to Leave Types
+            <div className="max-w-4xl pb-12 space-y-4">
+                <div className="flex items-center justify-between">
+                    <Link 
+                        href={route('settings.hr.leave-types.index')} 
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-primary transition-colors uppercase tracking-wider"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Back to Leave Types
                     </Link>
                 </div>
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-                    <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 border-b border-slate-200 rounded-t-xl">
-                        <h3 className="text-base font-bold text-white tracking-wide">{isEditing ? 'Edit Leave Type' : 'Create Leave Type'}</h3>
-                        <p className="text-slate-400 text-xs mt-0.5">Configure leave balances and constraints.</p>
+
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <h3 className="text-sm font-bold text-slate-800 tracking-tight">
+                            {isEditing ? 'Edit Leave Type' : 'Create Leave Type'}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Configure leave balances and constraints.</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -74,26 +83,28 @@ export default function Form({ leaveType }) {
                             />
                         </div>
 
-                        <div className="bg-slate-50 border border-slate-100 p-5 rounded-lg">
-                            <div className="flex justify-between items-center mb-4">
+                        <div className="border border-slate-100 p-5 rounded-lg bg-slate-50/30">
+                            <div className="flex justify-between items-center">
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-800">Is this a Short Leave?</h4>
-                                    <p className="text-xs text-slate-500">Enable this if the leave type is used for partial-day absences (e.g. 1 or 2 hours).</p>
+                                    <h4 className="text-xs font-bold text-slate-800">Is this a Short Leave?</h4>
+                                    <p className="text-xs text-slate-500 mt-0.5">Enable this if the leave type is used for partial-day absences (e.g. 1 or 2 hours).</p>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setData('is_short_leave', !data.is_short_leave)}
-                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${data.is_short_leave ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                                >
-                                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${data.is_short_leave ? 'translate-x-5' : 'translate-x-0'}`} />
-                                </button>
+                                <label className="relative inline-flex items-center cursor-pointer scale-90 shrink-0 ml-4">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={data.is_short_leave}
+                                        onChange={(e) => setData('is_short_leave', e.target.checked)}
+                                    />
+                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                </label>
                             </div>
 
                             {data.is_short_leave && (
-                                <div className="mt-4 border-t border-slate-200 pt-4 space-y-4">
+                                <div className="mt-4 border-t border-slate-200/60 pt-4 space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1">Limit Period</label>
+                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Limit Period</label>
                                             <SearchableSelect
                                                 options={limitTypeOptions}
                                                 value={limitTypeOptions.find(o => o.value === data.short_leave_limit_type)}
@@ -128,21 +139,32 @@ export default function Form({ leaveType }) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-1">Description / Guidelines (Optional)</label>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Description / Guidelines (Optional)</label>
                             <textarea
                                 value={data.comment}
                                 onChange={(e) => setData('comment', e.target.value)}
-                                className="w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-3"
+                                className="w-full border border-slate-300 rounded-md shadow-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 text-xs text-slate-800 p-3 transition-all placeholder-slate-400"
                                 rows="3"
                                 placeholder="Add notes about this leave type for employees..."
                             ></textarea>
                             {errors.comment && <span className="text-red-500 text-xs mt-1 block">{errors.comment}</span>}
                         </div>
 
-                        <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
-                            <PrimaryButton type="submit" disabled={processing}>
+                        <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                            <CommonButton 
+                                type="button" 
+                                variant="secondary" 
+                                href={route('settings.hr.leave-types.index')}
+                            >
+                                Cancel
+                            </CommonButton>
+                            <CommonButton 
+                                type="submit" 
+                                variant="primary" 
+                                processing={processing}
+                            >
                                 {isEditing ? 'Save Changes' : 'Create Leave Type'}
-                            </PrimaryButton>
+                            </CommonButton>
                         </div>
                     </form>
                 </div>

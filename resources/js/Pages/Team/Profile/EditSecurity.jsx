@@ -1,104 +1,145 @@
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { useForm, usePage, Head, router, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import CommonInput from '@/Components/CommonInput';
-
-import PrimaryButton from '@/Components/PrimaryButton';
+import CommonButton from '@/Components/CommonButton';
 import EmployeeTabs from '@/Components/EmployeeTabs';
 
-const EditSecurityPage= () => {
-    const { employee } = usePage().props ;
+const EditSecurityPage = ({ auth }) => {
+    const { employee } = usePage().props;
+    const [isSendingReset, setIsSendingReset] = useState(false);
         
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, put, processing, errors, reset, isDirty } = useForm({
         password: '',
         password_confirmation: '',
     });
 
-    
     const handleSubmit = (e) => {
         e.preventDefault();
-        put(`/employees/${employee.id}/security`);
+        put(route('employees.security.update', employee.id), {
+            onSuccess: () => reset(),
+            preserveScroll: true,
+        });
     };
 
     const handleSendMailRequest = () => {
-        if (confirm('Are you sure you want to send a password reset mail request?')) {
-            router.post(`/employee/${employee.id}/send-password-reset`);
+        if (!employee.email) {
+            alert('This employee does not have an email address configured. Please set an email in the General Info tab first.');
+            return;
+        }
+
+        if (confirm(`Send password reset instructions to ${employee.email}?`)) {
+            setIsSendingReset(true);
+            router.post(route('employees.security.send-reset', employee.id), {}, {
+                onFinish: () => setIsSendingReset(false),
+                preserveScroll: true,
+            });
         }
     };
 
     return (
-<AuthenticatedLayout header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Employee Profile</h2>}>
-<Head title="Employee Profile" />
-<div className="max-w-5xl mx-auto pb-12">
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-                
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 border-b border-slate-200">
-                    <h3 className="text-base font-bold text-white tracking-wide">Modify Staff Profile</h3>
-                    <p className="text-slate-400 text-xs mt-0.5">Manage personal profiles, corporate designations, and status logs.</p>
-                </div>
-                
-                <EmployeeTabs employeeId={employee.id} activeTab="security" />
-                
-                <form onSubmit={handleSubmit} className="p-6 space-y-8">
-                    <div className="max-w-2xl space-y-6 bg-slate-50/50 p-6 rounded-xl border border-slate-200/60">
-                        <div className="border-b border-slate-200 pb-3">
-                            <h4 className="font-bold text-slate-800 text-sm tracking-wide uppercase">Account Security</h4>
-                            <p className="text-slate-400 text-xs mt-0.5">Change the mobile access password for this employee.</p>
-                        </div>
+        <AuthenticatedLayout
+            user={auth?.user || {}}
+            header={<h2 className="font-bold text-lg text-slate-800 tracking-tight">Edit Employee</h2>}
+        >
+            <Head title={`Edit Security - ${employee.name}`} />
 
+            <div className="p-6 max-w-7xl mx-auto space-y-6">
+                <div>
+                    <div className="mb-3">
+                        <Link 
+                            href={route('employees.index')} 
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-primary transition-colors uppercase tracking-wider"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            Back to Employees
+                        </Link>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Edit Employee: {employee.name}</h1>
+                            <p className="text-xs text-slate-500 mt-0.5">Manage portal credentials and password recovery options.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <EmployeeTabs employeeId={employee.id} activeTab="security" isDirty={isDirty} />
+
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <h3 className="text-sm font-bold text-slate-800 tracking-tight">Access Credentials & Security</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Set a new access password or trigger an email password reset link.</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="p-6 space-y-6 max-w-xl">
                         <div className="space-y-4">
                             <CommonInput
-                                label="New Access Password"
+                                label="New Password"
                                 type="password"
                                 value={data.password}
                                 name="password"
-                                onChange={(e) => setData(e.target.name, e.target.value)}
+                                onChange={(e) => setData('password', e.target.value)}
                                 error={errors.password}
-                                placeholder="Minimum 8 characters"
+                                placeholder="Enter at least 4 characters"
                                 required
                             />
+
                             <CommonInput
                                 label="Confirm New Password"
                                 type="password"
                                 value={data.password_confirmation}
                                 name="password_confirmation"
-                                onChange={(e) => setData(e.target.name, e.target.value)}
-                                placeholder="Re-enter password"
+                                onChange={(e) => setData('password_confirmation', e.target.value)}
+                                placeholder="Re-type password"
                                 required
                             />
-                            <p className="text-[11px] text-slate-400 font-medium italic">
-                                * Note: The login identifier for mobile secure access matches the primary employee email address.
-                            </p>
-                        </div>
-                    </div>
 
-                    <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
-                        <Link 
-                            href="/employee" 
-                            className="flex items-center justify-center px-8 py-2.5 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-sm transition duration-150 active:scale-[0.98]"
-                        >
-                            Cancel
-                        </Link>
-                        <PrimaryButton
-                            type="button"
-                            variant="secondary"
-                            onClick={handleSendMailRequest}
-                        >
-                            Send Reset Mail
-                        </PrimaryButton>
-                        <PrimaryButton
-                            type="submit"
-                            loading={processing}
-                            loadingText="Updating..."
-                        >
-                            Update Password
-                        </PrimaryButton>
-                    </div>
-                </form>
+                            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/60 text-[11px] text-slate-500 space-y-1">
+                                <p className="font-semibold text-slate-700">Account Information:</p>
+                                <p>
+                                    Associated Email: <span className="font-mono text-slate-800 font-bold">{employee.email || 'None configured'}</span>
+                                </p>
+                                <p className="text-[10px] text-slate-400">
+                                    This email is used as the primary login identifier for mobile and web self-service portals.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-6 border-t border-slate-100">
+                            <CommonButton 
+                                type="button"
+                                variant="secondary" 
+                                onClick={handleSendMailRequest}
+                                disabled={isSendingReset || !employee.email}
+                                processing={isSendingReset}
+                            >
+                                Send Reset Email
+                            </CommonButton>
+
+                            <div className="flex items-center gap-3">
+                                <CommonButton 
+                                    variant="secondary" 
+                                    href={route('employees.index')}
+                                >
+                                    Cancel
+                                </CommonButton>
+                                <CommonButton
+                                    type="submit"
+                                    variant="primary"
+                                    processing={processing}
+                                    disabled={!data.password || processing}
+                                >
+                                    {processing ? 'Updating...' : 'Update Password'}
+                                </CommonButton>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
-</AuthenticatedLayout>
-);
+        </AuthenticatedLayout>
+    );
 };
 
 export default EditSecurityPage;

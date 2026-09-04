@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm } from '@inertiajs/react';
 import HRSettingsLayout from './HRSettingsLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
+import CommonButton from '@/Components/CommonButton';
 import CommonInput from '@/Components/CommonInput';
 
 export default function QRSettings({ settings }) {
@@ -20,18 +20,17 @@ export default function QRSettings({ settings }) {
     return (
         <HRSettingsLayout activeTab="qr">
             <div className="max-w-3xl pb-12">
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-                    <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 border-b border-slate-200 rounded-t-xl">
-                        <h3 className="text-base font-bold text-white tracking-wide">QR Code Settings</h3>
-                        <p className="text-slate-400 text-xs mt-0.5">Configure attendance QR code behavior.</p>
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <h3 className="text-sm font-bold text-slate-800">QR Code Settings</h3>
+                        <p className="text-xs text-slate-400 mt-0.5">Configure attendance QR code behavior.</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                        
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">QR Code Type</label>
-                            <div className="flex gap-4">
-                                <label className={`flex-1 flex items-center justify-center gap-2 p-4 border rounded-xl cursor-pointer transition-all ${data.qr_type === 'Static' ? 'bg-slate-900 border-slate-900 text-white shadow-md' : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'}`}>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">QR Code Type</label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <label className={`flex items-center justify-center gap-2 p-3.5 border rounded-lg cursor-pointer transition-all ${data.qr_type === 'Static' ? 'bg-primary text-white border-primary shadow-sm' : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'}`}>
                                     <input
                                         type="radio"
                                         name="qr_type"
@@ -40,9 +39,9 @@ export default function QRSettings({ settings }) {
                                         onChange={(e) => setData('qr_type', e.target.value)}
                                         className="hidden"
                                     />
-                                    <span className="font-semibold">Static</span>
+                                    <span className="text-xs font-bold uppercase tracking-wider">Static QR</span>
                                 </label>
-                                <label className={`flex-1 flex items-center justify-center gap-2 p-4 border rounded-xl cursor-pointer transition-all ${data.qr_type === 'Dynamic' ? 'bg-slate-900 border-slate-900 text-white shadow-md' : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'}`}>
+                                <label className={`flex items-center justify-center gap-2 p-3.5 border rounded-lg cursor-pointer transition-all ${data.qr_type === 'Dynamic' ? 'bg-primary text-white border-primary shadow-sm' : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'}`}>
                                     <input
                                         type="radio"
                                         name="qr_type"
@@ -51,15 +50,15 @@ export default function QRSettings({ settings }) {
                                         onChange={(e) => setData('qr_type', e.target.value)}
                                         className="hidden"
                                     />
-                                    <span className="font-semibold">Dynamic</span>
+                                    <span className="text-xs font-bold uppercase tracking-wider">Dynamic QR</span>
                                 </label>
                             </div>
-                            <p className="mt-2 text-xs text-slate-500">Static QR code never changes. Dynamic QR code refreshes automatically for better security.</p>
+                            <p className="mt-2 text-xs text-slate-400">Static QR code never changes. Dynamic QR code refreshes automatically for enhanced security.</p>
                             {errors.qr_type && <span className="text-red-500 text-xs mt-1 block">{errors.qr_type}</span>}
                         </div>
 
                         {data.qr_type === 'Dynamic' && (
-                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <div className="bg-slate-50/50 p-4 rounded-lg border border-slate-100 space-y-2">
                                 <CommonInput
                                     label="Refresh Interval (Minutes)"
                                     type="number"
@@ -69,14 +68,14 @@ export default function QRSettings({ settings }) {
                                     max="60"
                                     error={errors.qr_dynamic_interval}
                                 />
-                                <p className="mt-2 text-xs text-slate-500">How often the QR code should automatically regenerate on the public screen.</p>
+                                <p className="text-xs text-slate-400">How often the QR code should automatically regenerate on the attendance screen.</p>
                             </div>
                         )}
 
-                        <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end gap-3">
-                            <PrimaryButton type="submit" disabled={!isDirty || processing}>
+                        <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                            <CommonButton type="submit" variant="primary" processing={processing} disabled={!isDirty || processing}>
                                 Save QR Settings
-                            </PrimaryButton>
+                            </CommonButton>
                         </div>
                     </form>
                 </div>

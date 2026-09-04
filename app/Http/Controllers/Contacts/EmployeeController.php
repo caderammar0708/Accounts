@@ -25,11 +25,22 @@ class EmployeeController extends Controller
 
     public function edit(Employee $employee)
     {
-        $employee->load(['shift']);
+        $employee->load(['shift', 'managers']);
+        
+        $dbDepartments = Employee::whereNotNull('department')->where('department', '!=', '')->pluck('department')->toArray();
+        $defaultDepartments = ['Administration', 'Finance & Accounting', 'Human Resources', 'Operations', 'Sales & Marketing', 'Engineering', 'Workshop', 'Customer Support'];
+        $allDepartments = collect(array_values(array_unique(array_filter(array_merge($defaultDepartments, $dbDepartments)))))
+            ->map(fn($d) => ['value' => $d, 'label' => $d]);
+
+        $dbDesignations = Employee::whereNotNull('designation')->where('designation', '!=', '')->pluck('designation')->toArray();
+        $defaultDesignations = ['Manager', 'Assistant Manager', 'Accountant', 'Technician', 'Service Advisor', 'Mechanic', 'Cashier', 'Sales Executive', 'Driver', 'Office Assistant'];
+        $allDesignations = collect(array_values(array_unique(array_filter(array_merge($defaultDesignations, $dbDesignations)))))
+            ->map(fn($d) => ['value' => $d, 'label' => $d]);
+
         return Inertia::render('Team/Profile/EditGeneral', [
             'employee' => $employee,
-            'departments' => Employee::whereNotNull('department')->pluck('department')->unique()->values()->map(fn($d) => ['value' => $d, 'label' => $d]),
-            'designations' => Employee::whereNotNull('designation')->pluck('designation')->unique()->values()->map(fn($d) => ['value' => $d, 'label' => $d]),
+            'departments' => $allDepartments,
+            'designations' => $allDesignations,
             'shifts' => Shift::select('id as value', 'name as label')->get(),
             'managers' => Employee::select('id as value', 'name as label')->where('id', '!=', $employee->id)->get(),
         ]);
@@ -186,10 +197,25 @@ class EmployeeController extends Controller
         ]));
 
         if ($request->has('manager_ids')) {
-            $employee->managers()->sync($request->manager_ids);
+            $employee->managers()->sync($request->input('manager_ids', []));
         }
 
         return redirect()->back()->with('success', 'Employee updated successfully.');
+    }
+
+    public function updateAttendance(Request $request, Employee $employee)
+    {
+        $request->validate([
+            'shift_id' => 'nullable|exists:shifts,id',
+            'is_auto_attendance' => 'boolean',
+        ]);
+
+        $employee->update([
+            'shift_id' => $request->shift_id,
+            'is_auto_attendance' => $request->boolean('is_auto_attendance'),
+        ]);
+
+        return redirect()->back()->with('success', 'Attendance settings updated successfully.');
     }
 
     public function updateSalary(Request $request, Employee $employee)
@@ -217,23 +243,34 @@ class EmployeeController extends Controller
             ])
         );
 
+        $employee->update(['salary' => $request->basic_salary]);
+
         return redirect()->back()->with('success', 'Salary structure updated successfully.');
     }
 
     public function updateDocuments(Request $request, Employee $employee)
     {
+        $photoFile = $request->file('photo') ?? $request->file('photo_file');
+        $cvFile = $request->file('cv') ?? $request->file('cv_file');
+        $idCopyFile = $request->file('id_copy') ?? $request->file('id_copy_file');
+        $certFile = $request->file('certificate') ?? $request->file('certificate_file');
+
         $request->validate([
-            'photo' => 'nullable|image|max:2048',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'photo_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'cv' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
+            'cv_file' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
             'id_copy' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'id_copy_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'certificate' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'certificate_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
         $paths = [];
-        if ($request->hasFile('photo')) $paths['photo'] = $request->file('photo')->store('employees/photos', 'public');
-        if ($request->hasFile('cv')) $paths['cv_path'] = $request->file('cv')->store('employees/cvs', 'public');
-        if ($request->hasFile('id_copy')) $paths['id_copy_path'] = $request->file('id_copy')->store('employees/ids', 'public');
-        if ($request->hasFile('certificate')) $paths['certificate_path'] = $request->file('certificate')->store('employees/certificates', 'public');
+        if ($photoFile) $paths['photo'] = $photoFile->store('employees/photos', 'public');
+        if ($cvFile) $paths['cv_path'] = $cvFile->store('employees/cvs', 'public');
+        if ($idCopyFile) $paths['id_copy_path'] = $idCopyFile->store('employees/ids', 'public');
+        if ($certFile) $paths['certificate_path'] = $certFile->store('employees/certificates', 'public');
 
         if (!empty($paths)) {
             $employee->update($paths);
@@ -248,9 +285,47 @@ class EmployeeController extends Controller
             'password' => 'required|string|min:4|confirmed',
         ]);
 
-        // Security update logic here (e.g., updating a User model if they have mobile app access)
-        
+        if (!empty($employee->email)) {
+            $user = User::where('email', $employee->email)->first();
+            if ($user) {
+                $user->update(['password' => Hash::make($request->password)]);
+            } else {
+                User::create([
+                    'name' => $employee->name,
+                    'email' => $employee->email,
+                    'password' => Hash::make($request->password),
+                    'role' => 'Employee',
+                    'location_id' => $employee->location_id,
+                ]);
+            }
+        }
+
         return redirect()->back()->with('success', 'Security settings updated successfully.');
+    }
+
+    public function sendPasswordReset(Employee $employee)
+    {
+        if (empty($employee->email)) {
+            return redirect()->back()->with('error', 'This employee does not have an email address to receive password reset instructions.');
+        }
+
+        $user = User::where('email', $employee->email)->first();
+        if (!$user) {
+            $user = User::create([
+                'name' => $employee->name,
+                'email' => $employee->email,
+                'password' => Hash::make(\Illuminate\Support\Str::random(16)),
+                'role' => 'Employee',
+                'location_id' => $employee->location_id,
+            ]);
+        }
+
+        try {
+            \Illuminate\Support\Facades\Password::broker()->sendResetLink(['email' => $employee->email]);
+            return redirect()->back()->with('success', 'Password reset instructions have been sent to ' . $employee->email);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Could not send reset link: ' . $e->getMessage());
+        }
     }
 
     public function destroy(Employee $employee)

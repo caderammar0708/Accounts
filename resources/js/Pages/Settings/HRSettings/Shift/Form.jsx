@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm, Link } from '@inertiajs/react';
 import HRSettingsLayout from '../HRSettingsLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
+import CommonButton from '@/Components/CommonButton';
 import CommonInput from '@/Components/CommonInput';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -44,14 +44,18 @@ export default function Form({ shift }) {
         <HRSettingsLayout activeTab="shift">
             <div className="max-w-4xl pb-12">
                 <div className="mb-4">
-                    <Link href={route('settings.hr.shifts.index')} className="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
-                        &larr; Back to Shifts
+                    <Link
+                        href={route('settings.hr.shifts.index')}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase tracking-wider"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                        Back to Shifts
                     </Link>
                 </div>
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-                    <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 border-b border-slate-200 rounded-t-xl">
-                        <h3 className="text-base font-bold text-white tracking-wide">{isEditing ? 'Edit Shift' : 'Create Shift'}</h3>
-                        <p className="text-slate-400 text-xs mt-0.5">Define working hours and designated work days.</p>
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <h3 className="text-sm font-bold text-slate-800">{isEditing ? 'Edit Shift' : 'Create Shift'}</h3>
+                        <p className="text-xs text-slate-400 mt-0.5">Define working hours and designated work days.</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-6 space-y-8">
@@ -69,7 +73,7 @@ export default function Form({ shift }) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-4">
-                                <h4 className="font-bold text-sm text-slate-800 border-b pb-2">Full Day Timings</h4>
+                                <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2">Full Day Timings</h4>
                                 <CommonInput
                                     label="Start Time"
                                     type="time"
@@ -84,11 +88,11 @@ export default function Form({ shift }) {
                                     onChange={(e) => setData('end_time', e.target.value)}
                                     error={errors.end_time}
                                 />
-                                <p className="text-xs text-slate-500 italic">Leave blank if the shift has flexible hours.</p>
+                                <p className="text-xs text-slate-400 italic">Leave blank if the shift has flexible hours.</p>
                             </div>
 
                             <div className="space-y-4">
-                                <h4 className="font-bold text-sm text-slate-800 border-b pb-2">Half Day Timings</h4>
+                                <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2">Half Day Timings</h4>
                                 <CommonInput
                                     label="Half Day Start Time"
                                     type="time"
@@ -103,15 +107,15 @@ export default function Form({ shift }) {
                                     onChange={(e) => setData('half_day_end_time', e.target.value)}
                                     error={errors.half_day_end_time}
                                 />
-                                <p className="text-xs text-slate-500 italic">Optional. Only applied when staff take half day leave.</p>
+                                <p className="text-xs text-slate-400 italic">Optional. Only applied when staff take half day leave.</p>
                             </div>
                         </div>
 
-                        <div className="bg-slate-50 p-5 rounded-lg border border-slate-100">
-                            <h4 className="font-bold text-sm text-slate-800 mb-3">Working Days</h4>
-                            <p className="text-xs text-slate-500 mb-4">Select the days this shift is active. Unselected days will be treated as off-days.</p>
+                        <div className="bg-slate-50/50 p-5 rounded-lg border border-slate-100">
+                            <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700 mb-1">Working Days</h4>
+                            <p className="text-xs text-slate-400 mb-4">Select the days this shift is active. Unselected days will be treated as off-days.</p>
                             
-                            <div className="flex flex-wrap gap-3">
+                            <div className="flex flex-wrap gap-2.5">
                                 {DAYS_OF_WEEK.map(day => {
                                     const isSelected = data.working_days.includes(day);
                                     return (
@@ -119,10 +123,10 @@ export default function Form({ shift }) {
                                             key={day}
                                             type="button"
                                             onClick={() => toggleDay(day)}
-                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                            className={`px-3.5 py-1.5 rounded-md text-xs font-bold transition-all ${
                                                 isSelected 
-                                                    ? 'bg-indigo-600 text-white shadow-md' 
-                                                    : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100'
+                                                    ? 'bg-primary text-white border border-primary shadow-sm' 
+                                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                                             }`}
                                         >
                                             {day}
@@ -133,10 +137,13 @@ export default function Form({ shift }) {
                             {errors.working_days && <span className="text-red-500 text-xs mt-2 block">{errors.working_days}</span>}
                         </div>
 
-                        <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
-                            <PrimaryButton type="submit" disabled={processing}>
+                        <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                            <CommonButton variant="secondary" href={route('settings.hr.shifts.index')}>
+                                Cancel
+                            </CommonButton>
+                            <CommonButton type="submit" variant="primary" processing={processing}>
                                 {isEditing ? 'Save Changes' : 'Create Shift'}
-                            </PrimaryButton>
+                            </CommonButton>
                         </div>
                     </form>
                 </div>

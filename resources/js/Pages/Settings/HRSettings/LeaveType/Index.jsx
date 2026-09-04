@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import HRSettingsLayout from '../HRSettingsLayout';
 import Pagination from '@/Components/Pagination';
 import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
+import CommonButton from '@/Components/CommonButton';
 
 export default function Index({ leaveTypes, filters }) {
     const [searchTerm, setSearchTerm] = useState(filters?.search || '');
@@ -36,81 +37,89 @@ export default function Index({ leaveTypes, filters }) {
     return (
         <HRSettingsLayout activeTab="leave-types">
             <div className="space-y-6 pb-12">
-                <div className="flex justify-end mb-4">
-                    <Link
-                        href={route('settings.hr.leave-types.create')}
-                        className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                    >
-                        + Add Leave Type
-                    </Link>
-                </div>
-
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <h3 className="text-base font-bold text-white tracking-wide">Leave Types ({leaveTypes.total})</h3>
-                            <p className="text-slate-400 text-xs mt-0.5">Manage employee leave categories and limits.</p>
+                    {/* Header / Search Toolbar */}
+                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg className="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Search leave types..."
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && applyFilters()}
+                                    className="pl-9 pr-4 py-1.5 border border-slate-300 rounded-md text-[11px] w-64 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-slate-800 placeholder-slate-400"
+                                />
+                            </div>
                         </div>
-                        <div className="w-full md:w-72">
-                            <input
-                                type="text"
-                                placeholder="Search leave types..."
-                                value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && applyFilters()}
-                                className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/60 rounded-lg text-xs font-semibold text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                            />
-                        </div>
+
+                        <CommonButton
+                            variant="primary"
+                            href={route('settings.hr.leave-types.create')}
+                        >
+                            + Add Leave Type
+                        </CommonButton>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-200">
-                            <thead className="bg-slate-50">
-                                <tr>
-                                    <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Name</th>
-                                    <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Days/Year</th>
-                                    <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
-                                    <th className="px-6 py-3.5 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                    {/* Table */}
+                    <div className="overflow-x-auto min-h-[300px]">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200">
+                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Name</th>
+                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Days / Year</th>
+                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Type</th>
+                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-slate-100">
+                            <tbody className="divide-y divide-slate-100">
                                 {leaveTypes.data.map((type) => (
-                                    <tr key={type.id} className="hover:bg-slate-50/60 transition">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">{type.name}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-medium">
+                                    <tr key={type.id} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-4 py-2.5 text-[11px] font-bold text-slate-800">{type.name}</td>
+                                        <td className="px-4 py-2.5 text-[11px] text-slate-600 font-medium">
                                             {type.days_per_year} days
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-medium">
+                                        <td className="px-4 py-2.5 text-[11px]">
                                             {type.is_short_leave ? (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                                                     Short Leave
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary-50 text-primary border border-primary/20">
                                                     Standard
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                            <Link 
-                                                href={route('settings.hr.leave-types.edit', type.id)} 
-                                                className="text-indigo-600 hover:text-indigo-900 mx-1"
-                                            >
-                                                Edit
-                                            </Link>
-                                            <button 
-                                                onClick={() => setConfirmDelete(type)} 
-                                                className="text-red-600 hover:text-red-900 mx-1"
-                                            >
-                                                Delete
-                                            </button>
+                                        <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <CommonButton 
+                                                    variant="ghost" 
+                                                    size="xs" 
+                                                    href={route('settings.hr.leave-types.edit', type.id)}
+                                                >
+                                                    Edit
+                                                </CommonButton>
+                                                <CommonButton 
+                                                    variant="ghost" 
+                                                    size="xs" 
+                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                    onClick={() => setConfirmDelete(type)}
+                                                >
+                                                    Delete
+                                                </CommonButton>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
                                 {leaveTypes.data.length === 0 && (
                                     <tr>
-                                        <td colSpan={4} className="text-center py-12 text-slate-400 italic text-sm">
-                                            No leave types found. Use "Add Leave Type" to configure one.
+                                        <td colSpan={4} className="px-4 py-12 text-center text-[11px] text-slate-400 font-medium">
+                                            No leave types found. Use "+ Add Leave Type" to configure one.
                                         </td>
                                     </tr>
                                 )}
@@ -118,9 +127,11 @@ export default function Index({ leaveTypes, filters }) {
                         </table>
                     </div>
                     
-                    <div className="p-4 border-t border-slate-100 bg-slate-50/40">
-                        <Pagination classNames="mt-0" links={leaveTypes.links} />
-                    </div>
+                    {leaveTypes.links && leaveTypes.links.length > 3 && (
+                        <div className="p-4 border-t border-slate-100 bg-slate-50/40">
+                            <Pagination classNames="mt-0" links={leaveTypes.links} />
+                        </div>
+                    )}
                 </div>
 
                 <DeleteConfirmationModal

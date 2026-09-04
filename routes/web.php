@@ -164,12 +164,14 @@ Route::middleware('auth')->group(function () {
     Route::put('employees/{employee}/salary', [EmployeeController::class, 'updateSalary'])->name('employees.salary.update');
     
     Route::get('employees/{employee}/attendance', [EmployeeController::class, 'editAttendance'])->name('employees.attendance.edit');
+    Route::put('employees/{employee}/attendance', [EmployeeController::class, 'updateAttendance'])->name('employees.attendance.update');
     
     Route::get('employees/{employee}/documents', [EmployeeController::class, 'editDocuments'])->name('employees.documents.edit');
     Route::put('employees/{employee}/documents', [EmployeeController::class, 'updateDocuments'])->name('employees.documents.update');
     
     Route::get('employees/{employee}/security', [EmployeeController::class, 'editSecurity'])->name('employees.security.edit');
     Route::put('employees/{employee}/security', [EmployeeController::class, 'updateSecurity'])->name('employees.security.update');
+    Route::post('employees/{employee}/send-password-reset', [EmployeeController::class, 'sendPasswordReset'])->name('employees.security.send-reset');
     Route::resource('job-cards', JobCardController::class);
     Route::resource('vehicles', VehicleController::class);
 
